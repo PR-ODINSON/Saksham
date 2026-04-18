@@ -4,15 +4,27 @@ import {
   getRiskScores,
   getSchoolRisk,
   getMaintenanceQueue,
+  getRiskBySchool,
+  getAllRisks,
 } from '../controllers/risk.controller.js';
 
 const router = express.Router();
 
-// DEO + admin: aggregate risk scores across all schools
+// ── PS-03 Spec endpoints ──────────────────────────────────────────────────────
+// NOTE: literal paths must come before /:param routes to avoid shadowing
+
+// GET /api/risk/all — all stored per-category predictions
+router.get('/all', protect, authorize('deo', 'admin', 'contractor'), getAllRisks);
+
+// GET /api/risk/:school_id — predictions for a single school
+router.get('/:school_id', protect, getRiskBySchool);
+
+// ── Legacy endpoints (keep for existing dashboard) ────────────────────────────
+
+// GET /api/risk-scores — composite scores for all schools
 router.get('/', protect, authorize('deo', 'admin'), getRiskScores);
-// Per-school risk (school can see own, DEO sees any)
-router.get('/:schoolId', protect, getSchoolRisk);
-// Prioritised maintenance queue
-router.get('/queue/maintenance', protect, authorize('deo', 'admin', 'contractor'), getMaintenanceQueue);
+
+// GET /api/risk-scores/:schoolId — composite score for one school
+// (handled by /:school_id above — both work)
 
 export default router;
