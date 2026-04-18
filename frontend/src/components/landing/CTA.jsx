@@ -24,7 +24,7 @@ function CTA() {
         {/* Modern Badge (cite: copy.mp4, 0:14) */}
         <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-6 py-2 rounded-full mb-12">
           <Zap size={14} className="text-emerald-600 fill-emerald-600 animate-pulse" />
-          <span className="text-emerald-600 font-[900] tracking-[0.3em] text-[10px] uppercase italic">Ready to Lead?</span>
+          <span className="text-emerald-600 font-[900] tracking-[0.3em] text-[12px] uppercase italic">Ready to Lead?</span>
         </div>
 
         {/* MASSIVE BLACK TYPOGRAPHY: Tight & Bold (cite: screen.png) */}

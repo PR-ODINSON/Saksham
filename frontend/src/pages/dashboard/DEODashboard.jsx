@@ -96,13 +96,13 @@ export default function DEODashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div className="min-h-screen bg-[#f8fafc]">
       <style>{GLOBAL_CSS}</style>
 
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto pt-10 sm:pt-16 px-4 sm:px-8 space-y-8 pb-12">
         <PageHeader 
-          title="Maintenance Operational Hub"
-          subtitle="District infrastructure oversight and predictive risk management"
+          title="Operational Tactical Hub"
+          subtitle="District Infrastructure Insight & Predictive Risk Management"
           icon={LayoutList}
           actions={
             <Button 
@@ -121,7 +121,7 @@ export default function DEODashboard() {
           <MetricCard label="Avg Survival" value={<Counter to={stats.avgUrgency} suffix=" Days" />} icon={Wrench} variant="success" />
         </div>
 
-        <Card noPadding className="overflow-hidden">
+        <Card noPadding variant="gov" title="Risk Management Queue" subtitle="Real-time predictive analysis of infrastructure nodes" className="overflow-visible">
           <div className="border-b border-slate-100 px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="flex gap-1">
               <Button 
@@ -159,11 +159,11 @@ export default function DEODashboard() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Protocol</th>
-                  <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Infrastructure Node</th>
-                  <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Risk Categories</th>
-                  <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Failure Horizon</th>
-                  <th className="px-6 py-4 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Impact</th>
+                  <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Protocol</th>
+                  <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Infrastructure Node</th>
+                  <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Risk Categories</th>
+                  <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Failure Horizon</th>
+                  <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Impact</th>
                 </tr>
               </thead>
               <tbody>
@@ -186,12 +186,12 @@ export default function DEODashboard() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center font-bold text-[10px]">
+                            <div className="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center font-bold text-[12px]">
                               {s.schoolName.charAt(0)}
                             </div>
                             <div>
                               <div className="text-xs font-bold text-slate-900">{s.schoolName}</div>
-                              <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{s.block}, {s.district}</div>
+                              <div className="text-[12px] font-semibold text-slate-500 uppercase tracking-wide">{s.block}, {s.district}</div>
                             </div>
                           </div>
                         </td>
@@ -206,7 +206,7 @@ export default function DEODashboard() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="space-y-1.5">
-                            <div className="text-[10px] font-bold text-slate-700 uppercase">{s.daysToFailure} Days Remaining</div>
+                            <div className="text-[12px] font-bold text-slate-700 uppercase">{s.daysToFailure} Days Remaining</div>
                             <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                               <motion.div 
                                 initial={{ width: 0 }} 
@@ -219,7 +219,7 @@ export default function DEODashboard() {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-bold text-slate-900">{s.studentImpactScore}</span>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Impact</span>
+                            <span className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">Impact</span>
                           </div>
                         </td>
                       </tr>
@@ -243,11 +243,11 @@ export default function DEODashboard() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm font-bold text-red-900">{o.school?.name || 'Unknown School'}</div>
-                          <div className="text-[10px] font-semibold text-red-700 uppercase mt-0.5">By: {o.contractor?.name || 'Unassigned'}</div>
+                          <div className="text-[12px] font-semibold text-red-700 uppercase mt-0.5">By: {o.contractor?.name || 'Unassigned'}</div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-[10px] font-bold text-red-800 uppercase">SUBMITTED: {o.completionProof?.gpsLocation?.lat?.toFixed(4)}, {o.completionProof?.gpsLocation?.lng?.toFixed(4)}</div>
-                          <div className="text-[10px] font-bold text-red-900 uppercase mt-1 opacity-60">ACTUAL: {o.school?.location?.lat?.toFixed(4)}, {o.school?.location?.lng?.toFixed(4)}</div>
+                          <div className="text-[12px] font-bold text-red-800 uppercase">SUBMITTED: {o.completionProof?.gpsLocation?.lat?.toFixed(4)}, {o.completionProof?.gpsLocation?.lng?.toFixed(4)}</div>
+                          <div className="text-[12px] font-bold text-red-900 uppercase mt-1 opacity-60">ACTUAL: {o.school?.location?.lat?.toFixed(4)}, {o.school?.location?.lng?.toFixed(4)}</div>
                         </td>
                         <td className="px-6 py-4">
                            <Badge variant="critical">Resolution Mismatch</Badge>
@@ -255,7 +255,7 @@ export default function DEODashboard() {
                         <td className="px-6 py-4">
                            <div className="flex flex-col">
                              <span className="text-xs font-bold text-red-900">RADIAL VARIANCE</span>
-                             <span className="text-[9px] font-bold text-red-700 uppercase">OUTSIDE SECURITY RADIUS</span>
+                             <span className="text-[13px] font-bold text-red-700 uppercase">OUTSIDE SECURITY RADIUS</span>
                            </div>
                         </td>
                       </tr>
@@ -267,10 +267,10 @@ export default function DEODashboard() {
           </div>
 
           <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Last Synchronization: {lastSync.toLocaleTimeString()}</span>
+            <span className="text-[12px] font-bold text-slate-400 uppercase tracking-widest leading-none">Last Synchronization: {lastSync.toLocaleTimeString()}</span>
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-blue-600"></div>
-              <span className="text-[10px] font-bold text-blue-900 uppercase tracking-widest leading-none">Security Registry Operational</span>
+              <span className="text-[12px] font-bold text-blue-900 uppercase tracking-widest leading-none">Security Registry Operational</span>
             </div>
           </div>
         </Card>

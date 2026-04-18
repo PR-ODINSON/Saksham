@@ -6,9 +6,12 @@ import Button from "../../components/common/Button";
 import Badge from "../../components/common/Badge";
 import PageHeader from "../../components/common/PageHeader";
 import Input from "../../components/common/Input";
+import Select from "../../components/common/Select";
+import MultiSelect from "../../components/common/MultiSelect";
 import {
   Wrench, Zap, Building, CheckCircle2, AlertTriangle,
   Camera, X, ShieldAlert, Clock, TrendingDown, Minus,
+  ChevronDown,
 } from "lucide-react";
 
 // ─── Option lists — values mirror TS-PS3.csv column names ────────────────────
@@ -48,15 +51,22 @@ const CATEGORIES = [
     label: "Plumbing",
     icon: <Wrench size={20} strokeWidth={2} />,
     flags: [
-      { key: "waterLeak",   label: "Water Leak",   desc: "Tap or pipe is leaking" },
-      { key: "roofLeakFlag",label: "Roof Drip",    desc: "Water dripping from roof" },
-      { key: "issueFlag",   label: "Other Issue",  desc: "Something else is broken" },
+      { key: "waterLeak",        label: "Water Leak",        desc: "Active leakage in pipes" },
+      { key: "brokenTap",        label: "Broken Tap",        desc: "Faucet/Tap non-functional" },
+      { key: "cloggedDrain",     label: "Clogged Drain",     desc: "Water stagnation in sinks" },
+      { key: "tankOverflow",     label: "Tank Overflow",     desc: "Automatic switch failed" },
+      { key: "lowWaterPressure", label: "Low Pressure",      desc: "Barely any water flow" },
+      { key: "wallSeepage",      label: "Wall Seepage",      desc: "Dampness in toilet walls" },
+      { key: "roofLeakFlag",     label: "Roof Drip",         desc: "Water dripping from roof" },
+      { key: "brokenDoor",       label: "Broken Door",       desc: "Toilet door missing/broken" },
+      { key: "pestInfestation",  label: "Pest Issues",       desc: "Signs of rodents/insects" },
+      { key: "issueFlag",        label: "Other Issue",       desc: "Categorized plumbing fault" },
     ],
     selectField: {
       key: "toiletFunctionalRatio",
       label: "Toilet Functional Ratio",
-      options: TOILET_OPTIONS,
-      defaultVal: 1.0,
+      options: TOILET_OPTIONS.map(o => ({ value: o.value, label: `${o.labelEn} (${o.desc})` })),
+      defaultVal: "",
     },
   },
   {
@@ -64,14 +74,19 @@ const CATEGORIES = [
     label: "Electrical",
     icon: <Zap size={20} strokeWidth={2} />,
     flags: [
-      { key: "wiringExposed", label: "Exposed Wiring", desc: "Wire without cover / exposed" },
-      { key: "issueFlag",     label: "Other Issue",   desc: "Something else is broken" },
+      { key: "wiringExposed",    label: "Exposed Wiring",    desc: "Safety hazard: loose wires" },
+      { key: "brokenSwitch",     label: "Broken Switch",     desc: "Electrical board damage" },
+      { key: "burntSocket",      label: "Burnt Socket",      desc: "Signs of short circuit" },
+      { key: "flickeringLights", label: "Flickering",       desc: "Unstable power supply" },
+      { key: "panelDamage",      label: "Panel Damage",      desc: "Main breaker issues" },
+      { key: "highVoltage",      label: "Voltage Surge",     desc: "Equipment risk detected" },
+      { key: "issueFlag",        label: "Other Issue",       desc: "General electrical fault" },
     ],
     selectField: {
       key: "powerOutageHours",
       label: "Weekly Power Outage",
-      options: POWER_OPTIONS,
-      defaultVal: 0,
+      options: POWER_OPTIONS.map(o => ({ value: o.value, label: `${o.labelEn} (${o.desc})` })),
+      defaultVal: "",
     },
   },
   {
@@ -79,14 +94,21 @@ const CATEGORIES = [
     label: "Structural",
     icon: <Building size={20} strokeWidth={2} />,
     flags: [
-      { key: "roofLeakFlag", label: "Roof Damage",  desc: "Ceiling or roof is damaged" },
-      { key: "issueFlag",    label: "Other Issue",  desc: "Something else is broken" },
+      { key: "roofLeakFlag",     label: "Roof Damage",       desc: "Structural roof cracks" },
+      { key: "wallSeepage",      label: "Wall Dampness",      desc: "Ground water absorption" },
+      { key: "brokenWindow",     label: "Broken Window",     desc: "Glass/Frame damage" },
+      { key: "brokenDoor",       label: "Door Damage",       desc: "Classroom door issues" },
+      { key: "pestInfestation",  label: "Termite Issues",    desc: "Structural wood damage" },
+      { key: "paintPeeling",     label: "Paint Peeling",     desc: "Aesthetic/Moisture issue" },
+      { key: "floorDamage",      label: "Floor Cracks",      desc: "Safety hazard: floor holes" },
+      { key: "ceilingHole",      label: "Ceiling Hole",      desc: "Debris falling risk" },
+      { key: "issueFlag",        label: "Other Issue",       desc: "Unspecified structural risk" },
     ],
     selectField: {
       key: "crackWidthMM",
       label: "Crack Width Analysis",
-      options: CRACK_OPTIONS,
-      defaultVal: 0,
+      options: CRACK_OPTIONS.map(o => ({ value: o.value, label: `${o.labelEn} (${o.desc})` })),
+      defaultVal: "",
     },
   },
 ];
@@ -113,6 +135,14 @@ const RISK_LEVEL_CONFIG = {
   high:   { bg: "bg-red-50",     border: "border-red-200",     text: "text-red-700",     label: "CRITICAL"},
 };
 
+const ROLE_LABELS = { 
+  peon: 'Peon/Watchman', 
+  principal: 'Principal', 
+  deo: 'DEO COMMAND', 
+  contractor: 'Contractor', 
+  admin: 'System Admin' 
+};
+
 // Auto-compute ISO week number for today
 function getISOWeek() {
   const now  = new Date();
@@ -125,15 +155,31 @@ function defaultCategoryState() {
   const s = {};
   for (const cat of CATEGORIES) {
     s[cat.id] = {
-      conditionScore: 2,
+      conditionScore: "",
       issueFlag:             false,
       waterLeak:             false,
       wiringExposed:         false,
       roofLeakFlag:          false,
-      // select fields — pre-set to the "best" option
-      crackWidthMM:          0,
-      toiletFunctionalRatio: 1.0,
-      powerOutageHours:      0,
+      brokenTap:             false,
+      cloggedDrain:          false,
+      tankOverflow:          false,
+      lowWaterPressure:      false,
+      wallSeepage:           false,
+      brokenDoor:            false,
+      brokenWindow:          false,
+      pestInfestation:       false,
+      paintPeeling:          false,
+      floorDamage:           false,
+      ceilingHole:           false,
+      flickeringLights:      false,
+      brokenSwitch:          false,
+      burntSocket:           false,
+      panelDamage:           false,
+      highVoltage:           false,
+      // select fields — pre-set to empty for manual selection
+      crackWidthMM:          "",
+      toiletFunctionalRatio: "",
+      powerOutageHours:      "",
     };
   }
   return s;
@@ -160,7 +206,7 @@ function VisualSelectGrid({ options, value, onChange }) {
             <span className={`text-sm font-bold ${isSelected ? c.text : "text-slate-700"}`}>
               {opt.labelEn}
             </span>
-            <span className={`text-[10px] font-semibold uppercase tracking-wider ${isSelected ? c.text : "text-slate-500"}`}>
+            <span className={`text-[12px] font-semibold uppercase tracking-wider ${isSelected ? c.text : "text-slate-500"}`}>
               {opt.desc}
             </span>
           </button>
@@ -174,16 +220,16 @@ function VisualSelectGrid({ options, value, onChange }) {
 function PhotoUpload({ file, onChange }) {
   const inputRef = useRef(null);
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 h-full flex flex-col">
       <label className="text-xs font-bold text-slate-700 block uppercase tracking-wide">
         Evidence Photography
       </label>
       {file ? (
-        <div className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 border border-slate-200 shadow-sm">
+        <div className="flex-1 flex items-center gap-4 p-4 rounded-lg bg-slate-50 border border-slate-200 shadow-sm">
           <img
             src={URL.createObjectURL(file)}
             alt="preview"
-            className="w-16 h-16 rounded border border-slate-200 object-cover"
+            className="w-20 h-20 rounded border border-slate-200 object-cover"
           />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-slate-900 truncate">{file.name}</p>
@@ -201,13 +247,13 @@ function PhotoUpload({ file, onChange }) {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="w-full py-8 rounded-lg border border-dashed border-slate-300 bg-white hover:border-blue-500 hover:bg-blue-50/30 transition-all flex flex-col items-center gap-3 text-slate-500 group"
+          className="flex-1 w-full py-6 rounded-lg border border-dashed border-slate-300 bg-white hover:border-blue-500 hover:bg-blue-50/30 transition-all flex flex-col items-center justify-center gap-2 text-slate-500 group"
         >
-          <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
-            <Camera size={24} />
+          <div className="w-14 h-14 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
+            <Camera size={28} />
           </div>
           <div className="text-center">
-            <span className="text-sm font-bold text-slate-700 block">Select Inspection Photo</span>
+            <span className="text-sm font-bold text-slate-700 block transition-colors group-hover:text-blue-700">Select Inspection Photo</span>
             <span className="text-xs text-slate-500">JPG, PNG allowed (Max 5MB)</span>
           </div>
         </button>
@@ -302,10 +348,18 @@ export default function WeeklyInputForm() {
         issueFlag:             s.issueFlag,
         waterLeak:             s.waterLeak,
         wiringExposed:         s.wiringExposed,
+        powerOutageHours:      Number(s.powerOutageHours)      || 0,
         roofLeakFlag:          s.roofLeakFlag,
+        brokenTap:             s.brokenTap,
+        cloggedDrain:          s.cloggedDrain,
+        tankOverflow:          s.tankOverflow,
+        lowWaterPressure:      s.lowWaterPressure,
+        wallSeepage:           s.wallSeepage,
+        brokenDoor:            s.brokenDoor,
+        brokenWindow:          s.brokenWindow,
+        pestInfestation:       s.pestInfestation,
         crackWidthMM:          Number(s.crackWidthMM)          || 0,
         toiletFunctionalRatio: Number(s.toiletFunctionalRatio) ?? 0,
-        powerOutageHours:      Number(s.powerOutageHours)      || 0,
       };
 
       let res;
@@ -339,112 +393,102 @@ export default function WeeklyInputForm() {
   if (results) {
     const allOk = results.every(r => r.success);
     return (
-      <div className="max-w-2xl mx-auto p-6 space-y-6 font-body text-[#0f172a]">
-        {/* Banner */}
-        <div className={`rounded-xl border p-8 text-center ${allOk ? "bg-white border-blue-200 shadow-sm" : "bg-white border-amber-200 shadow-sm"}`}>
-          <div className="flex justify-center mb-6">
-            {allOk
-              ? <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center text-blue-600"><CheckCircle2 size={32} /></div>
-              : <div className="w-16 h-16 rounded-full bg-amber-50 flex items-center justify-center text-amber-600"><AlertTriangle size={32} /></div>}
+      <div className="max-w-3xl mx-auto p-6 space-y-8 font-body text-[#0f172a]">
+        {/* Official Acknowledgement Header */}
+        <div className="bg-white border-2 border-[#003366] p-8 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <Building size={120} />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">
-            {allOk ? "Report Logged Successfully" : "Submission Partial"}
-          </h2>
-          <p className="text-slate-500 font-medium text-sm">
-            Record ID: W-{weekNumber}-{schoolId} · {school?.district ?? "District Region"}
-          </p>
+          
+          <div className="flex justify-between items-start mb-8 border-b-2 border-slate-100 pb-6">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-800 mb-1">Government of Gujarat</p>
+              <h1 className="text-2xl font-extrabold text-[#003366] tracking-tighter">Acknowledgement Receipt</h1>
+              <p className="text-xs font-bold text-slate-500 uppercase mt-1">Infrastructure Condition Audit · Saksham Portal</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-black uppercase text-slate-400">Reference Number</p>
+              <p className="text-sm font-black text-[#003366]">SAK-{weekNumber}-{schoolId.slice(-6).toUpperCase()}</p>
+              <p className="text-[10px] font-bold text-slate-500 mt-1">{new Date().toLocaleString()}</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-8 mb-8">
+            <div>
+              <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Entity Information</p>
+              <p className="text-sm font-bold text-slate-900">{school?.name}</p>
+              <p className="text-xs font-medium text-slate-600">{school?.district}, {school?.block}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Reported By</p>
+              <p className="text-sm font-bold text-slate-900">{user?.name}</p>
+              <p className="text-xs font-medium text-slate-600">{ROLE_LABELS[user?.role]}</p>
+            </div>
+          </div>
+
+          {/* Per-category summary table */}
+          <div className="border border-slate-200 rounded-md overflow-hidden mb-8">
+             <table className="w-full text-left text-xs">
+               <thead>
+                 <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="px-4 py-3 font-bold uppercase tracking-wider text-slate-600">Category</th>
+                    <th className="px-4 py-3 font-bold uppercase tracking-wider text-slate-600 text-center">Status</th>
+                    <th className="px-4 py-3 font-bold uppercase tracking-wider text-slate-600 text-right">Risk Assessment</th>
+                 </tr>
+               </thead>
+               <tbody>
+                 {results.map(r => (
+                   <tr key={r.category} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/50">
+                     <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-blue-700">{r.icon}</span>
+                          <span className="font-bold text-slate-800">{r.label}</span>
+                        </div>
+                     </td>
+                     <td className="px-4 py-3 text-center">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${r.success ? "text-emerald-700 bg-emerald-50 border border-emerald-100" : "text-red-700 bg-red-50 border border-red-100"}`}>
+                          {r.success ? "Recorded" : "Failed"}
+                        </span>
+                     </td>
+                     <td className="px-4 py-3 text-right">
+                        {r.prediction ? (
+                          <span className={`font-bold ${RISK_LEVEL_CONFIG[r.prediction.riskLevel]?.text || "text-slate-600"}`}>
+                            {r.prediction.riskLevel.toUpperCase()} ({r.prediction.riskScore})
+                          </span>
+                        ) : "N/A"}
+                     </td>
+                   </tr>
+                 ))}
+               </tbody>
+             </table>
+          </div>
+
+          <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-md">
+            <p className="text-[10px] font-bold text-blue-800 leading-relaxed">
+              <span className="font-black uppercase mr-2 text-blue-900">Official Note:</span>
+              This is a computer-generated acknowledgement. All data submitted is subject to verification by the District Education Office (DEO). Please maintain a digital copy for your records.
+            </p>
+          </div>
         </div>
 
-        {/* Per-category result + prediction */}
-        <div className="space-y-4">
-          {results.map(r => {
-            const pred = r.prediction;
-            const rlCfg = pred ? (RISK_LEVEL_CONFIG[pred.riskLevel] || RISK_LEVEL_CONFIG.low) : null;
-            return (
-              <div
-                key={r.category}
-                className={`rounded-2xl border-2 overflow-hidden ${r.success ? "border-slate-200" : "border-red-200"}`}
-              >
-                <div className={`flex items-center gap-4 p-5 ${r.success ? "bg-white" : "bg-red-50"}`}>
-                  <div className="text-blue-600">{r.icon}</div>
-                  <span className="text-slate-900 font-bold tracking-tight text-sm flex-1">
-                    {r.label} Assessment
-                  </span>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded border ${
-                    r.success
-                      ? "text-blue-700 border-blue-200 bg-blue-50"
-                      : "text-red-700 border-red-200 bg-red-50"
-                  }`}>
-                    {r.success ? "Saved" : "Retry Required"}
-                  </span>
-                </div>
-
-                {/* Prediction panel */}
-                {pred && r.success && (
-                  <div className={`px-5 pb-5 pt-3 border-t-2 border-slate-100 ${rlCfg?.bg || "bg-slate-50"} space-y-3`}>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
-                      ML Prediction Result
-                    </p>
-                    <div className="grid grid-cols-3 gap-3">
-                      {/* Risk Score */}
-                      <div className={`p-3 rounded-xl border-2 ${rlCfg?.border} bg-white text-center`}>
-                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Risk Score</p>
-                        <p className={`text-2xl font-black ${rlCfg?.text}`}>
-                          {pred.riskScore}
-                          <span className="text-xs opacity-50">/100</span>
-                        </p>
-                      </div>
-                      {/* Days to Failure */}
-                      <div className={`p-3 rounded-xl border-2 ${pred.within_30_days ? "border-red-500 bg-red-50" : "border-slate-200 bg-white"} text-center`}>
-                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Days Safe</p>
-                        <p className={`text-2xl font-black ${pred.within_30_days ? "text-red-600" : pred.within_60_days ? "text-orange-600" : "text-emerald-600"}`}>
-                          {pred.estimated_days_to_failure}
-                          <span className="text-xs opacity-50">d</span>
-                        </p>
-                      </div>
-                      {/* Risk Level */}
-                      <div className={`p-3 rounded-xl border-2 ${rlCfg?.border} bg-white text-center`}>
-                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Level</p>
-                        <p className={`text-sm font-black uppercase ${rlCfg?.text}`}>
-                          {rlCfg?.label || pred.riskLevel}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Urgent alerts */}
-                    {pred.within_30_days && (
-                      <div className="flex items-center gap-2 p-3 rounded-xl bg-red-100 border-2 border-red-500">
-                        <AlertTriangle size={16} className="text-red-600 shrink-0" strokeWidth={3} />
-                        <p className="text-xs font-black text-red-700 uppercase tracking-wide">
-                          ⚠ Failure likely within 30 days — Principal has been notified
-                        </p>
-                      </div>
-                    )}
-                    {!pred.within_30_days && pred.within_60_days && (
-                      <div className="flex items-center gap-2 p-3 rounded-xl bg-orange-50 border-2 border-orange-400">
-                        <Clock size={16} className="text-orange-600 shrink-0" strokeWidth={3} />
-                        <p className="text-xs font-black text-orange-700 uppercase tracking-wide">
-                          Maintenance recommended within 60 days
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        <div className="flex gap-4">
+          <button
+            onClick={() => window.print()}
+            className="flex-1 py-3 rounded-md bg-white border border-slate-300 text-slate-700 font-bold text-xs uppercase tracking-widest hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
+          >
+            Download/Print Receipt
+          </button>
+          <button
+            onClick={() => {
+              setResults(null);
+              setCatStates(defaultCategoryState());
+              setCatPhotos({ plumbing: null, electrical: null, structural: null });
+            }}
+            className="flex-1 py-3 rounded-md bg-[#003366] text-white font-bold text-xs uppercase tracking-widest hover:bg-blue-900 transition-all shadow-md focus:ring-2 focus:ring-blue-500"
+          >
+            Submit Another Entry
+          </button>
         </div>
-
-        <button
-          onClick={() => {
-            setResults(null);
-            setCatStates(defaultCategoryState());
-            setCatPhotos({ plumbing: null, electrical: null, structural: null });
-          }}
-          className="w-full py-3.5 mt-2 rounded-lg bg-blue-900 border border-blue-900 text-white font-bold text-sm transition-all shadow-sm hover:bg-blue-800 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 uppercase tracking-wide"
-        >
-          Submit Another Assessment
-        </button>
       </div>
     );
   }
@@ -454,178 +498,154 @@ export default function WeeklyInputForm() {
   const activeState = catStates[activeTab];
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-8">
-      <PageHeader 
-        title="Infrastructure Condition Audit"
-        subtitle={`Period: Week ${weekNumber}, 2026 · ${school?.name || "Generic Node"}`}
-        icon={Wrench}
-      />
+    <div className="max-w-5xl mx-auto pt-10 sm:pt-16 px-4 sm:px-6 space-y-4 sm:space-y-6">
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm">
+        <div className="bg-[#003366] px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-t-lg">
+          <div>
+            <h1 className="text-lg font-extrabold text-white tracking-tight flex items-center gap-3">
+              <Wrench size={20} className="text-blue-300" />
+              Condition Audit Form (Weekly)
+            </h1>
+            <p className="text-blue-200 text-[11px] font-bold uppercase tracking-wider mt-0.5">
+              Ref: {school?.district} / {school?.block} / Week {weekNumber}
+            </p>
+          </div>
+        </div>
 
-      <div className="flex flex-wrap gap-2 -mt-4">
-        {school ? (
-          <>
-            <Badge variant="info" size="lg"><Building size={12} className="mr-1.5" /> {school.district} {school.block ? `/ ${school.block}` : ""}</Badge>
-            <Badge variant="default" size="lg">Building Age: {school.buildingAge}Y</Badge>
-            <Badge variant="default" size="lg">Registry Size: {school.numStudents}</Badge>
-          </>
-        ) : (
-          <Badge variant="default" size="lg">School ID: {schoolId}</Badge>
-        )}
-      </div>
-
-      {/* Category Tabs */}
-      <div className="flex border-b border-slate-200">
-        {CATEGORIES.map(cat => (
-          <button
-            key={cat.id}
-            type="button"
-            onClick={() => setActiveTab(cat.id)}
-            className={`px-6 py-4 text-[10px] font-bold uppercase tracking-widest transition-all border-b-2 -mb-px flex items-center gap-2 ${
-              activeTab === cat.id
-                ? "border-blue-900 text-blue-900 bg-blue-50/30"
-                : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
-            }`}
-          >
-            {cat.icon}
-            <span>{cat.label}</span>
-          </button>
-        ))}
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <Card title={`${activeCat.label} Assessment Unit`} noPadding className="overflow-hidden">
-          <div className="p-8 space-y-10">
-
-          {/* ── Photo Upload ── */}
-          <PhotoUpload
-            file={catPhotos[activeTab]}
-            onChange={(f) => setPhoto(activeTab, f)}
-          />
-
-          <div className="space-y-4">
-            <label className="text-xs font-bold text-slate-700 block uppercase tracking-wide">
-              Resource Condition Level (1-5)
-            </label>
-            <div className="grid grid-cols-5 gap-3">
-              {CONDITION_LEVELS.map(({ score, label, color }) => {
-                const c = COLOR_MAP[color];
-                const isSelected = activeState.conditionScore === score;
-                return (
-                  <button
-                    key={score}
-                    type="button"
-                    onClick={() => setField(activeTab, "conditionScore", score)}
-                    className={`py-3 rounded-md border transition-all text-center flex flex-col items-center justify-center gap-1 ${
-                      isSelected
-                        ? `${c.bg} ${c.border} ${c.text} ring-1 ring-blue-500`
-                        : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-white hover:border-slate-400"
-                    }`}
-                  >
-                    <span className="text-lg font-bold">{score}</span>
-                    <span className="text-[10px] font-semibold uppercase">{label}</span>
-                  </button>
-                );
-              })}
+        <div className="p-6 md:p-8">
+          <div className="mb-8 flex items-start gap-4 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-md">
+            <ShieldAlert className="text-amber-500 shrink-0 mt-0.5" size={18} />
+            <div>
+              <p className="text-xs font-black text-amber-900 uppercase mb-0.5">Instruction for School Personnel</p>
+              <p className="text-xs font-medium text-amber-800 leading-relaxed">
+                Please provide accurate physical assessments for each category. Uploading a clear photo of identifiable issues is mandatory for priority maintenance allocation.
+              </p>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <label className="text-xs font-bold text-slate-700 block uppercase tracking-wide">
-              {activeCat.selectField.label}
-            </label>
-            <VisualSelectGrid
-              options={activeCat.selectField.options}
-              value={activeState[activeCat.selectField.key]}
-              onChange={(v) => setField(activeTab, activeCat.selectField.key, v)}
-            />
-          </div>
-
-          <div className="space-y-4">
-            <label className="text-xs font-bold text-slate-700 block uppercase tracking-wide">
-              Critical Damage Indicators
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {activeCat.flags.map(({ key, label, desc }) => (
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Category Navigation (Horizontal Pill List) */}
+            <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-lg">
+              {CATEGORIES.map(cat => (
                 <button
-                  key={key}
+                  key={cat.id}
                   type="button"
-                  onClick={() => setField(activeTab, key, !activeState[key])}
-                  className={`flex items-center gap-4 p-4 rounded-lg border text-left transition-all ${
-                    activeState[key]
-                      ? "bg-red-50 border-red-200 shadow-sm"
-                      : "bg-white border-slate-200 hover:border-slate-300"
+                  onClick={() => setActiveTab(cat.id)}
+                  className={`flex items-center justify-center gap-2 py-3 px-4 rounded-md text-xs font-black uppercase tracking-widest transition-all ${
+                    activeTab === cat.id
+                      ? "bg-white text-[#003366] shadow-md border border-slate-200"
+                      : "text-slate-500 hover:bg-slate-200/50"
                   }`}
                 >
-                  <div
-                    className={`w-6 h-6 rounded border flex items-center justify-center transition-all shrink-0 ${
-                      activeState[key]
-                        ? "bg-red-600 border-red-700"
-                        : "bg-slate-50 border-slate-200"
-                    }`}
-                  >
-                    {activeState[key] && <CheckCircle2 size={14} className="text-white" />}
-                  </div>
-                  <div>
-                    <p className={`text-sm font-bold ${activeState[key] ? "text-red-800" : "text-slate-800"}`}>
-                      {label}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {desc}
-                    </p>
-                  </div>
+                  {cat.icon}
+                  <span className="hidden sm:inline">{cat.label}</span>
                 </button>
               ))}
             </div>
-          </div>
 
-          </div>
-        </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+              {/* Left Column: inputs */}
+              <div className="lg:col-span-12 space-y-8">
+                
+                <section className="space-y-4">
+                  <div className="flex items-center gap-3 border-b-2 border-slate-100 pb-2">
+                    <div className="w-8 h-8 rounded bg-blue-50 flex items-center justify-center text-[#003366]">
+                       {activeCat.icon}
+                    </div>
+                    <h2 className="text-sm font-black uppercase tracking-widest text-slate-800">
+                      I. {activeCat.label} Unit Assessment
+                    </h2>
+                  </div>
 
-        {/* Per-category summary indicators */}
-        <div className="grid grid-cols-3 gap-3">
-          {CATEGORIES.map(cat => {
-            const cs    = catStates[cat.id].conditionScore;
-            const c     = COLOR_MAP[CONDITION_LEVELS.find(l => l.score === cs)?.color || "blue"];
-            const photo = catPhotos[cat.id];
-            return (
-              <div
-                key={cat.id}
-                onClick={() => setActiveTab(cat.id)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-all ${
-                  activeTab === cat.id
-                    ? "border-blue-600 bg-blue-50/50 shadow-sm"
-                    : "border-slate-200 bg-white hover:border-slate-300"
-                }`}
-              >
-                <div className={`w-8 h-8 rounded flex items-center justify-center ${activeTab === cat.id ? "text-blue-700" : "text-slate-400"}`}>
-                  {cat.icon}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-xs font-bold truncate ${activeTab === cat.id ? "text-blue-900" : "text-slate-600"}`}>{cat.label}</p>
-                  {photo && <p className="text-[10px] text-blue-600 font-semibold flex items-center gap-1"><Camera size={10} /> Image Attached</p>}
-                </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-6">
+                       {/* 1. Condition Score */}
+                       <div className="space-y-4">
+                          <label className="text-[11px] font-black text-slate-500 uppercase flex items-center gap-2">
+                            <span>Condition State (1-5)</span>
+                            <span className="text-[9px] font-bold text-white bg-slate-400 px-1.5 py-0.5 rounded">Required</span>
+                          </label>
+                          <div className="grid grid-cols-5 gap-2">
+                            {CONDITION_LEVELS.map(({ score, label, color }) => {
+                              const c = COLOR_MAP[color];
+                              const isSelected = activeState.conditionScore === score;
+                              return (
+                                <button
+                                  key={score}
+                                  type="button"
+                                  onClick={() => setField(activeTab, "conditionScore", score)}
+                                  className={`py-3 rounded border transition-all text-center flex flex-col items-center justify-center gap-1 ${
+                                    isSelected
+                                      ? `bg-[#003366] border-[#003366] text-white shadow-lg scale-105`
+                                      : "bg-white border-slate-200 text-slate-600 hover:border-blue-400"
+                                  }`}
+                                >
+                                  <span className="text-sm font-black">{score}</span>
+                                  <span className="text-[9px] font-bold uppercase">{label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                      </div>
+
+                      {/* 2. Primary Ratio/Outage Select */}
+                      <Select
+                        label={activeCat.selectField.label}
+                        options={activeCat.selectField.options}
+                        value={activeState[activeCat.selectField.key]}
+                        onChange={(e) => setField(activeTab, activeCat.selectField.key, e.target.value)}
+                      />
+
+                      {/* 3. Deficiency Check-list (Shifted from Right Side) */}
+                      <MultiSelect
+                        label="Deficiency Check-list"
+                        placeholder="Observe and Select..."
+                        options={activeCat.flags.map(f => ({ value: f.key, label: f.label, desc: f.desc }))}
+                        selectedValues={activeCat.flags.filter(f => activeState[f.key]).map(f => f.key)}
+                        onChange={(newKeys) => {
+                          const updatedCatState = { ...activeState };
+                          activeCat.flags.forEach(f => { updatedCatState[f.key] = newKeys.includes(f.key); });
+                          setCatStates(prev => ({ ...prev, [activeTab]: updatedCatState }));
+                        }}
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-4">
+                      {/* 4. Photo Upload Section */}
+                      <div className="flex-1">
+                        <PhotoUpload
+                          file={catPhotos[activeTab]}
+                          onChange={(f) => setPhoto(activeTab, f)}
+                        />
+                      </div>
+
+                      {/* 5. Compact Submit Button (Shifted here) */}
+                      <Button 
+                        type="submit" 
+                        variant="primary" 
+                        size="lg" 
+                        disabled={submitting}
+                        isLoading={submitting}
+                        className="w-full bg-[#003366] hover:bg-blue-900 text-white font-black uppercase tracking-widest text-[10px] h-12 shadow-sm"
+                      >
+                        Submit Audit Report
+                      </Button>
+                    </div>
+                  </div>
+                </section>
+                
               </div>
-            );
-          })}
+            </div>
+
+            {error && (
+              <div className="p-4 rounded-md bg-red-50 border border-red-200 text-red-700 font-bold text-xs uppercase flex items-center gap-3">
+                <AlertTriangle size={16} /> {error}
+              </div>
+            )}
+
+          </form>
         </div>
-
-        {error && (
-          <div className="p-4 rounded-xl bg-red-50 border-2 border-red-200 text-red-600 font-bold text-sm shadow-[2px_2px_0_#ef4444]">
-            {error}
-          </div>
-        )}
-
-        <Button 
-          type="submit" 
-          variant="primary" 
-          size="lg" 
-          disabled={submitting}
-          isLoading={submitting}
-          className="w-full"
-        >
-          Finalize Week {weekNumber} Audit
-        </Button>
-      </form>
+      </div>
     </div>
   );
 }

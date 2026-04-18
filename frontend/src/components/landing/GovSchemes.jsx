@@ -72,7 +72,7 @@ function GovSchemes() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
             </span>
-            <span className="text-blue-400 text-[10px] font-black uppercase tracking-[0.2em]">Live Intelligence</span>
+            <span className="text-blue-400 text-[12px] font-black uppercase tracking-[0.2em]">Live Intelligence</span>
           </div>
         </div>
         <h2 className="text-4xl md:text-5xl font-[900] text-white tracking-tighter uppercase leading-[1]">

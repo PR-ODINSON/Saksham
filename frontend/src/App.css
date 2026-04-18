@@ -23,11 +23,11 @@
   --slate-900: #0f172a;
 
   /* Typography */
-  --font-sizes-h1: 2rem;       /* 32px */
-  --font-sizes-h2: 1.5rem;     /* 24px */
-  --font-sizes-h3: 1.25rem;    /* 20px */
-  --font-sizes-body: 0.875rem; /* 14px */
-  --font-sizes-small: 0.75rem; /* 12px */
+  --font-sizes-h1: 2rem;       /* 36px at 18px base */
+  --font-sizes-h2: 1.5rem;     /* 27px at 18px base */
+  --font-sizes-h3: 1.25rem;    /* 22.5px at 18px base */
+  --font-sizes-body: 1rem;     /* 18px at 18px base */
+  --font-sizes-small: 0.875rem; /* 15.75px at 18px base */
   
   /* Spacing */
   --space-xs: 0.25rem; /* 4px */
@@ -45,7 +45,7 @@
 
 /* Global Overrides */
 html {
-  font-size: 16px;
+  font-size: 18px;
 }
 
 body {

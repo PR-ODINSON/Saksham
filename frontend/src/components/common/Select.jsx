@@ -17,7 +17,7 @@ const Select = ({
   return (
     <div className={`space-y-1.5 ${className}`}>
       {label && (
-        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">
+        <label className="text-[12px] font-bold text-slate-500 uppercase tracking-widest block">
           {label}{required && <span className="text-red-500 ml-1">*</span>}
         </label>
       )}
@@ -41,7 +41,7 @@ const Select = ({
         ))}
       </select>
       {error && (
-        <p className="text-[10px] font-bold text-red-600 uppercase tracking-wider mt-1">{error}</p>
+        <p className="text-[12px] font-bold text-red-600 uppercase tracking-wider mt-1">{error}</p>
       )}
     </div>
   );

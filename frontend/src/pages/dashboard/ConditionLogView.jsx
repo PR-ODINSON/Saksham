@@ -85,7 +85,7 @@ function ReportCard({ r }) {
                   {condCfg.label} ({r.conditionScore}/5)
                 </Badge>
                 {submittedAt && (
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                  <span className="text-[12px] text-slate-400 font-bold uppercase tracking-widest">
                     {submittedAt.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                   </span>
                 )}
@@ -121,30 +121,30 @@ function ReportCard({ r }) {
       {/* Expanded prediction details */}
       {expanded && (
         <div className={`px-5 pb-5 pt-4 border-t ${rc.border} bg-slate-50 space-y-4`}>
-          <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400">
+          <p className="text-[13px] font-bold uppercase tracking-wider text-slate-400">
             ML Prognostics
           </p>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="bg-white rounded border border-slate-100 p-3 text-center">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">Priority Index</p>
-              <p className={`text-xl font-bold ${rc.color}`}>{Math.round(r.priorityScore || 0)}<span className="text-[10px] opacity-50">/100</span></p>
+              <p className="text-[13px] font-bold uppercase tracking-wider text-slate-400 mb-1">Priority Index</p>
+              <p className={`text-xl font-bold ${rc.color}`}>{Math.round(r.priorityScore || 0)}<span className="text-[12px] opacity-50">/100</span></p>
             </div>
             <div className="bg-white rounded border border-slate-100 p-3 text-center">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">MTTF</p>
+              <p className="text-[13px] font-bold uppercase tracking-wider text-slate-400 mb-1">MTTF</p>
               <p className={`text-xl font-bold ${r.willFailWithin30Days ? "text-red-600" : r.willFailWithin60Days ? "text-orange-600" : "text-emerald-600"}`}>
                 {r.daysToFailure != null ? r.daysToFailure : "N/A"}
-                <span className="text-[10px] opacity-50">d</span>
+                <span className="text-[12px] opacity-50">d</span>
               </p>
             </div>
             <div className="bg-white rounded border border-slate-100 p-3 text-center">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">30D Risk</p>
+              <p className="text-[13px] font-bold uppercase tracking-wider text-slate-400 mb-1">30D Risk</p>
               <p className={`text-xs font-bold uppercase ${r.willFailWithin30Days ? "text-red-700" : "text-emerald-700"}`}>
                 {r.willFailWithin30Days ? "High" : "Minimal"}
               </p>
             </div>
             <div className="bg-white rounded border border-slate-100 p-3 text-center">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mb-1">60D Risk</p>
+              <p className="text-[13px] font-bold uppercase tracking-wider text-slate-400 mb-1">60D Risk</p>
               <p className={`text-xs font-bold uppercase ${r.willFailWithin60Days ? "text-orange-700" : "text-emerald-700"}`}>
                 {r.willFailWithin60Days ? "High" : "Minimal"}
               </p>
@@ -154,7 +154,7 @@ function ReportCard({ r }) {
           {/* Numeric details */}
           {(r.category === "plumbing" && r.toiletFunctionalRatio != null) && (
             <div className="flex items-center gap-3 bg-white rounded border border-slate-100 px-4 py-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 w-40">Functionality Baseline</span>
+              <span className="text-[12px] font-bold uppercase tracking-wider text-slate-400 w-40">Functionality Baseline</span>
               <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-100">
                 <div
                   className="h-full bg-blue-600"
@@ -166,13 +166,13 @@ function ReportCard({ r }) {
           )}
           {(r.category === "electrical" && r.powerOutageHours > 0) && (
             <div className="flex items-center gap-3 bg-white rounded border border-slate-100 px-4 py-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 w-40">Grid Downtime</span>
+              <span className="text-[12px] font-bold uppercase tracking-wider text-slate-400 w-40">Grid Downtime</span>
               <span className="text-sm font-bold text-slate-700">{r.powerOutageHours} hrs / week</span>
             </div>
           )}
           {(r.category === "structural" && r.crackWidthMM > 0) && (
             <div className="flex items-center gap-3 bg-white rounded border border-slate-100 px-4 py-3">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 w-40">Crack Aperture</span>
+              <span className="text-[12px] font-bold uppercase tracking-wider text-slate-400 w-40">Crack Aperture</span>
               <span className="text-sm font-bold text-slate-700">{r.crackWidthMM} mm</span>
             </div>
           )}
@@ -205,7 +205,7 @@ export default function ConditionLogView() {
     return (
       <div className="flex flex-col items-center justify-center py-32 space-y-4 font-body">
         <div className="w-12 h-12 border-4 border-slate-200 border-t-[#0f172a] rounded-full animate-spin" />
-        <p className="text-slate-400 font-black tracking-[0.2em] text-[10px] uppercase animate-pulse">Loading Reports...</p>
+        <p className="text-slate-400 font-black tracking-[0.2em] text-[12px] uppercase animate-pulse">Loading Reports...</p>
       </div>
     );
   }
@@ -242,10 +242,11 @@ export default function ConditionLogView() {
   });
 
   return (
-    <div className="p-6 space-y-8 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#f8fafc]">
+      <div className="max-w-7xl mx-auto pt-10 sm:pt-16 pb-12 px-4 sm:px-8 space-y-8">
       <PageHeader 
         title="Technical Inspection Registry"
-        subtitle="Historical audit log compiled from field infrastructure node submissions"
+        subtitle="Historical Audit Log Compiled from Field Infrastructure Node Submissions"
         icon={FileText}
       />
 
@@ -271,7 +272,7 @@ export default function ConditionLogView() {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-4 items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-        <div className="text-[10px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
+        <div className="text-[12px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
           <Filter size={14} /> Refine View:
         </div>
 
@@ -303,14 +304,15 @@ export default function ConditionLogView() {
           ))}
         </div>
 
-        <div className="ml-auto text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+        <div className="ml-auto text-[12px] font-bold text-slate-400 uppercase tracking-widest">
           {sorted.length} Entries Identified
         </div>
       </div>
 
       {/* Report list */}
-      <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
-        {sorted.length === 0 ? (
+      <Card variant="gov" title="Historical Audit Logs" subtitle="Chronological record of official node assessments" noPadding>
+        <div className="p-6">
+          {sorted.length === 0 ? (
           <div className="text-center py-12 bg-slate-50 rounded border border-dashed border-slate-200">
             <FileText size={32} className="text-slate-300 mx-auto mb-3" />
             <p className="text-slate-400 font-medium">
@@ -327,6 +329,8 @@ export default function ConditionLogView() {
           </div>
         )}
       </div>
+    </Card>
+    </div>
     </div>
   );
 }

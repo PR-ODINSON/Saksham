@@ -85,7 +85,7 @@ export default function CompletionModal({ workOrder, onDone, onClose }) {
 
           <div className="grid grid-cols-2 gap-8">
             <div className="space-y-4">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Operational Baseline</label>
+              <label className="text-[12px] font-bold text-slate-500 uppercase tracking-widest block">Operational Baseline</label>
               <div className="flex gap-1.5">
                 {[1, 2, 3, 4, 5].map(s => (
                   <button
@@ -104,7 +104,7 @@ export default function CompletionModal({ workOrder, onDone, onClose }) {
               </div>
             </div>
             <div className="space-y-4">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Resolution Outcome</label>
+              <label className="text-[12px] font-bold text-slate-500 uppercase tracking-widest block">Resolution Outcome</label>
               <div className="flex gap-1.5">
                 {[1, 2, 3, 4, 5].map(s => (
                   <button
@@ -127,7 +127,7 @@ export default function CompletionModal({ workOrder, onDone, onClose }) {
           {/* Location & Photo */}
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-3">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Coordinates</label>
+              <label className="text-[12px] font-bold text-slate-500 uppercase tracking-widest block">Coordinates</label>
               <div className={`h-20 rounded border flex flex-col items-center justify-center transition-all ${
                 gpsStatus === 'captured' ? 'bg-emerald-50 border-emerald-200' : 
                 gpsStatus === 'denied' ? 'bg-red-50 border-red-200' : 
@@ -140,27 +140,27 @@ export default function CompletionModal({ workOrder, onDone, onClose }) {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                       </svg>
                     </div>
-                    <span className="text-[9px] font-bold text-emerald-700 uppercase tracking-wider">Coordinates Secured</span>
+                    <span className="text-[13px] font-bold text-emerald-700 uppercase tracking-wider">Coordinates Secured</span>
                   </>
                 ) : gpsStatus === 'denied' ? (
                   <>
                     <MapPin size={20} className="mb-1 text-red-600" />
-                    <span className="text-[9px] font-bold text-red-700 uppercase tracking-wider">Access Required</span>
+                    <span className="text-[13px] font-bold text-red-700 uppercase tracking-wider">Access Required</span>
                   </>
                 ) : (
                   <>
                     <div className="w-5 h-5 border-2 border-slate-200 border-t-blue-600 rounded-full animate-spin mb-1" />
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Locating...</span>
+                    <span className="text-[13px] font-bold text-slate-400 uppercase tracking-wider">Locating...</span>
                   </>
                 )}
               </div>
             </div>
             <div className="space-y-3">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Resolution Proof</label>
+              <label className="text-[12px] font-bold text-slate-500 uppercase tracking-widest block">Resolution Proof</label>
               <div className="h-20 rounded bg-slate-100 border border-slate-200 overflow-hidden relative group cursor-pointer shadow-inner">
                 <img src={form.photoUrl} alt="Preview" className="w-full h-full object-cover opacity-90 group-hover:opacity-75 transition-opacity" />
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-[9px] font-bold text-slate-900 uppercase bg-white/95 border border-slate-300 px-2 py-1 rounded shadow-sm">
+                  <span className="text-[13px] font-bold text-slate-900 uppercase bg-white/95 border border-slate-300 px-2 py-1 rounded shadow-sm">
                     Modify Photo
                   </span>
                 </div>
@@ -170,7 +170,7 @@ export default function CompletionModal({ workOrder, onDone, onClose }) {
 
           {/* Notes */}
           <div className="space-y-4">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Operational Summary</label>
+            <label className="text-[12px] font-bold text-slate-500 uppercase tracking-widest block">Operational Summary</label>
             <textarea
               value={form.notes}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}

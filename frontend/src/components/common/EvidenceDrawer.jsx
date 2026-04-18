@@ -30,7 +30,7 @@ export default function EvidenceDrawer({ isOpen, onClose, schoolName, evidence =
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Categories */}
               <div>
-                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Priority Assessment</h3>
+                <h3 className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mb-4">Priority Assessment</h3>
                 <div className="flex flex-wrap gap-2">
                   {categories.map(cat => (
                     <Badge key={cat} variant="info" size="sm">
@@ -42,7 +42,7 @@ export default function EvidenceDrawer({ isOpen, onClose, schoolName, evidence =
 
               {/* Evidence List */}
               <div>
-                <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Risk Indicators</h3>
+                <h3 className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mb-3">Risk Indicators</h3>
                 {evidence.length > 0 ? (
                   <ul className="space-y-3">
                     {evidence.map((item, idx) => (
@@ -63,7 +63,7 @@ export default function EvidenceDrawer({ isOpen, onClose, schoolName, evidence =
               <div className="p-4 rounded bg-blue-50 border border-blue-100">
                 <div className="flex gap-3">
                   <div className="text-blue-900 shrink-0 mt-0.5"><Database size={16} /></div>
-                  <p className="text-[11px] text-blue-900 leading-relaxed font-medium">
+                  <p className="text-[13px] text-blue-900 leading-relaxed font-medium">
                     Automated priority estimation based on multi-week condition logs and historic failure thresholds.
                   </p>
                 </div>

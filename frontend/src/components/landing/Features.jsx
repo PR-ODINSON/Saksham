@@ -120,7 +120,7 @@ function Features() {
             className="inline-flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 px-6 py-2 rounded-full mb-8 shadow-sm backdrop-blur-md"
           >
             <Sparkles size={16} className="text-emerald-600 fill-emerald-600" />
-            <span className="text-emerald-600 font-[900] tracking-[0.3em] text-[11px] uppercase italic">Core Intelligence</span>
+            <span className="text-emerald-600 font-[900] tracking-[0.3em] text-[13px] uppercase italic">Core Intelligence</span>
           </motion.div>
           
           <h2 className="text-4xl md:text-[4.2rem] font-[900] text-[#020503] tracking-[-0.05em] leading-[1.1] uppercase">
@@ -139,4 +139,4 @@ function Features() {
   );
 }
 
-export default Features;
+export default Features;

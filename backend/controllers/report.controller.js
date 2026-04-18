@@ -21,6 +21,8 @@ export const submitReport = async (req, res) => {
       category, weekNumber, conditionScore,
       issueFlag, waterLeak, wiringExposed, crackWidthMM,
       toiletFunctionalRatio, powerOutageHours, roofLeakFlag,
+      brokenTap, cloggedDrain, tankOverflow, lowWaterPressure,
+      wallSeepage, brokenDoor, brokenWindow, pestInfestation,
     } = req.body;
 
     // Structured input validation — no free text
@@ -57,6 +59,14 @@ export const submitReport = async (req, res) => {
         toiletFunctionalRatio: Number(toiletFunctionalRatio) || 0,
         powerOutageHours: Number(powerOutageHours) || 0,
         roofLeakFlag: parseBool(roofLeakFlag),
+        brokenTap: parseBool(brokenTap),
+        cloggedDrain: parseBool(cloggedDrain),
+        tankOverflow: parseBool(tankOverflow),
+        lowWaterPressure: parseBool(lowWaterPressure),
+        wallSeepage: parseBool(wallSeepage),
+        brokenDoor: parseBool(brokenDoor),
+        brokenWindow: parseBool(brokenWindow),
+        pestInfestation: parseBool(pestInfestation),
         photoUploaded,
       },
       { upsert: true, new: true, runValidators: true },
@@ -96,6 +106,15 @@ export const submitReport = async (req, res) => {
         crackWidthMM:          Number(crackWidthMM)   || 0,
         toiletFunctionalRatio: toiletRatioVal,
         powerOutageHours:      Number(powerOutageHours) || 0,
+        // New flags included for better logging in prediction engine context
+        brokenTap: parseBool(brokenTap),
+        cloggedDrain: parseBool(cloggedDrain),
+        tankOverflow: parseBool(tankOverflow),
+        lowWaterPressure: parseBool(lowWaterPressure),
+        wallSeepage: parseBool(wallSeepage),
+        brokenDoor: parseBool(brokenDoor),
+        brokenWindow: parseBool(brokenWindow),
+        pestInfestation: parseBool(pestInfestation),
       },
     });
 

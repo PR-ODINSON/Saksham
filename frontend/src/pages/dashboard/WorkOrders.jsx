@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { get, post } from "../../services/api";
+import { get, post, patch } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import CompletionModal from "../../components/common/CompletionModal";
@@ -8,6 +8,8 @@ import Button from "../../components/common/Button";
 import Badge from "../../components/common/Badge";
 import MetricCard from "../../components/common/MetricCard";
 import PageHeader from "../../components/common/PageHeader";
+import Input from "../../components/common/Input";
+import Select from "../../components/common/Select";
 import { Building, Zap, Wrench, Droplets, Grid, Hammer, Clock, Shield } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -26,10 +28,10 @@ const PRIORITY_CONFIG = {
 };
 
 const CATEGORY_ICONS = {
-  structural: <Building size={20} strokeWidth={2.5} />, 
-  electrical: <Zap size={20} strokeWidth={2.5} />, 
-  plumbing: <Wrench size={20} strokeWidth={2.5} />, 
-  sanitation: <Droplets size={20} strokeWidth={2.5} />, 
+  structural: <Building size={20} strokeWidth={2.5} />,
+  electrical: <Zap size={20} strokeWidth={2.5} />,
+  plumbing: <Wrench size={20} strokeWidth={2.5} />,
+  sanitation: <Droplets size={20} strokeWidth={2.5} />,
   furniture: <Grid size={20} strokeWidth={2.5} />,
 };
 
@@ -73,8 +75,8 @@ function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <Card 
-        title="Formulate Maintenance Directive" 
+      <Card
+        title="Formulate Maintenance Directive"
         className="w-full max-w-xl"
         noPadding
       >
@@ -83,7 +85,7 @@ function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-              <Select 
+              <Select
                 label="Target Infrastructure Node"
                 value={form.schoolId}
                 onChange={e => setForm({ ...form, schoolId: e.target.value })}
@@ -92,13 +94,13 @@ function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
                 placeholder="Select node..."
               />
             </div>
-            <Select 
+            <Select
               label="Assigned Category"
               value={form.category}
               onChange={e => setForm({ ...form, category: e.target.value })}
               options={Object.keys(CATEGORY_ICONS).map(k => ({ value: k, label: k.charAt(0).toUpperCase() + k.slice(1) }))}
             />
-            <Select 
+            <Select
               label="Operational Priority"
               value={form.priority}
               onChange={e => setForm({ ...form, priority: e.target.value })}
@@ -110,7 +112,7 @@ function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
               ]}
             />
             <div className="md:col-span-2">
-              <Input 
+              <Input
                 label="Objective Description"
                 value={form.description}
                 onChange={e => setForm({ ...form, description: e.target.value })}
@@ -118,14 +120,14 @@ function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
                 placeholder="Detailed scope of work..."
               />
             </div>
-            <Select 
+            <Select
               label="Designated Personnel"
               value={assignedTo}
               onChange={e => setAssignedTo(e.target.value)}
               options={contractors.map(c => ({ value: c._id, label: c.name }))}
               placeholder="Unassigned"
             />
-            <Input 
+            <Input
               label="Compliance Deadline"
               type="date"
               value={form.dueDate}
@@ -188,171 +190,173 @@ export default function WorkOrders() {
   const breachedCount = orders.filter(o => o.slaBreach).length;
 
   return (
-    <div className="p-6 space-y-8 max-w-7xl mx-auto">
-      <PageHeader 
-        title="Infrastructure Directives"
-        subtitle={user?.role === "contractor" ? "Allocated tasks requiring operational resolution" : "Operational oversight of district-wide maintenance assignments"}
-        icon={Hammer}
-        actions={
-          canAssign && (
-            <Button onClick={() => setShowNew(true)} variant="primary">
-              Authorize Directive
-            </Button>
-          )
-        }
-      />
-
-      {breachedCount > 0 && (
-        <MetricCard 
-          label="SLA Compliance Alert"
-          value={breachedCount}
-          variant="critical"
-          trendValue="Directives exceeding authorized timelines"
-          icon={Clock}
+    <div className="min-h-screen bg-[#f8fafc]">
+      <div className="max-w-7xl mx-auto pt-10 sm:pt-16 pb-12 px-4 sm:px-8 space-y-8">
+        <PageHeader
+          title="Infrastructure Directives"
+          subtitle={user?.role === "contractor" ? "Allocated Tasks Requiring Operational Resolution" : "Operational Oversight of District-wide Maintenance Assignments"}
+          icon={Hammer}
+          actions={
+            canAssign && (
+              <Button onClick={() => setShowNew(true)} variant="primary">
+                Authorize Directive
+              </Button>
+            )
+          }
         />
-      )}
 
-      {/* Status filter tabs */}
-      <div className="flex border-b border-slate-200">
-        {["all", "pending", "assigned", "in_progress", "completed"].map(s => (
-          <button
-            key={s}
-            onClick={() => setStatusFilter(s)}
-            className={`px-6 py-4 text-[10px] font-bold tracking-widest transition-all border-b-2 -mb-px flex items-center gap-2 ${
-              statusFilter === s 
-                ? "border-blue-900 text-blue-900 bg-blue-50/30" 
-                : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
-            }`}
-          >
-            {s === "all" ? "ALL REGISTRY" : STATUS_CONFIG[s]?.label.toUpperCase()}
-            <Badge variant={statusFilter === s ? "info" : "default"} size="sm" className="ml-2">
-              {s === "all" ? orders.length : orders.filter(o => o.status === s).length}
-            </Badge>
-          </button>
-        ))}
-      </div>
+        {breachedCount > 0 && (
+          <MetricCard
+            label="SLA Compliance Alert"
+            value={breachedCount}
+            variant="critical"
+            trendValue="Directives exceeding authorized timelines"
+            icon={Clock}
+          />
+        )}
 
-      {/* Orders list */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-24 space-y-4">
-           <div className="w-12 h-12 border-4 border-slate-200 border-t-[#0f172a] rounded-full animate-spin" />
-           <p className="text-slate-400 font-black tracking-[0.2em] text-[10px] uppercase animate-pulse">Syncing Registry...</p>
+        {/* Status filter tabs */}
+        <div className="flex border-b border-slate-200">
+          {["all", "pending", "assigned", "in_progress", "completed"].map(s => (
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s)}
+              className={`px-6 py-4 text-[12px] font-bold tracking-widest transition-all border-b-2 -mb-px flex items-center gap-2 ${statusFilter === s
+                  ? "border-blue-900 text-blue-900 bg-blue-50/30"
+                  : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
+                }`}
+            >
+              {s === "all" ? "ALL REGISTRY" : STATUS_CONFIG[s]?.label.toUpperCase()}
+              <Badge variant={statusFilter === s ? "info" : "default"} size="sm" className="ml-2">
+                {s === "all" ? orders.length : orders.filter(o => o.status === s).length}
+              </Badge>
+            </button>
+          ))}
         </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded border border-slate-200 border-dashed">
-          <p className="text-slate-400 font-medium italic text-sm">No matching work orders found in the registry.</p>
-        </div>
-      ) : (
-        <div className="grid gap-6">
-          {filtered.map(order => {
-            const sc = STATUS_CONFIG[order.status];
-            const isAssignedToMe = user?.role === "contractor" && order.assignedTo?._id === user.id;
-            const canComplete = isAssignedToMe || canAssign;
-            
-            return (
-              <Card 
-                key={order._id}
-                className={order.slaBreach ? 'border-red-200' : ''}
-                noPadding
-              >
-                <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 p-8">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 flex-wrap mb-4">
-                      <div className="w-10 h-10 rounded bg-slate-900 border border-slate-700 text-white flex items-center justify-center">
-                        {CATEGORY_ICONS[order.category] || <Wrench size={20} />}
+
+        {/* Orders list */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-24 space-y-4">
+            <div className="w-12 h-12 border-4 border-slate-200 border-t-[#0f172a] rounded-full animate-spin" />
+            <p className="text-slate-400 font-black tracking-[0.2em] text-[12px] uppercase animate-pulse">Syncing Registry...</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-20 bg-white rounded border border-slate-200 border-dashed">
+            <p className="text-slate-400 font-medium italic text-sm">No matching work orders found in the registry.</p>
+          </div>
+        ) : (
+          <div className="grid gap-6">
+            {filtered.map(order => {
+              const sc = STATUS_CONFIG[order.status];
+              const isAssignedToMe = user?.role === "contractor" && order.assignedTo?._id === user.id;
+              const canComplete = isAssignedToMe || canAssign;
+
+              return (
+                <Card
+                  key={order._id}
+                  variant={order.slaBreach ? 'danger' : 'default'}
+                  noPadding
+                  className={`transition-all hover:shadow-md ${order.slaBreach ? 'border-red-300' : ''}`}
+                >
+                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 p-8">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 flex-wrap mb-4">
+                        <div className="w-10 h-10 rounded bg-slate-900 border border-slate-700 text-white flex items-center justify-center">
+                          {CATEGORY_ICONS[order.category] || <Wrench size={20} />}
+                        </div>
+                        <span className="font-bold text-slate-900 uppercase text-lg tracking-tight">{order.category}</span>
+                        <Badge variant={order.priority === 'critical' || order.priority === 'high' ? 'high' : 'default'} size="lg">
+                          {order.priority}
+                        </Badge>
+
+                        {order.slaBreach && (
+                          <Badge variant="critical" size="lg">SLA Breach</Badge>
+                        )}
                       </div>
-                      <span className="font-bold text-slate-900 uppercase text-lg tracking-tight">{order.category}</span>
-                      <Badge variant={order.priority === 'critical' || order.priority === 'high' ? 'high' : 'default'} size="lg">
-                        {order.priority}
-                      </Badge>
-                      
-                      {order.slaBreach && (
-                        <Badge variant="critical" size="lg">SLA Breach</Badge>
+
+                      <p className="text-slate-600 text-sm mb-6 leading-relaxed font-medium">{order.description}</p>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 bg-slate-50 p-6 rounded-lg border border-slate-100">
+                        <div>
+                          <p className="text-[13px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Asset Location</p>
+                          <p className="text-xs text-slate-900 truncate font-bold">{order.schoolId?.name || "Unknown Node"}</p>
+                        </div>
+                        <div>
+                          <p className="text-[13px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Designated Personnel</p>
+                          <p className="text-xs text-slate-900 font-bold">{order.assignedTo?.name || "Unassigned"}</p>
+                        </div>
+                        <div>
+                          <p className="text-[13px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Authorized Deadline</p>
+                          <p className={`text-xs font-bold ${order.slaBreach ? 'text-red-600' : 'text-slate-900'}`}>
+                            {order.dueDate ? new Date(order.dueDate).toLocaleDateString() : 'Unscheduled'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[13px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Temporal Delay</p>
+                          <p className={`text-xs font-bold ${order.contractorDelayDays > 0 ? 'text-red-700' : 'text-emerald-700'}`}>
+                            {order.contractorDelayDays || 0} Days
+                          </p>
+                        </div>
+                      </div>
+
+                      {order.status === "completed" && order.completionNotes && (
+                        <div className="mt-4 text-xs font-medium text-emerald-900 bg-emerald-50 border border-emerald-100 p-4 rounded">
+                          <span className="text-[13px] font-bold uppercase tracking-widest block mb-1 opacity-60">Resolution Summary</span>
+                          {order.completionNotes}
+                        </div>
                       )}
                     </div>
-                    
-                    <p className="text-slate-600 text-sm mb-6 leading-relaxed font-medium">{order.description}</p>
-                    
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 bg-slate-50 p-6 rounded-lg border border-slate-100">
-                      <div>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Asset Location</p>
-                        <p className="text-xs text-slate-900 truncate font-bold">{order.schoolId?.name || "Unknown Node"}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Designated Personnel</p>
-                        <p className="text-xs text-slate-900 font-bold">{order.assignedTo?.name || "Unassigned"}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Authorized Deadline</p>
-                        <p className={`text-xs font-bold ${order.slaBreach ? 'text-red-600' : 'text-slate-900'}`}>
-                          {order.dueDate ? new Date(order.dueDate).toLocaleDateString() : 'Unscheduled'}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Temporal Delay</p>
-                        <p className={`text-xs font-bold ${order.contractorDelayDays > 0 ? 'text-red-700' : 'text-emerald-700'}`}>
-                          {order.contractorDelayDays || 0} Days
-                        </p>
-                      </div>
+
+                    <div className="flex flex-col items-end gap-3 shrink-0">
+                      <Badge variant={order.status === 'completed' ? 'low' : order.status === 'in_progress' ? 'moderate' : 'info'} size="lg">
+                        {sc.label}
+                      </Badge>
+
+                      {order.status !== "completed" && order.status !== "cancelled" && canComplete && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => setCompletingOrder(order)}
+                          className="w-full"
+                        >
+                          Authorize Closure
+                        </Button>
+                      )}
+
+                      {canAssign && order.status === "pending" && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => patch(`/api/tasks/${order._id}/status`, { status: "assigned" }).then(r => r.success && updateOrderInList(r.workOrder))}
+                          className="w-full"
+                        >
+                          Assign Task
+                        </Button>
+                      )}
                     </div>
-
-                    {order.status === "completed" && order.completionNotes && (
-                      <div className="mt-4 text-xs font-medium text-emerald-900 bg-emerald-50 border border-emerald-100 p-4 rounded">
-                        <span className="text-[9px] font-bold uppercase tracking-widest block mb-1 opacity-60">Resolution Summary</span>
-                        {order.completionNotes}
-                      </div>
-                    )}
                   </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
-                  <div className="flex flex-col items-end gap-3 shrink-0">
-                    <Badge variant={order.status === 'completed' ? 'low' : order.status === 'in_progress' ? 'moderate' : 'info'} size="lg">
-                      {sc.label}
-                    </Badge>
-                    
-                    {order.status !== "completed" && order.status !== "cancelled" && canComplete && (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => setCompletingOrder(order)}
-                        className="w-full"
-                      >
-                        Authorize Closure
-                      </Button>
-                    )}
-                    
-                    {canAssign && order.status === "pending" && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => patch(`/api/tasks/${order._id}/status`, { status: "assigned" }).then(r => r.success && updateOrderInList(r.workOrder))}
-                        className="w-full"
-                      >
-                        Assign Task
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
-
-      {showNew && (
-        <NewWorkOrderPanel
-          prefill={prefill}
-          schools={schools}
-          onCreated={(wo) => setOrders([wo, ...orders])}
-          onClose={() => setShowNew(false)}
-        />
-      )}
-      {completingOrder && (
-        <CompletionModal
-          workOrder={completingOrder}
-          onDone={updateOrderInList}
-          onClose={() => setCompletingOrder(null)}
-        />
-      )}
+        {showNew && (
+          <NewWorkOrderPanel
+            prefill={prefill}
+            schools={schools}
+            onCreated={(wo) => setOrders([wo, ...orders])}
+            onClose={() => setShowNew(false)}
+          />
+        )}
+        {completingOrder && (
+          <CompletionModal
+            workOrder={completingOrder}
+            onDone={updateOrderInList}
+            onClose={() => setCompletingOrder(null)}
+          />
+        )}
+      </div>
     </div>
   );
 }
