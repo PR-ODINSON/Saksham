@@ -27,6 +27,7 @@ export default defineConfig({
         '.js': 'jsx',
       },
     },
+    include: ['lucide-react'] // Add this block
   },
   define: {
     'process.env': {}

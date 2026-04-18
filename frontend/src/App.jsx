@@ -1,12 +1,14 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import AppLayout from './components/AppLayout.jsx';
+import Landing from './pages/Landing.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Login from './pages/Login.jsx';
 import SchoolView from './pages/SchoolView.jsx';
 import DEODashboard from './pages/DEODashboard.jsx';
 import WeeklyInputForm from './pages/WeeklyInputForm.jsx';
 import WorkOrders from './pages/WorkOrders.jsx';
+import Signup from './pages/Signup.jsx';
 import './App.css';
 
 // Role-based default dashboard redirect
@@ -24,9 +26,10 @@ function App() {
     <Router>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+         {/* Landing page without app layout */}
+        <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
-
+          <Route path="/signup" element={<Signup />} />
           <Route
             path="/dashboard/*"
             element={
