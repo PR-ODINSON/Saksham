@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Building2, Activity, Clock, Terminal, ShieldCheck, BarChart3, Radio, Database, Server } from 'lucide-react';
+import { Building2, Activity, Clock, Terminal, ShieldCheck, Cpu, Globe, Database, ArrowUpRight, Zap } from 'lucide-react';
 
 /* ─────────────────────────────────────────────────────────
-   MICRO-COMPONENTS (Institutional Dashboard Style)
+   MICRO-COMPONENTS (Refined Terminal Style)
    ───────────────────────────────────────────────────────── */
 const SystemMetric = ({ label, value, color = '#2563eb' }) => (
-  <div style={{ padding: '12px 24px', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: 4 }}>
-    <span style={{ fontSize: 9, fontWeight: 900, color: '#64748b', letterSpacing: '0.12em', textTransform: 'uppercase' }}>{label}</span>
-    <span style={{ fontSize: 13, fontWeight: 800, color, fontFamily: 'monospace' }}>[{value}]</span>
+  <div style={{ padding: '16px 32px', borderRight: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: 6, minWidth: 200 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, boxShadow: `0 0 10px ${color}` }} />
+        <span style={{ fontSize: 10, fontWeight: 900, color: '#94a3b8', letterSpacing: '0.12em', textTransform: 'uppercase' }}>{label}</span>
+    </div>
+    <span style={{ fontSize: 15, fontWeight: 900, color: '#0f172a', fontFamily: 'monospace' }}>[{value}]</span>
   </div>
 );
 
@@ -19,9 +22,9 @@ const DigitalClock = () => {
     return () => clearInterval(interval);
   }, []);
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 24px', borderLeft: '1px solid #e2e8f0' }}>
-       <Clock size={14} color="#2563eb" />
-       <span style={{ fontSize: 13, fontWeight: 900, color: '#0f172a', fontFamily: 'monospace' }}>{time}</span>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 32px', borderLeft: '1px solid #f1f5f9', background: '#fff' }}>
+       <Clock size={16} color="#2563eb" />
+       <span style={{ fontSize: 14, fontWeight: 900, color: '#0f172a', fontFamily: 'monospace', letterSpacing: '1px' }}>{time}</span>
     </div>
   );
 };
@@ -30,76 +33,86 @@ const DigitalClock = () => {
    MAIN SYSTEM FOOTER
    ───────────────────────────────────────────────────────── */
 const Footer = () => {
-  const [activeSchools, setActiveSchools] = useState(30412);
+  const [uptime, setUptime] = useState(99.982);
+
   useEffect(() => {
     const interval = setInterval(() => {
-      setActiveSchools(prev => prev + (Math.random() > 0.5 ? 1 : -1));
-    }, 3000);
+      setUptime(prev => +(prev + (Math.random() > 0.5 ? 0.001 : -0.001)).toFixed(3));
+    }, 4000);
     return () => clearInterval(interval);
   }, []);
 
   const navGroups = [
-    { title: 'Asset Management', links: ['School Registry', 'Inventory Logs', 'Condition Audit', 'SLA Tracking'] },
-    { title: 'Analytics Engine', links: ['Predictive Models', 'Failure Windows', 'Impact Scoring', 'Risk Map'] },
-    { title: 'Governance', links: ['DEO Dashboard', 'Policy Docs', 'Audit Reports', 'System Status'] },
+    { title: 'Infrastructure', links: ['District Hub', 'Asset Registry', 'Structural Logs', 'GIS Mapping'] },
+    { title: 'Intelligence', links: ['Predictive Models', 'Failure Windows', 'Impact Analysis', 'ML Training'] },
+    { title: 'Support', links: ['API Documentation', 'System Status', 'Audit Protocol', 'Security Policy'] },
   ];
 
   return (
-    <footer style={{ background: '#fff', fontFamily: 'var(--font-body)', position: 'relative', overflow: 'hidden', borderTop: '2px solid #0f172a' }}>
+    <footer style={{ background: '#fff', fontFamily: 'var(--font-body)', position: 'relative', overflow: 'hidden', borderTop: '3px solid #0f172a' }}>
       
-      {/* Architectural Frame Base */}
-      <div className="grid-lines" style={{ position: 'absolute', inset: 0, opacity: 0.6, pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', top: 0, bottom: 0, left: '8%', width: 1, background: '#e2e8f0', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', top: 0, bottom: 0, left: '92%', width: 1, background: '#e2e8f0', pointerEvents: 'none' }} />
+      {/* Background Decor - Fixed UNDEFINED variables */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        <div className="grid-lines" style={{ position: 'absolute', inset: 0, opacity: 0.5 }} />
+        <div 
+          style={{ 
+            position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', 
+            fontFamily: 'var(--font-display)', fontSize: '18vw', fontWeight: 900, 
+            color: '#f8fafc', letterSpacing: '-0.05em', whiteSpace: 'nowrap', userSelect: 'none', zIndex: 0 
+          }}
+        >
+          SAKSHAM_SYS
+        </div>
+      </div>
 
-      <div style={{ maxWidth: 1440, margin: '0 auto', padding: '0 24px', position: 'relative', zIndex: 10 }}>
+      <div style={{ maxWidth: 1440, margin: '0 auto', position: 'relative', zIndex: 10 }}>
         
-        {/* TOP STATUS BAR (Maintenance Network) */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', overflowX: 'auto' }}>
-           <SystemMetric label="Total Schools" value={activeSchools.toLocaleString()} />
-           <SystemMetric label="Prediction Acc" value="94.2%" color="#2563eb" />
-           <SystemMetric label="Active Audits" value="1,204" />
-           <SystemMetric label="System Core" value="SAKSHAM_v2.1" />
+        {/* TOP STATUS BAR (Live Monitoring) */}
+        <div style={{ display: 'flex', borderBottom: '2px solid #0f172a', background: '#fff', overflowX: 'auto', whiteSpace: 'nowrap' }}>
+           <SystemMetric label="Operational_Mode" value="PREDICTIVE_LIVE" />
+           <SystemMetric label="Uptime_Protocol" value={`${uptime}%`} />
+           <SystemMetric label="Node_Status" value="GUJARAT_WEST_01" />
+           <SystemMetric label="API_Core" value="v2.4.0_STABLE" color="#22c55e" />
            <div style={{ flex: 1 }} />
            <DigitalClock />
         </div>
 
-        {/* MAIN NAV SECTION */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', minHeight: 400 }}>
+        {/* MAIN FOOTER CONTENT */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr', padding: '0 40px' }}>
           
-          {/* Brand & Stats Block */}
-          <div style={{ padding: '80px 60px 80px 0', borderRight: '1px solid #e2e8f0' }}>
+          {/* Brand Block */}
+          <div style={{ padding: '80px 60px 80px 0', borderRight: '1px solid #f1f5f9' }}>
              <a href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 14, textDecoration: 'none', marginBottom: 32 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: '#0f172a', border: '2px solid #0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '4px 4px 0 #2563eb' }}>
+                <div style={{ width: 48, height: 48, borderRadius: 14, background: '#0f172a', border: '2px solid #0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '4px 4px 0 #2563eb' }}>
                   <Building2 size={24} color="#fff" />
                 </div>
-                <span style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.04em' }}>Saksham</span>
+                <span style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.04em' }}>Saksham</span>
              </a>
-             <p style={{ fontSize: '1.05rem', color: '#64748b', fontWeight: 600, lineHeight: 1.6, maxWidth: 340, marginBottom: 40 }}>
-                AI-powered infrastructure terminal for government schools. Transforming reactive repairs into predictive maintenance cycles.
+             <p style={{ fontSize: '1.1rem', color: '#64748b', fontWeight: 600, lineHeight: 1.6, maxWidth: 360, marginBottom: 40 }}>
+                The definitive predictive maintenance engine for institutional infrastructure. Data-driven safety for every classroom.
              </p>
              
-             {/* Security Badge Pill */}
-             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '10px 20px', borderRadius: 12, border: '2px solid #0f172a', background: '#fff', boxShadow: '6px 6px 0 #2563eb' }}>
-                <ShieldCheck size={18} color="#2563eb" />
-                <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.05em' }}>AI_PREDICT_CERTIFIED</span>
+             {/* Security Badge */}
+             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 12, padding: '12px 24px', borderRadius: 14, border: '2px solid #0f172a', background: '#fff', boxShadow: '6px 6px 0 #0f172a' }}>
+                <ShieldCheck size={20} color="#2563eb" />
+                <span style={{ fontSize: 11, fontWeight: 900, color: '#0f172a', letterSpacing: '0.05em' }}>ISO_27001_CERTIFIED_CORE</span>
              </div>
           </div>
 
-          {/* Dynamic Link Groups */}
+          {/* Links Sections */}
           {navGroups.map((group, i) => (
-            <div key={i} style={{ padding: '80px 0 80px 48px', borderRight: i < navGroups.length - 1 ? '1px solid #e2e8f0' : 'none' }}>
-               <h4 style={{ fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 32 }}>
+            <div key={i} style={{ padding: '80px 0 80px 48px', borderRight: i < navGroups.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+               <h4 style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 36 }}>
                   {group.title}
                </h4>
-               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                  {group.links.map((link, j) => (
                    <motion.a 
                     key={j} href="#" 
                     whileHover={{ x: 6, color: '#2563eb' }}
-                    style={{ textDecoration: 'none', color: '#64748b', fontSize: 14, fontWeight: 700, transition: 'color 0.2s' }}
+                    style={{ textDecoration: 'none', color: '#64748b', fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}
                    >
-                     {link}
+                     {link} <ArrowUpRight size={12} style={{ opacity: 0 }} className="arrow-hover" />
                    </motion.a>
                  ))}
                </div>
@@ -108,29 +121,41 @@ const Footer = () => {
         </div>
 
         {/* BOTTOM TERMINAL FOOTNOTE */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '32px 0', borderTop: '1px solid #e2e8f0' }}>
-           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <Terminal size={16} color="#2563eb" />
-              <p style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', margin: 0 }}>
-                 &copy; {new Date().getFullYear()} Saksham Intelligence Engine. PREDICTIVE_CYCLE_ACTIVE
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '40px', borderTop: '2px solid #0f172a', background: '#fff' }}>
+           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <Terminal size={18} color="#2563eb" />
+              <p style={{ fontSize: 12, fontWeight: 800, color: '#94a3b8', fontFamily: 'monospace', margin: 0 }}>
+                 &copy; {new Date().getFullYear()} SAKSHAM_INTELLIGENCE // ENCRYPTION_AES_256_ACTIVE
               </p>
            </div>
 
-           {/* Architectural Social Boxes */}
-           <div style={{ display: 'flex', gap: 8 }}>
-              {['DISTRICT_HUB', 'STATE_LOGS', 'REPORTS_CSV', 'DEV_CORE'].map((tag, i) => (
+           {/* System Social Tags */}
+           <div style={{ display: 'flex', gap: 10 }}>
+              {['SERVER_A1', 'DEO_DASH', 'OPS_LOGS', 'SYS_SEC'].map((tag, i) => (
                 <motion.a 
                   key={i} href="#" 
                   whileHover={{ y: -4, borderColor: '#2563eb', color: '#2563eb', boxShadow: '4px 4px 0 #2563eb' }}
-                  style={{ padding: '8px 12px', border: '2px solid #e2e8f0', borderRadius: 8, background: '#fff', textDecoration: 'none', fontSize: 10, fontWeight: 900, color: '#94a3b8', fontFamily: 'monospace', transition: 'all 0.2s' }}
+                  style={{ padding: '8px 16px', border: '2px solid #e2e8f0', borderRadius: 8, background: '#fff', textDecoration: 'none', fontSize: 10, fontWeight: 900, color: '#94a3b8', fontFamily: 'monospace', transition: 'all 0.2s' }}
                 >
-                  {tag}
+                  [{tag}]
                 </motion.a>
               ))}
            </div>
         </div>
 
       </div>
+
+      <style>{`
+        .grid-lines {
+          background-image: 
+            linear-gradient(rgba(30, 58, 138, 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(30, 58, 138, 0.05) 1px, transparent 1px);
+          background-size: 40px 40px;
+        }
+        a:hover .arrow-hover {
+          opacity: 1 !important;
+        }
+      `}</style>
     </footer>
   );
 };

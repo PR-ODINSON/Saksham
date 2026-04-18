@@ -1,6 +1,6 @@
 import React from 'react';
 import Navbar from '../components/landing/Navbar';
-import Hero from '../components/landing/Hero';
+
 import GovSchemes from '../components/landing/GovSchemes';
 import Features2 from '../components/landing/Features2';
 import Hero2 from '../components/landing/Hero2';
@@ -14,13 +14,13 @@ function Landing() {
   return (
     <div className="min-h-screen bg-slate-50">
       <Navbar />
-      <Hero />
+      <Hero2/>  
       <Features2 />
       <GovSchemes />
       <AppPreview />
       <HowItWorks2 />
       <Testimonials />
-      <Hero2/>     
+        
       <Download/>
       <Footer />
     </div>
