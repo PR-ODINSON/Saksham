@@ -54,7 +54,12 @@ const repairLogSchema = new mongoose.Schema({
     type: Boolean,
     required: true,
     default: false
-  }
+  },
+  locationMismatch: {
+    type: Boolean,
+    default: false
+  },
+  photoUrl: String
 }, {
   timestamps: true,
   collection: 'repair_logs'

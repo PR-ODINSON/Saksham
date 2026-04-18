@@ -60,6 +60,10 @@ const workOrderSchema = new mongoose.Schema({
       lat: Number,
       lng: Number
     }
+  },
+  locationMismatch: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true,

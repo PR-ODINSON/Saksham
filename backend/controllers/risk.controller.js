@@ -88,33 +88,110 @@ export const getAllRisks = async (req, res) => {
   }
 };
 
-// ─── GET /api/maintenance-queue ───────────────────────────────────────────────
-// District-level priority queue from MaintenanceDecision.
-// Girls-school plumbing boost (+15) is already applied during CSV load.
+// ─── GET /api/risk/queue ──────────────────────────────────────────────────────
+// District-level priority queue aggregated by school.
 export const getMaintenanceQueue = async (req, res) => {
   try {
-    const { district, category, status = 'pending' } = req.query;
+    const { district, block, category, urgency = 60 } = req.query;
 
-    const filter = { 'status.status': status };
+    const filter = { status: 'pending' };
     if (district) filter.district = district;
     if (category) filter.category = category;
 
-    const decisions = await MaintenanceDecision.find(filter)
-      .sort({ 'decision.computedPriorityScore': -1 })
-      .lean();
+    const pipeline = [
+      { $match: filter },
+      // Join with School records to get name and block
+      {
+        $lookup: {
+          from: 'schools',
+          localField: 'schoolId',
+          foreignField: 'schoolId',
+          as: 'schoolInfo'
+        }
+      },
+      { $unwind: { path: '$schoolInfo', preserveNullAndEmptyArrays: true } },
+      // Join with SchoolConditionRecord to get daysToFailure
+      {
+        $lookup: {
+          from: 'school_condition_records',
+          localField: 'recordId',
+          foreignField: '_id',
+          as: 'conditionRecord'
+        }
+      },
+      { $unwind: { path: '$conditionRecord', preserveNullAndEmptyArrays: true } },
+      // Group by school
+      {
+        $group: {
+          _id: '$schoolId',
+          schoolId: { $first: '$schoolId' },
+          schoolName: { $first: '$schoolInfo.name' },
+          district: { $first: '$district' },
+          block: { $first: '$schoolInfo.block' },
+          isGirlsSchool: { $first: '$impact.isGirlsSchool' },
+          studentImpactScore: { $first: '$impact.studentsAffected' },
+          categories: { $addToSet: '$category' },
+          maxPriorityScore: { $max: '$decision.computedPriorityScore' },
+          minDaysToFailure: { $min: '$conditionRecord.daysToFailure' },
+          allEvidence: { $push: '$explainability.reasons' },
+          decisions: { $push: '$$ROOT' }
+        }
+      },
+      // Flatten evidence and determine highest priority category
+      {
+        $addFields: {
+          topEvidence: {
+            $slice: [
+              {
+                $reduce: {
+                  input: '$allEvidence',
+                  initialValue: [],
+                  in: { $concatArrays: ['$$value', '$$this'] }
+                }
+              },
+              5
+            ]
+          },
+          highestPriorityCategory: {
+            $arrayElemAt: [
+              {
+                $filter: {
+                  input: '$decisions',
+                  as: 'd',
+                  cond: { $eq: ['$$d.decision.computedPriorityScore', '$maxPriorityScore'] }
+                }
+              },
+              0
+            ]
+          }
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          schoolId: 1,
+          schoolName: 1,
+          district: 1,
+          block: 1,
+          isGirlsSchool: 1,
+          studentImpactScore: 1,
+          categories: 1,
+          highestPriorityCategory: '$highestPriorityCategory.category',
+          daysToFailure: '$minDaysToFailure',
+          priorityScore: '$maxPriorityScore',
+          topEvidence: 1
+        }
+      },
+      // Filter by urgency (days to failure)
+      { $match: { daysToFailure: { $lte: Number(urgency) } } },
+      { $sort: { priorityScore: -1 } }
+    ];
 
-    const queue = decisions.map(d => ({
-      school_id:     d.schoolId,
-      district:      d.district,
-      category:      d.category,
-      weekNumber:    d.weekNumber,
-      priority:      d.decision.priorityLevel.toUpperCase(),
-      priority_score: d.decision.computedPriorityScore,
-      is_girls_school: d.impact.isGirlsSchool,
-      students_affected: d.impact.studentsAffected,
-      reasons:       d.explainability.reasons,
-      status:        d.status.status,
-    }));
+    if (block) {
+      pipeline.push({ $match: { block: block } });
+    }
+
+    const queue = await MaintenanceDecision.aggregate(pipeline);
 
     res.json({ success: true, queue, total: queue.length });
   } catch (err) {
