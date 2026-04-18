@@ -13,7 +13,7 @@ const router = express.Router();
 router.get('/', protect, getWorkOrders);
 
 // POST /api/tasks/assign — assign a work order to a contractor
-router.post('/assign', protect, authorize('deo', 'admin'), assignTask);
+router.post('/assign', protect, authorize('deo', 'bmo', 'admin'), assignTask);
 
 // POST /api/tasks/complete — mark task complete, upload photo proof
 router.post(
@@ -24,6 +24,6 @@ router.post(
 );
 
 // PATCH /api/tasks/:id/status — update status
-router.patch('/:id/status', protect, authorize('deo', 'admin'), updateTaskStatus);
+router.patch('/:id/status', protect, authorize('deo', 'bmo', 'admin'), updateTaskStatus);
 
 export default router;

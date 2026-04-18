@@ -85,7 +85,7 @@ app.use('/api/tasks',    taskRoutes);
 
 app.get(
   '/api/maintenance-queue',
-  protect, authorize('deo', 'admin', 'contractor'),
+  protect, authorize('deo', 'bmo', 'admin', 'contractor'),
   getMaintenanceQueue,
 );
 

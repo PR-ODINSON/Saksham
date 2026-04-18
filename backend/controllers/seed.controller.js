@@ -22,6 +22,7 @@ export const seedDatabase = async (_req, res) => {
     const pwd = await hashPassword('password123');
     const users = await User.insertMany([
       { name: 'Priya Sharma (DEO)',   email: 'deo@demo.com',         password: pwd, role: 'deo',        district: 'Kutch' },
+      { name: 'Block Officer Raj',    email: 'bmo@demo.com',         password: pwd, role: 'bmo',        district: 'Kutch' },
       { name: 'Ramesh Contractor',    email: 'contractor1@demo.com', password: pwd, role: 'contractor', district: 'Kutch', phone: '9876543210' },
       { name: 'School Staff #2126',   email: 'school1@demo.com',     password: pwd, role: 'school',     schoolId: 2126 },
       { name: 'Admin',                email: 'admin@demo.com',        password: pwd, role: 'admin' },
@@ -124,6 +125,7 @@ export const seedDatabase = async (_req, res) => {
       message: 'Demo data seeded with new schema',
       demoAccounts: {
         deo:        'deo@demo.com / password123',
+        bmo:        'bmo@demo.com / password123',
         contractor: 'contractor1@demo.com / password123',
         school:     'school1@demo.com / password123',
         admin:      'admin@demo.com / password123',
