@@ -10,14 +10,14 @@ import MetricCard from "../../components/common/MetricCard";
 import PageHeader from "../../components/common/PageHeader";
 import Input from "../../components/common/Input";
 import Select from "../../components/common/Select";
-import { Building, Zap, Wrench, Droplets, Grid, Hammer, Clock, Shield } from 'lucide-react';
+import { Building, Zap, Wrench, Droplets, Grid, Hammer, Clock, Shield, ChevronDown } from 'lucide-react';
 
 const STATUS_CONFIG = {
-  pending: { label: "Pending", color: "text-slate-600" },
-  assigned: { label: "Assigned", color: "text-blue-700" },
-  in_progress: { label: "In Progress", color: "text-amber-700" },
-  completed: { label: "Completed", color: "text-emerald-700" },
-  cancelled: { label: "Cancelled", color: "text-slate-500" },
+  pending: { label: "Pending", color: "text-slate-600", border: "border-slate-300" },
+  assigned: { label: "Assigned", color: "text-blue-700", border: "border-blue-400" },
+  in_progress: { label: "In Progress", color: "text-amber-700", border: "border-amber-400" },
+  completed: { label: "Completed", color: "text-emerald-700", border: "border-emerald-400" },
+  cancelled: { label: "Cancelled", color: "text-slate-500", border: "border-slate-300" },
 };
 
 const PRIORITY_CONFIG = {
@@ -154,6 +154,7 @@ export default function WorkOrders() {
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [showNew, setShowNew] = useState(false);
   const [completingOrder, setCompletingOrder] = useState(null);
 
@@ -170,10 +171,11 @@ export default function WorkOrders() {
     setLoading(true);
     const params = new URLSearchParams();
     if (statusFilter !== "all") params.set("status", statusFilter);
+    if (categoryFilter !== "all") params.set("category", categoryFilter);
     const res = await get(`/api/tasks?${params}`);
     if (res.success) setOrders(res.workOrders);
     setLoading(false);
-  }, [statusFilter]);
+  }, [statusFilter, categoryFilter]);
 
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
   useEffect(() => { get("/api/schools").then(d => d.success && setSchools(d.schools)); }, []);
@@ -186,22 +188,64 @@ export default function WorkOrders() {
     setOrders(orders.map(o => o._id === updated._id ? updated : o));
   };
 
-  const filtered = orders.filter(o => statusFilter === "all" || o.status === statusFilter);
+  const filtered = orders.filter(o => {
+    const sMatch = statusFilter === "all" || o.status === statusFilter;
+    const cMatch = categoryFilter === "all" || o.category === categoryFilter;
+    return sMatch && cMatch;
+  });
   const breachedCount = orders.filter(o => o.slaBreach).length;
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <div className="max-w-7xl mx-auto pt-10 sm:pt-16 pb-12 px-4 sm:px-8 space-y-8">
+      <div className="max-w-7xl mx-auto pt-8 sm:pt-12 pb-12 px-4 sm:px-8 space-y-8">
         <PageHeader
           title="Infrastructure Directives"
           subtitle={user?.role === "contractor" ? "Allocated Tasks Requiring Operational Resolution" : "Operational Oversight of District-wide Maintenance Assignments"}
           icon={Hammer}
           actions={
-            canAssign && (
-              <Button onClick={() => setShowNew(true)} variant="primary">
-                Authorize Directive
-              </Button>
-            )
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Category Filter */}
+              <div className="relative">
+                <select 
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="appearance-none bg-white border border-slate-200 text-[#003366] text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 pr-10 rounded-lg outline-none focus:border-blue-900 transition-all shadow-sm cursor-pointer"
+                >
+                  <option value="all">ALL CATEGORIES</option>
+                  <option value="structural">STRUCTURAL</option>
+                  <option value="plumbing">PLUMBING</option>
+                  <option value="electrical">ELECTRICITY</option>
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <ChevronDown size={14} />
+                </div>
+              </div>
+
+              {/* Status Filter */}
+              <div className="relative">
+                <select 
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="appearance-none bg-white border border-slate-200 text-[#003366] text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 pr-10 rounded-lg outline-none focus:border-blue-900 transition-all shadow-sm cursor-pointer"
+                >
+                  {["all", "pending", "assigned", "in_progress", "completed"].map(s => (
+                    <option key={s} value={s}>
+                      {s === "all" ? "ALL REGISTRY" : (STATUS_CONFIG[s]?.label || s).toUpperCase()} 
+                      ({s === "all" ? orders.length : orders.filter(o => o.status === s).length})
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <ChevronDown size={14} />
+                </div>
+              </div>
+
+              {canAssign && (
+                <Button onClick={() => setShowNew(true)} variant="primary" className="text-[10px] font-bold uppercase tracking-widest">
+                  New Directive
+                </Button>
+              )}
+            </div>
           }
         />
 
@@ -215,24 +259,6 @@ export default function WorkOrders() {
           />
         )}
 
-        {/* Status filter tabs */}
-        <div className="flex border-b border-slate-200">
-          {["all", "pending", "assigned", "in_progress", "completed"].map(s => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-6 py-4 text-[12px] font-bold tracking-widest transition-all border-b-2 -mb-px flex items-center gap-2 ${statusFilter === s
-                  ? "border-blue-900 text-blue-900 bg-blue-50/30"
-                  : "border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300"
-                }`}
-            >
-              {s === "all" ? "ALL REGISTRY" : STATUS_CONFIG[s]?.label.toUpperCase()}
-              <Badge variant={statusFilter === s ? "info" : "default"} size="sm" className="ml-2">
-                {s === "all" ? orders.length : orders.filter(o => o.status === s).length}
-              </Badge>
-            </button>
-          ))}
-        </div>
 
         {/* Orders list */}
         {loading ? (
@@ -245,100 +271,112 @@ export default function WorkOrders() {
             <p className="text-slate-400 font-medium italic text-sm">No matching work orders found in the registry.</p>
           </div>
         ) : (
-          <div className="grid gap-6">
-            {filtered.map(order => {
-              const sc = STATUS_CONFIG[order.status];
-              const isAssignedToMe = user?.role === "contractor" && order.assignedTo?._id === user.id;
-              const canComplete = isAssignedToMe || canAssign;
+          <Card noPadding className="border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse min-w-[1000px]">
+                <thead>
+                  <tr className="bg-slate-50/80 border-b border-slate-200">
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Type</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Asset Location</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Personnel</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Deadline</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Offset</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Status</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filtered.map(order => {
+                    const sc = STATUS_CONFIG[order.status];
+                    const isAssignedToMe = user?.role === "contractor" && order.assignedTo?._id === user.id;
+                    const canComplete = isAssignedToMe || canAssign;
 
-              return (
-                <Card
-                  key={order._id}
-                  variant={order.slaBreach ? 'danger' : 'default'}
-                  noPadding
-                  className={`transition-all hover:shadow-md ${order.slaBreach ? 'border-red-300' : ''}`}
-                >
-                  <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 p-8">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 flex-wrap mb-4">
-                        <div className="w-10 h-10 rounded bg-slate-900 border border-slate-700 text-white flex items-center justify-center">
-                          {CATEGORY_ICONS[order.category] || <Wrench size={20} />}
-                        </div>
-                        <span className="font-bold text-slate-900 uppercase text-lg tracking-tight">{order.category}</span>
-                        <Badge variant={order.priority === 'critical' || order.priority === 'high' ? 'high' : 'default'} size="lg">
-                          {order.priority}
-                        </Badge>
-
-                        {order.slaBreach && (
-                          <Badge variant="critical" size="lg">SLA Breach</Badge>
-                        )}
-                      </div>
-
-                      <p className="text-slate-600 text-sm mb-6 leading-relaxed font-medium">{order.description}</p>
-
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 bg-slate-50 p-6 rounded-lg border border-slate-100">
-                        <div>
-                          <p className="text-[13px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Asset Location</p>
-                          <p className="text-xs text-slate-900 truncate font-bold">{order.schoolId?.name || "Unknown Node"}</p>
-                        </div>
-                        <div>
-                          <p className="text-[13px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Designated Personnel</p>
-                          <p className="text-xs text-slate-900 font-bold">{order.assignedTo?.name || "Unassigned"}</p>
-                        </div>
-                        <div>
-                          <p className="text-[13px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Authorized Deadline</p>
-                          <p className={`text-xs font-bold ${order.slaBreach ? 'text-red-600' : 'text-slate-900'}`}>
-                            {order.dueDate ? new Date(order.dueDate).toLocaleDateString() : 'Unscheduled'}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-[13px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Temporal Delay</p>
-                          <p className={`text-xs font-bold ${order.contractorDelayDays > 0 ? 'text-red-700' : 'text-emerald-700'}`}>
-                            {order.contractorDelayDays || 0} Days
-                          </p>
-                        </div>
-                      </div>
-
-                      {order.status === "completed" && order.completionNotes && (
-                        <div className="mt-4 text-xs font-medium text-emerald-900 bg-emerald-50 border border-emerald-100 p-4 rounded">
-                          <span className="text-[13px] font-bold uppercase tracking-widest block mb-1 opacity-60">Resolution Summary</span>
-                          {order.completionNotes}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col items-end gap-3 shrink-0">
-                      <Badge variant={order.status === 'completed' ? 'low' : order.status === 'in_progress' ? 'moderate' : 'info'} size="lg">
-                        {sc.label}
-                      </Badge>
-
-                      {order.status !== "completed" && order.status !== "cancelled" && canComplete && (
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => setCompletingOrder(order)}
-                          className="w-full"
-                        >
-                          Authorize Closure
-                        </Button>
-                      )}
-
-                      {canAssign && order.status === "pending" && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => patch(`/api/tasks/${order._id}/status`, { status: "assigned" }).then(r => r.success && updateOrderInList(r.workOrder))}
-                          className="w-full"
-                        >
-                          Assign Task
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
+                    return (
+                      <tr key={order._id} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${
+                              order.status === 'completed' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' :
+                              order.status === 'in_progress' ? 'bg-amber-50 border-amber-100 text-amber-600' :
+                              'bg-slate-50 border-slate-100 text-slate-400'
+                            }`}>
+                              {CATEGORY_ICONS[order.category] || <Wrench size={16} />}
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-900 uppercase text-[11px] tracking-tight">{order.category}</p>
+                              <p className="text-[9px] font-medium text-slate-400">REF: {order._id.slice(-6).toUpperCase()}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-[12px] font-semibold text-slate-700">{order.schoolId?.name || "Unknown Node"}</p>
+                          <p className="text-[10px] text-slate-400">{order.schoolId?.schoolId}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500 uppercase">
+                              {(order.assignedTo?.name || "U")[0]}
+                            </div>
+                            <p className="text-[12px] font-medium text-slate-600">{order.assignedTo?.name || "Unassigned"}</p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className={`text-[12px] font-bold ${order.slaBreach ? 'text-red-600' : 'text-slate-700'}`}>
+                              {order.dueDate ? new Date(order.dueDate).toLocaleDateString(undefined, { day: '2-digit', month: 'short' }) : 'NA'}
+                            </span>
+                            {order.slaBreach && <span className="text-[8px] font-black text-red-500 uppercase tracking-widest">SLA Breach</span>}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <Badge 
+                            variant={order.contractorDelayDays > 0 ? "critical" : "low"} 
+                            size="sm"
+                            className="font-bold"
+                          >
+                            {order.contractorDelayDays || 0} DAYS
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4">
+                          <Badge 
+                            variant={order.status === 'completed' ? 'low' : order.status === 'in_progress' ? 'moderate' : 'info'} 
+                            size="sm"
+                            className="font-bold uppercase tracking-widest text-[9px]"
+                          >
+                            {sc.label}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            {canAssign && order.status === "pending" && (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => patch(`/api/tasks/${order._id}/status`, { status: "assigned" }).then(r => r.success && updateOrderInList(r.workOrder))}
+                                className="text-[9px] font-bold uppercase tracking-widest px-3 py-1"
+                              >
+                                Assign
+                              </Button>
+                            )}
+                            {order.status !== "completed" && order.status !== "cancelled" && canComplete && (
+                              <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => setCompletingOrder(order)}
+                                className="text-[9px] font-bold uppercase tracking-widest px-4 py-1 bg-[#003366]"
+                              >
+                                Authorize Closure
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
         )}
 
         {showNew && (

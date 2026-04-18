@@ -4,7 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { get } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { Globe, RefreshCw, AlertTriangle, Building, ShieldCheck } from 'lucide-react';
+import { Globe, RefreshCw, AlertTriangle, Building, ShieldCheck, ChevronDown } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import MetricCard from '../../components/common/MetricCard';
 import Badge from '../../components/common/Badge';
@@ -60,6 +60,8 @@ export default function GeospatialMap() {
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
+  const [selectedDistrict, setSelectedDistrict] = useState("");
+  const [districts, setDistricts] = useState([]);
 
   const fetchMapData = async () => {
     setLoading(true);
@@ -87,6 +89,10 @@ export default function GeospatialMap() {
         }
 
         setSchools(mergedSchools);
+        
+        // Extract unique districts
+        const uniqueDistricts = [...new Set(mergedSchools.map(s => s.district))].sort();
+        setDistricts(uniqueDistricts);
       }
     } catch (err) {
       console.error("Map fetch error:", err);
@@ -122,9 +128,14 @@ export default function GeospatialMap() {
   }
 
   // Calculate stats for the header
-  const total = schools.length;
-  const critical = schools.filter(s => s.priorityScore >= 80).length;
-  const safe = schools.filter(s => s.priorityScore != null && s.priorityScore < 40).length;
+  // Calculate stats for the header based on filter
+  const filteredSchools = selectedDistrict 
+    ? schools.filter(s => s.district === selectedDistrict)
+    : schools;
+
+  const total = filteredSchools.length;
+  const critical = filteredSchools.filter(s => s.priorityScore >= 80).length;
+  const safe = filteredSchools.filter(s => s.priorityScore != null && s.priorityScore < 40).length;
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
@@ -147,20 +158,38 @@ export default function GeospatialMap() {
           title="Infrastructure Mapping Grid"
           subtitle="Geospatial monitoring of structural risk baseline across regions"
           icon={Globe}
-          className="mb-8"
+          className="mb-6"
           actions={
-            <Button
-              variant="outline"
-              isLoading={loading}
-              onClick={fetchMapData}
-              className="text-[10px] font-bold uppercase tracking-widest border-[#003366] text-[#003366] hover:bg-blue-50"
-            >
-              Update Registry
-            </Button>
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <select 
+                  value={selectedDistrict}
+                  onChange={(e) => setSelectedDistrict(e.target.value)}
+                  className="appearance-none bg-white border border-slate-200 text-[#003366] text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 pr-10 rounded-lg outline-none focus:border-blue-500 transition-all shadow-sm cursor-pointer"
+                >
+                  <option value="">All Districts</option>
+                  {districts.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                  <ChevronDown size={14} />
+                </div>
+              </div>
+              
+              <Button
+                variant="outline"
+                isLoading={loading}
+                onClick={fetchMapData}
+                className="text-[10px] font-bold uppercase tracking-widest border-[#003366] text-[#003366] hover:bg-blue-50"
+              >
+                Update
+              </Button>
+            </div>
           }
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <MetricCard label="Identification Nodes" value={total} icon={Building} variant="info" />
           <MetricCard label="Critical Designation" value={critical} icon={AlertTriangle} variant="critical" />
           <MetricCard label="Stable Baseline" value={safe} icon={ShieldCheck} variant="success" />
@@ -175,10 +204,10 @@ export default function GeospatialMap() {
             </div>
           ) : null}
 
-          {schools.length > 0 && (
+          {filteredSchools.length > 0 && (
             <MapContainer
-              center={[schools[0].location?.lat || 23.8, schools[0].location?.lng || 69.5]}
-              zoom={6}
+              center={[filteredSchools[0].location?.lat || 23.8, filteredSchools[0].location?.lng || 69.5]}
+              zoom={selectedDistrict ? 9 : 7}
               style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}
             >
               {/* White-themed CartoDB Positron tiles */}
@@ -187,7 +216,7 @@ export default function GeospatialMap() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
               />
 
-              {schools.map((school, idx) => {
+              {filteredSchools.map((school, idx) => {
                 if (!school.location || !school.location.lat) return null;
 
                 const color = getMarkerColor(school.priorityScore);
