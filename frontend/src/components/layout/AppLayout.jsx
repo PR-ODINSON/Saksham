@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { Building2, LogOut, Menu, X, ChevronDown, Activity, LayoutDashboard, FileText, School, Zap, Crosshair, Hammer, Shield, Globe } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 
@@ -37,14 +37,7 @@ const ROLE_LABELS = {
   school: 'School'
 };
 
-const GLOBAL_STYLES = `
-  .grid-lines-light {
-    background-image: 
-      linear-gradient(rgba(30, 58, 138, 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(30, 58, 138, 0.05) 1px, transparent 1px);
-    background-size: 40px 40px;
-  }
-`;
+const GLOBAL_STYLES = ``;
 
 export default function AppLayout({ children }) {
   const { user, logout } = useAuth();
@@ -75,20 +68,12 @@ export default function AppLayout({ children }) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] flex flex-col font-body selection:bg-blue-200 relative">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-body selection:bg-blue-100 relative">
       <style>{GLOBAL_STYLES}</style>
-      <div className="absolute inset-0 grid-lines-light pointer-events-none opacity-80" />
 
-      {/* Floating Navbar Container */}
-      <div className="fixed top-0 left-0 right-0 z-50 px-4 pt-4 sm:px-6 transition-all duration-300">
-        <header 
-          /* REMOVED overflow-hidden FROM HERE */
-          className={`max-w-7xl mx-auto transition-all duration-500 relative ${
-            isScrolled 
-              ? 'bg-white/95 backdrop-blur-xl border-2 border-[#0f172a] shadow-[8px_8px_0_rgba(15,23,42,0.15)] rounded-[20px] py-3 px-5' 
-              : 'bg-white/80 backdrop-blur-md border-2 border-[#0f172a] shadow-[4px_4px_0_rgba(15,23,42,0.05)] rounded-[20px] py-4 px-6'
-          }`}
-        >
+      {/* Formal Header */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-200 shadow-sm">
+        <header className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           {/* Scroll Progress Bar (Added border radius to fit the container without overflow-hidden) */}
           <motion.div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: '#2563eb', scaleX, transformOrigin: '0%', zIndex: 10, borderBottomLeftRadius: '18px', borderBottomRightRadius: '18px' }} />
           
@@ -96,45 +81,34 @@ export default function AppLayout({ children }) {
             {/* Brand */}
             <div className="flex items-center gap-6 shrink-0">
               <Link to="/dashboard" className="flex items-center gap-3 group outline-none">
-                <motion.div 
-                  whileHover={{ rotate: [0, -5, 5, 0] }}
-                  className="w-10 h-10 rounded-xl bg-[#0f172a] flex items-center justify-center border-2 border-[#0f172a] shadow-[3px_3px_0_#2563eb] group-hover:shadow-[5px_5px_0_#2563eb] transition-all"
-                >
+                <div className="w-10 h-10 rounded-lg bg-blue-900 flex items-center justify-center border border-blue-800 shadow-sm">
                   <Building2 size={20} className="text-white" />
-                </motion.div>
-                <span className="font-black text-2xl tracking-tight hidden sm:block text-[#0f172a]" style={{ fontFamily: 'var(--font-display)' }}>
-                  Saksham
-                </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-bold text-xl tracking-tight hidden sm:block text-slate-900 leading-tight">
+                    Saksham
+                  </span>
+                  <span className="text-[10px] font-semibold text-slate-500 hidden sm:block uppercase tracking-wider">
+                    Infrastructure Monitoring
+                  </span>
+                </div>
               </Link>
-              <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border-2 border-blue-100">
-                <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 1.5, repeat: Infinity }} className="w-1.5 h-1.5 rounded-full bg-blue-600 shadow-[0_0_8px_#3b82f6]"></motion.span>
-                <span className="text-[10px] font-black tracking-[0.1em] uppercase text-slate-500" style={{ fontFamily: 'monospace' }}>ENGINE READY // v3.0</span>
-              </div>
             </div>
 
             {/* Desktop nav */}
-            <nav className="hidden md:flex items-center gap-2 flex-1 justify-center" onMouseLeave={() => setHoveredLink(null)}>
+            <nav className="hidden md:flex items-center gap-1 mx-8" onMouseLeave={() => setHoveredLink(null)}>
               {navItems.map(item => (
                 <Link
                   key={item.path}
                   to={item.path}
-                  onMouseEnter={() => setHoveredLink(item.path)}
-                  className={`relative flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-colors z-10 ${
-                    isActive(item.path, item.exact) ? 'text-white' : 'text-[#0f172a]'
+                  className={`relative flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold transition-all ${
+                    isActive(item.path, item.exact) 
+                      ? 'bg-blue-50 text-blue-700 border border-blue-100 shadow-sm' 
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 >
-                  <span className={isActive(item.path, item.exact) ? 'text-white' : 'text-slate-400'}>{item.icon}</span>
+                  <span className={isActive(item.path, item.exact) ? 'text-blue-600' : 'text-slate-400'}>{item.icon}</span>
                   {item.label}
-                  {hoveredLink === item.path && !isActive(item.path, item.exact) && (
-                    <motion.div
-                      layoutId="nav-pill"
-                      transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                      className="absolute inset-0 bg-[#eff6ff] rounded-xl border border-[#dbeafe] -z-10"
-                    />
-                  )}
-                  {isActive(item.path, item.exact) && (
-                    <div className="absolute inset-0 bg-[#0f172a] rounded-xl border-2 border-[#0f172a] shadow-[4px_4px_0_#2563eb] -z-10" />
-                  )}
                 </Link>
               ))}
             </nav>
@@ -149,12 +123,12 @@ export default function AppLayout({ children }) {
               <div className="relative">
                 <button
                   onClick={() => setProfileOpen(!profileOpen)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border-2 border-slate-200 hover:border-[#0f172a] transition-all outline-none shadow-[2px_2px_0_rgba(15,23,42,0.05)] hover:shadow-[4px_4px_0_#0f172a]"
+                  className="flex items-center gap-2 pr-2 pl-1 py-1 rounded-lg border border-slate-200 hover:border-slate-300 transition-all bg-white"
                 >
-                  <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center text-xs font-black text-blue-700 uppercase border border-blue-200">
+                  <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-700 border border-slate-200">
                     {user?.name?.[0] || 'U'}
                   </div>
-                  <span className="text-sm font-bold text-[#0f172a] max-w-[100px] truncate hidden sm:block">{user?.name}</span>
+                  <span className="text-sm font-semibold text-slate-700 max-w-[100px] truncate hidden sm:block">{user?.name}</span>
                   <ChevronDown size={14} className="text-slate-400" />
                 </button>
                 
@@ -167,16 +141,16 @@ export default function AppLayout({ children }) {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute right-0 mt-3 w-56 bg-white border-2 border-[#0f172a] rounded-2xl shadow-[8px_8px_0_#0f172a] z-50 overflow-hidden"
+                        className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 rounded-lg shadow-lg z-50 overflow-hidden"
                       >
-                        <div className="px-4 py-3 bg-slate-50 border-b-2 border-slate-100">
-                          <p className="text-[#0f172a] text-sm font-black truncate">{user?.name}</p>
-                          <p className="text-slate-500 text-xs font-semibold truncate mt-0.5">{user?.email}</p>
+                        <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
+                          <p className="text-slate-900 text-sm font-semibold truncate">{user?.name}</p>
+                          <p className="text-slate-500 text-xs font-medium truncate mt-0.5">{user?.email}</p>
                         </div>
-                        <div className="p-2">
+                        <div className="p-1">
                           <button
                             onClick={handleLogout}
-                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-600 font-bold hover:bg-red-50 hover:text-red-700 transition-colors"
+                            className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-red-600 font-medium hover:bg-red-50 hover:text-red-700 transition-colors text-sm"
                           >
                             <LogOut size={16} />
                             Sign out
@@ -229,13 +203,16 @@ export default function AppLayout({ children }) {
       </div>
 
       {/* Main content */}
-      <main className="flex-1 pt-32 pb-12 relative z-10">
+      <main className="flex-1 pt-24 pb-12 relative z-10">
         {children}
       </main>
 
       {/* Footer */}
-      <footer className="border-t-2 border-slate-200 py-6 px-6 text-center text-slate-400 text-[10px] font-black uppercase tracking-widest relative z-10 bg-white">
-        Saksham © 2026 · Predictive Maintenance Engine · PS-03
+      <footer className="border-t border-slate-200 py-8 px-6 text-center text-slate-500 text-xs font-medium relative z-10 bg-white">
+        <div className="max-w-7xl mx-auto flex flex-col items-center gap-2">
+          <p className="font-bold text-slate-700">Digital Infrastructure Maintenance Division</p>
+          <p>Saksham © 2026 · Predictive Maintenance Engine · PS-03</p>
+        </div>
       </footer>
     </div>
   );

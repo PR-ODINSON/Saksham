@@ -1,1 +1,83 @@
-/* App-level overrides — minimal */
+:root {
+  /* Official Government Palette */
+  --gov-blue-900: #0f172a;
+  --gov-blue-800: #1e293b;
+  --gov-blue-700: #334155;
+  --gov-blue-600: #2563eb;
+  --gov-blue-50: #f0f9ff;
+  
+  /* Semantic Colors */
+  --status-critical: #b91c1c; /* red-700 */
+  --status-high: #c2410c;     /* orange-700 */
+  --status-moderate: #b45309; /* amber-700 */
+  --status-low: #047857;      /* emerald-700 */
+  
+  /* Grayscale */
+  --slate-50: #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-900: #0f172a;
+
+  /* Typography */
+  --font-sizes-h1: 2rem;       /* 32px */
+  --font-sizes-h2: 1.5rem;     /* 24px */
+  --font-sizes-h3: 1.25rem;    /* 20px */
+  --font-sizes-body: 0.875rem; /* 14px */
+  --font-sizes-small: 0.75rem; /* 12px */
+  
+  /* Spacing */
+  --space-xs: 0.25rem; /* 4px */
+  --space-sm: 0.5rem;  /* 8px */
+  --space-md: 1rem;    /* 16px */
+  --space-lg: 1.5rem;  /* 24px */
+  --space-xl: 2rem;    /* 32px */
+  
+  /* Borders & Shadows */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+/* Global Overrides */
+html {
+  font-size: 16px;
+}
+
+body {
+  background-color: var(--slate-50);
+  color: var(--slate-900);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+}
+
+h1 { font-size: var(--font-sizes-h1); font-weight: 700; }
+h2 { font-size: var(--font-sizes-h2); font-weight: 600; }
+h3 { font-size: var(--font-sizes-h3); font-weight: 600; }
+
+.container-tight {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+}
+
+/* Common UI Patterns */
+.formal-card {
+  background: white;
+  border: 1px solid var(--slate-200);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-lg);
+}
+
+.formal-label {
+  font-size: var(--font-sizes-small);
+  font-weight: 700;
+  text-transform: uppercase;
+  tracking: 0.05em;
+  color: var(--slate-500);
+}

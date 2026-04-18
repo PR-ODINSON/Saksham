@@ -2,10 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { get } from '../services/api';
-import { useAuth } from '../context/AuthContext';
-import { Globe, RefreshCw, AlertTriangle } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { get } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
+import { Globe, RefreshCw, AlertTriangle, Building, ShieldCheck } from 'lucide-react';
+import PageHeader from '../../components/common/PageHeader';
+import MetricCard from '../../components/common/MetricCard';
+import Badge from '../../components/common/Badge';
+import Button from '../../components/common/Button';
+import Card from '../../components/common/Card';
 
 // Global Leaflet fix for base markers, though we use custom ones
 delete L.Icon.Default.prototype._getIconUrl;
@@ -38,17 +42,16 @@ const createCustomIcon = (score) => {
     html: `
       <div style="
         background-color: ${color}; 
-        width: 24px; 
-        height: 24px; 
+        width: 18px; 
+        height: 18px; 
         border-radius: 50%; 
-        border: 3px solid white;
-        box-shadow: 0 0 10px ${color}, 2px 2px 0 #0f172a;
+        border: 2px solid white;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         transform: translate(-50%, -50%);
-        ${score >= 60 ? 'animation: pulse 2s infinite;' : ''}
       "></div>
     `,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12]
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
   });
 };
 
@@ -124,68 +127,44 @@ export default function GeospatialMap() {
   const safe = schools.filter(s => s.priorityScore != null && s.priorityScore < 40).length;
 
   return (
-    <div className="min-h-screen bg-slate-50 font-body flex flex-col">
+    <div className="p-6 h-screen flex flex-col space-y-8 overflow-hidden">
       {/* CSS overrides for Leaflet Popups to match Bento Box theme */}
       <style>{`
         .leaflet-popup-content-wrapper {
-          border-radius: 16px;
-          border: 2px solid #0f172a;
-          box-shadow: 4px 4px 0 #0f172a !important;
+          border-radius: 8px;
+          border: 1px solid #e2e8f0;
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
           padding: 0;
           overflow: hidden;
         }
         .leaflet-popup-content { margin: 0; }
         .leaflet-popup-tip-container { display: none; }
         .custom-map-marker { background: transparent; border: none; }
-        @keyframes pulse {
-          0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-          50% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.8; }
-          100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-        }
       `}</style>
 
-      {/* HEADER */}
-      <div className="bg-white border-b-2 border-[#0f172a] px-8 py-6 shadow-sm z-10 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-blue-50 border-2 border-[#0f172a] rounded-xl flex items-center justify-center shadow-[2px_2px_0_#2563eb]">
-            <Globe size={24} className="text-blue-600" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-black text-[#0f172a] uppercase tracking-tight">Geospatial Command</h1>
-            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">Live Structural Risk Matrix</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-6">
-          <div className="flex gap-4 items-center bg-slate-50 px-6 py-2 rounded-xl border-2 border-slate-200">
-            <div className="flex flex-col items-center">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nodes</span>
-              <span className="text-lg font-black text-[#0f172a]">{total}</span>
-            </div>
-            <div className="w-px h-8 bg-slate-300"></div>
-            <div className="flex flex-col items-center">
-              <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Critical</span>
-              <span className="text-lg font-black text-red-600">{critical}</span>
-            </div>
-            <div className="w-px h-8 bg-slate-300"></div>
-            <div className="flex flex-col items-center">
-              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Stable</span>
-              <span className="text-lg font-black text-emerald-600">{safe}</span>
-            </div>
-          </div>
-
-          <button 
+      <PageHeader 
+        title="Geospatial Tactical Map"
+        subtitle="Live structural risk matrix across regional infrastructure nodes"
+        icon={Globe}
+        actions={
+          <Button 
+            variant="primary" 
+            isLoading={loading} 
             onClick={fetchMapData}
-            disabled={loading}
-            className="w-12 h-12 flex items-center justify-center bg-[#0f172a] text-white rounded-xl border-2 border-[#0f172a] shadow-[4px_4px_0_#2563eb] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_#2563eb] transition-all disabled:opacity-50"
           >
-            <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-          </button>
-        </div>
+            Refresh Node Registry
+          </Button>
+        }
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <MetricCard label="Identification Nodes" value={total} icon={Building} variant="info" />
+        <MetricCard label="Critical Designation" value={critical} icon={AlertTriangle} variant="critical" />
+        <MetricCard label="Stable Baseline" value={safe} icon={ShieldCheck} variant="success" />
       </div>
 
       {/* MAP CONTAINER */}
-      <div className="flex-1 relative z-0">
+      <div className="flex-1 relative z-0 border border-slate-200 rounded-xl overflow-hidden shadow-inner bg-slate-100">
         {loading && schools.length === 0 ? (
           <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
              <div className="w-12 h-12 border-4 border-slate-200 border-t-[#0f172a] rounded-full animate-spin" />
@@ -217,27 +196,21 @@ export default function GeospatialMap() {
                    position={[school.location.lat, school.location.lng]}
                    icon={createCustomIcon(school.priorityScore)}
                  >
-                   <Popup>
-                     <div className="p-4 bg-white min-w-[200px]">
-                       <div className="flex items-start justify-between gap-4 mb-3">
-                         <div>
-                           <h3 className="font-black text-[#0f172a] text-sm leading-tight uppercase">{school.name}</h3>
-                           <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-1">{school.district}</p>
-                         </div>
-                         {school.priorityScore >= 60 && <AlertTriangle size={16} className="text-red-500 shrink-0" />}
-                       </div>
-                       
-                       <div className="mt-3 bg-slate-50 border-2 border-slate-200 rounded-lg p-2.5 flex items-center justify-between">
-                         <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Risk Level</span>
-                         <span 
-                           className="text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border-2"
-                           style={{ borderColor: color, color: color, backgroundColor: `${color}15` }}
-                         >
-                           {level} {school.priorityScore ? `(${Math.round(school.priorityScore)})` : ''}
-                         </span>
-                       </div>
-                     </div>
-                   </Popup>
+                    <Popup>
+                      <div className="p-4 bg-white min-w-[220px]">
+                        <div className="mb-4">
+                          <h3 className="font-bold text-slate-900 text-sm leading-tight uppercase tracking-tight">{school.name}</h3>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">{school.district}</p>
+                        </div>
+                        
+                        <div className="flex items-center justify-between gap-4 p-3 rounded bg-slate-50 border border-slate-100">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Designation</span>
+                          <Badge variant={level.toLowerCase()} size="sm">
+                            {level} {school.priorityScore ? `(${Math.round(school.priorityScore)})` : ''}
+                          </Badge>
+                        </div>
+                      </div>
+                    </Popup>
                  </Marker>
                );
             })}
@@ -264,9 +237,9 @@ export default function GeospatialMap() {
                     })}
                   >
                     <Popup>
-                      <div className="p-3 bg-white min-w-[120px]">
-                        <h3 className="font-black text-[#0f172a] text-sm leading-tight uppercase">Your Location</h3>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-500 mt-1">Live GPS Tracking</p>
+                      <div className="p-4 bg-white min-w-[140px]">
+                        <h3 className="font-bold text-slate-900 text-sm leading-tight uppercase">User Node</h3>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-blue-600 mt-1">Operational GPS Active</p>
                       </div>
                     </Popup>
                   </Marker>

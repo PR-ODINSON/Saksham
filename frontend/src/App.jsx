@@ -1,16 +1,16 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
-import AppLayout from './components/AppLayout.jsx';
+import AppLayout from './components/layout/AppLayout.jsx';
 import Landing from './pages/Landing.jsx';
-import ProtectedRoute from './components/ProtectedRoute.jsx';
-import Login from './pages/Login.jsx';
-import SchoolView from './pages/SchoolView.jsx';
-import DEODashboard from './pages/DEODashboard.jsx';
-import WeeklyInputForm from './pages/WeeklyInputForm.jsx';
-import WorkOrders from './pages/WorkOrders.jsx';
-import Signup from './pages/Signup.jsx';
-import ConditionLogView from './pages/ConditionLogView.jsx';
-import GeospatialMap from './pages/GeospatialMap.jsx';
+import ProtectedRoute from './components/common/ProtectedRoute.jsx';
+import Login from './pages/auth/Login.jsx';
+import SchoolView from './pages/dashboard/SchoolView.jsx';
+import DEODashboard from './pages/dashboard/DEODashboard.jsx';
+import WeeklyInputForm from './pages/dashboard/WeeklyInputForm.jsx';
+import WorkOrders from './pages/dashboard/WorkOrders.jsx';
+import Signup from './pages/auth/Signup.jsx';
+import ConditionLogView from './pages/dashboard/ConditionLogView.jsx';
+import GeospatialMap from './pages/dashboard/GeospatialMap.jsx';
 import './App.css';
 
 // Role-based default dashboard redirect
@@ -33,6 +33,16 @@ function App() {
         <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <DashboardIndex />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/dashboard/*"
             element={
