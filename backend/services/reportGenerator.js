@@ -10,6 +10,8 @@
 import PDFDocument from 'pdfkit';
 import fs          from 'fs';
 import path        from 'path';
+import https       from 'https';
+import http        from 'http';
 import { fileURLToPath } from 'url';
 import { SchoolConditionRecord, School, User, ReportImage } from '../models/index.js';
 import cloudinary from '../config/cloudinary.js';
@@ -46,16 +48,52 @@ function toEmbeddableImageUrl(url) {
 // PDF generation (a peon often submits the same image across categories).
 const remoteImageCache = new Map();
 
+/**
+ * Low-level HTTP(S) download → Buffer, used as a fallback when global `fetch`
+ * is unavailable or blocked (e.g. some Windows network stacks). Follows up to
+ * 5 redirects (Cloudinary occasionally 301s the bare CDN host).
+ */
+function httpGetBuffer(url, redirectsLeft = 5) {
+  return new Promise((resolve, reject) => {
+    const lib = url.startsWith('https://') ? https : http;
+    lib.get(url, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && redirectsLeft > 0) {
+        const next = new URL(res.headers.location, url).toString();
+        res.resume();
+        return resolve(httpGetBuffer(next, redirectsLeft - 1));
+      }
+      if (res.statusCode !== 200) {
+        res.resume();
+        return reject(new Error(`HTTP ${res.statusCode}`));
+      }
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end',  () => resolve(Buffer.concat(chunks)));
+      res.on('error', reject);
+    }).on('error', reject);
+  });
+}
+
 async function fetchRemoteImageBuffer(url) {
   if (remoteImageCache.has(url)) return remoteImageCache.get(url);
   try {
-    const res = await fetch(url);
-    if (!res.ok) {
-      console.warn(`[reportGenerator] Failed to fetch image ${url}: ${res.status}`);
-      remoteImageCache.set(url, null);
-      return null;
+    let buf = null;
+    if (typeof fetch === 'function') {
+      try {
+        const res = await fetch(url);
+        if (res.ok) {
+          buf = Buffer.from(await res.arrayBuffer());
+        } else {
+          console.warn(`[reportGenerator] fetch() ${url} → ${res.status} ${res.statusText}, falling back to https.get`);
+        }
+      } catch (fetchErr) {
+        console.warn(`[reportGenerator] fetch() failed for ${url}: ${fetchErr.message}; falling back to https.get`);
+      }
     }
-    const buf = Buffer.from(await res.arrayBuffer());
+    if (!buf) {
+      buf = await httpGetBuffer(url);
+    }
+    console.log(`[reportGenerator] Downloaded ${url} (${buf.length} bytes)`);
     remoteImageCache.set(url, buf);
     return buf;
   } catch (err) {
@@ -232,10 +270,15 @@ export async function generateAndSendPDF(reportId) {
   // The cache is per-PDF so repeated Cloudinary URLs aren't re-downloaded.
   remoteImageCache.clear();
   const imagesByRecordId = {};
+  console.log(`[reportGenerator] Building PDF for school=${schoolId} week=${weekNumber} (${weekRecords.length} records)`);
   for (const r of weekRecords) {
-    imagesByRecordId[String(r._id)] = (
-      await Promise.all((r.images || []).map(resolveImageSource))
-    ).filter(Boolean);
+    const rawImages = Array.isArray(r.images) ? r.images : [];
+    console.log(`[reportGenerator]   record ${r._id} category=${r.category} images=${rawImages.length}`,
+      rawImages.length ? rawImages : '(none)');
+    const resolved = await Promise.all(rawImages.map(resolveImageSource));
+    const kept = resolved.filter(Boolean);
+    console.log(`[reportGenerator]     resolved ${kept.length}/${rawImages.length} embeddable sources`);
+    imagesByRecordId[String(r._id)] = kept;
   }
 
   await new Promise((resolve, reject) => {
@@ -437,7 +480,9 @@ export async function generateAndSendPDF(reportId) {
             }
           }
           try {
+            const kind = Buffer.isBuffer(imgSrc) ? `Buffer(${imgSrc.length}B)` : typeof imgSrc;
             doc.image(imgSrc, imgX, rowY, { fit: [IMG_W, IMG_H], align: 'center', valign: 'center' });
+            console.log(`[reportGenerator] Embedded image (${kind}) at x=${imgX} y=${rowY}`);
           } catch (err) {
             console.warn(`[reportGenerator] Skipping unembeddable image: ${err.message}`);
           }
