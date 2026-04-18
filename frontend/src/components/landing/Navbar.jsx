@@ -1,12 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, Building2, ChevronRight, Activity, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hoveredLink, setHoveredLink] = useState(null);
   
+  const navigate = useNavigate(); // Initialize navigate
+
+  // This would typically come from your Auth Context or Redux store
+  // For now, I'm using a placeholder. Replace this with your actual auth logic.
+  const [isLoggedIn, setIsLoggedIn] = useState(false); 
+
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
 
@@ -15,6 +22,16 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Handler function for redirection
+  const handleDashboardRedirect = () => {
+    if (isLoggedIn) {
+      navigate('/dashboard');
+    } else {
+      navigate('/login');
+    }
+    setMobileMenuOpen(false); // Close mobile menu if open
+  };
 
   const navLinks = [
     { name: 'Features',    href: '#features' },
@@ -56,10 +73,8 @@ const Navbar = () => {
           position: 'relative', overflow: 'hidden'
         }}
       >
-        {/* Scroll Progress Line - Changed to Blue */}
         <motion.div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: '#2563eb', scaleX, transformOrigin: '0%' }} />
 
-        {/* Left Side: Saksham Logo & System Indicator */}
         <motion.div variants={itemVariants} style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
           <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
             <motion.div 
@@ -74,14 +89,12 @@ const Navbar = () => {
             <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.04em' }}>Saksham</span>
           </a>
 
-          {/* System Heartbeat - Changed to Blue */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderLeft: '1px solid #e2e8f0' }} className="hidden-mobile">
             <motion.div animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 1.5, repeat: Infinity }} style={{ width: 6, height: 6, borderRadius: '50%', background: '#2563eb', boxShadow: '0 0 8px #2563eb' }} />
             <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', letterSpacing: '0.12em', fontFamily: 'monospace' }}>ENGINE READY // v2.0.4</span>
           </div>
         </motion.div>
 
-        {/* Center: Magnetic Links */}
         <nav style={{ display: 'flex', alignItems: 'center', gap: 12 }} className="hidden-mobile" onMouseLeave={() => setHoveredLink(null)}>
           <div style={{ display: 'flex', gap: 4, position: 'relative' }}>
             {navLinks.map((link) => (
@@ -111,6 +124,7 @@ const Navbar = () => {
               variants={itemVariants}
               whileHover={{ y: -2, boxShadow: '8px 8px 0 #2563eb' }}
               whileTap={{ scale: 0.98 }}
+              onClick={handleDashboardRedirect} // Added Click Handler
               style={{
                 fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 900, color: '#fff',
                 background: '#0f172a', border: '2px solid #0f172a', cursor: 'pointer',
@@ -123,13 +137,11 @@ const Navbar = () => {
           </div>
         </nav>
 
-        {/* Mobile toggle */}
         <motion.button variants={itemVariants} onClick={() => setMobileMenuOpen(!mobileMenuOpen)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0f172a', padding: 4 }} className="show-mobile">
           {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
         </motion.button>
       </motion.div>
 
-      {/* Mobile Menu */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <motion.div
@@ -143,7 +155,12 @@ const Navbar = () => {
                 </a>
               ))}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 16 }}>
-                <button style={{ width: '100%', padding: '16px', borderRadius: 16, border: '2px solid #0f172a', background: '#0f172a', fontFamily: 'var(--font-body)', fontWeight: 900, fontSize: 16, color: '#fff', cursor: 'pointer', boxShadow: '6px 6px 0 #2563eb', textTransform: 'uppercase' }}>Launch Dashboard</button>
+                <button 
+                  onClick={handleDashboardRedirect} // Added Click Handler to Mobile Menu
+                  style={{ width: '100%', padding: '16px', borderRadius: 16, border: '2px solid #0f172a', background: '#0f172a', fontFamily: 'var(--font-body)', fontWeight: 900, fontSize: 16, color: '#fff', cursor: 'pointer', boxShadow: '6px 6px 0 #2563eb', textTransform: 'uppercase' }}
+                >
+                  Launch Dashboard
+                </button>
               </div>
             </div>
           </motion.div>
