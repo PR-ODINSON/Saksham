@@ -174,15 +174,32 @@ export default function DEODashboard() {
   const [selectedSchool, setSelectedSchool] = useState(null);
   const [lastSync, setLastSync] = useState(new Date());
   
+  // New state for GPS Mismatch feature
+  const [activeTab, setActiveTab] = useState("queue"); 
+  const [flaggedOrders, setFlaggedOrders] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [showNotificationPanel, setShowNotificationPanel] = useState(false);
+  
   const navigate = useNavigate();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({ district, block, category, urgency });
-    const res = await get(`/api/risk/queue?${params}`);
-    if (res.success) {
-      setData(res.queue);
+    const [riskRes, flaggedRes, alertsRes] = await Promise.all([
+      get(`/api/risk/queue?${params}`),
+      get(`/api/tasks?locationMismatch=true`),
+      get(`/api/alerts?type=GPS_MISMATCH`)
+    ]);
+
+    if (riskRes.success) {
+      setData(riskRes.queue);
       setLastSync(new Date());
+    }
+    if (flaggedRes.success) {
+      setFlaggedOrders(flaggedRes.workOrders);
+    }
+    if (alertsRes.success) {
+      setAlerts(alertsRes.data);
     }
     setLoading(false);
   }, [district, block, category, urgency]);
@@ -231,12 +248,57 @@ export default function DEODashboard() {
               </p>
               
               {/* Geometric Left-Aligned Button */}
-              <button 
-                onClick={() => navigate("/dashboard/work-orders")}
-                className="neo-btn"
-              >
-                <LayoutList size={18} /> Manage Work Orders
-              </button>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button 
+                  onClick={() => navigate("/dashboard/work-orders")}
+                  className="neo-btn"
+                >
+                  <LayoutList size={18} /> Manage Work Orders
+                </button>
+
+                {flaggedOrders.length > 0 && (
+                  <button 
+                    onClick={() => setActiveTab("flagged")}
+                    className="neo-btn"
+                    style={{ background: '#ef4444', border: '2px solid #0f172a' }}
+                  >
+                    <ShieldAlert size={18} /> 
+                    <span style={{ marginLeft: 4 }}>{flaggedOrders.length} Flagged Mismatches</span>
+                  </button>
+                )}
+                
+                <div style={{ position: 'relative' }}>
+                  <button 
+                    onClick={() => setShowNotificationPanel(!showNotificationPanel)}
+                    className="neo-btn"
+                    style={{ background: alerts.length > 0 ? '#f59e0b' : '#334155' }}
+                  >
+                    <Radio size={18} className={alerts.length > 0 ? "animate-pulse" : ""} />
+                    {alerts.length > 0 && <span style={{ marginLeft: 6, background: '#fff', color: '#f59e0b', padding: '0 6px', borderRadius: 6, fontSize: 10 }}>{alerts.length}</span>}
+                  </button>
+
+                  {showNotificationPanel && (
+                    <div className="neo-card" style={{ position: 'absolute', top: '120%', right: 0, width: 320, zIndex: 100, padding: 16, maxHeight: 400, overflowY: 'auto' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '2px solid #0f172a', paddingBottom: 8 }}>
+                        <h4 style={{ margin: 0, fontSize: 13, fontWeight: 900 }}>GPS ALERT FEED</h4>
+                        <span className="step-tag">REAL-TIME</span>
+                      </div>
+                      {alerts.length === 0 ? (
+                        <p style={{ fontSize: 11, color: '#64748b', textAlign: 'center', padding: '20px 0' }}>No active GPS alerts</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          {alerts.map((a, i) => (
+                            <div key={i} style={{ padding: 10, borderRadius: 8, background: '#fff1f2', border: '1px solid #fecaca' }}>
+                              <p style={{ margin: 0, fontSize: 11, fontWeight: 700, color: '#991b1b' }}>{a.message}</p>
+                              <p style={{ margin: '4px 0 0', fontSize: 9, color: '#b91c1c', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>{new Date(a.createdAt).toLocaleString()}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </motion.div>
 
             {/* Right: Telemetry */}
@@ -328,8 +390,21 @@ export default function DEODashboard() {
                  <Database size={20} color="#2563eb" />
                </div>
                <div>
-                 <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 900, margin: 0, color: '#0f172a', letterSpacing: '-0.02em' }}>Identity Directory</h2>
-                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#64748b', fontWeight: 700, letterSpacing: '0.08em' }}>{data.length} RECORDS FOUND</span>
+                 <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 900, margin: 0, color: '#0f172a', letterSpacing: '-0.02em' }}>Control Dashboard</h2>
+                 <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
+                   <button 
+                     onClick={() => setActiveTab("queue")}
+                     style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, color: activeTab === 'queue' ? '#2563eb' : '#64748b', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: activeTab === 'queue' ? '2px solid #2563eb' : '2px solid transparent' }}
+                   >
+                     PREDICTIVE QUEUE ({data.length})
+                   </button>
+                   <button 
+                     onClick={() => setActiveTab("flagged")}
+                     style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, color: activeTab === 'flagged' ? '#ef4444' : '#64748b', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', borderBottom: activeTab === 'flagged' ? '2px solid #ef4444' : '2px solid transparent' }}
+                   >
+                     🚩 FLAGGED MISMATCHES ({flaggedOrders.length})
+                   </button>
+                 </div>
                </div>
             </div>
 
@@ -361,71 +436,78 @@ export default function DEODashboard() {
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
-                  Array(5).fill(0).map((_, i) => (
-                    <tr key={i}><td colSpan={5} style={{ padding: 32 }}><div style={{ height: 20, width: '100%', background: '#f1f5f9', borderRadius: 4, animation: 'pulse 1.5s infinite' }} /></td></tr>
-                  ))
-                ) : data.length === 0 ? (
-                  <tr><td colSpan={5} style={{ padding: 60, textAlign: 'center' }}><Globe size={32} color="#e2e8f0" style={{ margin: '0 auto 12px' }} /><p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>NO RISK NODES DETECTED</p></td></tr>
+                {activeTab === "queue" ? (
+                  loading ? (
+                    Array(5).fill(0).map((_, i) => (
+                      <tr key={i}><td colSpan={5} style={{ padding: 32 }}><div style={{ height: 20, width: '100%', background: '#f1f5f9', borderRadius: 4, animation: 'pulse 1.5s infinite' }} /></td></tr>
+                    ))
+                  ) : data.length === 0 ? (
+                    <tr><td colSpan={5} style={{ padding: 60, textAlign: 'center' }}><Globe size={32} color="#e2e8f0" style={{ margin: '0 auto 12px' }} /><p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>NO RISK NODES DETECTED</p></td></tr>
+                  ) : (
+                    data.map((s, idx) => (
+                      <tr key={idx} onClick={() => setSelectedSchool(s)} className="trow" style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}>
+                        <td style={{ padding: '22px 32px' }}>
+                          <button onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/work-orders/new?schoolId=${s.schoolId}&school=${encodeURIComponent(s.schoolName)}&category=${s.highestPriorityCategory}&score=${s.priorityScore}`); }} className="neo-btn-outline"> Deploy <ArrowRight size={14} /> </button>
+                        </td>
+                        <td style={{ padding: '22px 32px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ width: 36, height: 36, borderRadius: 10, background: '#0f172a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 14, boxShadow: '2px 2px 0 #2563eb' }}> {s.schoolName.charAt(0)} </div>
+                            <div>
+                              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, color: '#0f172a', lineHeight: 1.2 }}>{s.schoolName}</div>
+                              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#64748b', fontWeight: 600 }}>{s.block}, {s.district}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '22px 32px' }}>
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}> {s.categories.map(cat => <span key={cat} className="step-tag">{cat}</span>)} </div>
+                        </td>
+                        <td style={{ padding: '22px 32px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: '#0f172a' }}>{s.daysToFailure} DAYS</div>
+                            <div style={{ width: 120, height: 6, background: '#f1f5f9', borderRadius: 10, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                              <motion.div initial={{ width: 0 }} animate={{ width: `${Math.max(10, 100 - s.daysToFailure)}%` }} style={{ height: '100%', background: '#2563eb' }} />
+                            </div>
+                          </div>
+                        </td>
+                        <td style={{ padding: '22px 32px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 900, color: '#0f172a' }}>{s.studentImpactScore}</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: '#94a3b8' }}>USERS</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )
                 ) : (
-                  data.map((s, idx) => (
-                    <tr key={idx} onClick={() => setSelectedSchool(s)} className="trow" style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}>
-                      
-                      {/* ACTION BUTTON */}
-                      <td style={{ padding: '22px 32px' }}>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/dashboard/work-orders/new?schoolId=${s.schoolId}&school=${encodeURIComponent(s.schoolName)}&category=${s.highestPriorityCategory}&score=${s.priorityScore}`);
-                          }}
-                          className="neo-btn-outline"
-                        >
-                          Deploy <ArrowRight size={14} />
-                        </button>
-                      </td>
-
-                      {/* ENTITY DETAILS */}
-                      <td style={{ padding: '22px 32px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{ width: 36, height: 36, borderRadius: 10, background: '#0f172a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 14, boxShadow: '2px 2px 0 #2563eb' }}>
-                            {s.schoolName.charAt(0)}
-                          </div>
-                          <div>
-                            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, color: '#0f172a', lineHeight: 1.2 }}>{s.schoolName}</div>
-                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#64748b', fontWeight: 600 }}>{s.block}, {s.district}</div>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* VECTORS */}
-                      <td style={{ padding: '22px 32px' }}>
-                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                          {s.categories.map(cat => (
-                            <span key={cat} className="step-tag">{cat}</span>
-                          ))}
-                        </div>
-                      </td>
-
-                      {/* HORIZON */}
-                      <td style={{ padding: '22px 32px' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: '#0f172a' }}>{s.daysToFailure} DAYS</div>
-                          <div style={{ width: 120, height: 6, background: '#f1f5f9', borderRadius: 10, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                            <motion.div initial={{ width: 0 }} animate={{ width: `${Math.max(10, 100 - s.daysToFailure)}%` }} style={{ height: '100%', background: '#2563eb' }} />
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* IMPACT */}
-                      <td style={{ padding: '22px 32px' }}>
-                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                           <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 900, color: '#0f172a' }}>{s.studentImpactScore}</span>
-                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: '#94a3b8' }}>USERS</span>
-                         </div>
-                      </td>
-
-                    </tr>
-                  ))
+                  // FLAGGED MISMATCH TAB
+                  flaggedOrders.length === 0 ? (
+                    <tr><td colSpan={5} style={{ padding: 60, textAlign: 'center' }}><ShieldAlert size={32} color="#fecaca" style={{ margin: '0 auto 12px' }} /><p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>NO LOCATION MISMATCHES DETECTED</p></td></tr>
+                  ) : (
+                    flaggedOrders.map((o, idx) => (
+                      <tr key={idx} className="trow" style={{ borderBottom: '1px solid #fee2e2', background: '#fff1f2' }}>
+                        <td style={{ padding: '22px 32px' }}>
+                          <button onClick={() => window.open(o.completionProof?.photoUrl, '_blank')} className="neo-btn-outline" style={{ background: '#ef4444', color: '#fff' }}> View Proof </button>
+                        </td>
+                        <td style={{ padding: '22px 32px' }}>
+                          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, color: '#991b1b' }}>{o.school?.name || 'Unknown School'}</div>
+                          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#b91c1c', fontWeight: 600 }}>By: {o.contractor?.name || 'Unassigned'}</div>
+                        </td>
+                        <td style={{ padding: '22px 32px' }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#991b1b' }}>SUBMITTED: {o.completionProof?.gpsLocation?.lat?.toFixed(4)}, {o.completionProof?.gpsLocation?.lng?.toFixed(4)}</div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#b91c1c', marginTop: 4 }}>ACTUAL: {o.school?.location?.lat?.toFixed(4)}, {o.school?.location?.lng?.toFixed(4)}</div>
+                        </td>
+                        <td style={{ padding: '22px 32px' }}>
+                           <span style={{ background: '#ef4444', color: '#fff', padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 900 }}>🚩 MISMATCH</span>
+                        </td>
+                        <td style={{ padding: '22px 32px' }}>
+                           <div style={{ display: 'flex', flexDirection: 'column' }}>
+                             <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 900, color: '#991b1b' }}>GPS LOCK ERR</span>
+                             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: '#b91c1c' }}>OUTSIDE RADIUS</span>
+                           </div>
+                        </td>
+                      </tr>
+                    ))
+                  )
                 )}
               </tbody>
             </table>

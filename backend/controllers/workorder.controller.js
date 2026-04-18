@@ -2,7 +2,8 @@
  * Work Order controller — PS-03
  * Uses the new WorkOrder schema: decisionId, schoolId (Number), deadline, status.
  */
-import { WorkOrder, MaintenanceDecision, RepairLog, SchoolConditionRecord, School } from '../models/index.js';
+import mongoose from 'mongoose';
+import { WorkOrder, MaintenanceDecision, RepairLog, SchoolConditionRecord, School, Alert } from '../models/index.js';
 
 /**
  * Haversine formula to calculate distance between two points in km.
@@ -21,22 +22,50 @@ function getDistanceKM(lat1, lon1, lat2, lon2) {
 // GET /api/tasks  |  GET /api/work-orders
 export const getWorkOrders = async (req, res) => {
   try {
-    const { status, schoolId, district } = req.query;
+    const { status, schoolId, district, locationMismatch } = req.query;
     const filter = {};
     if (status)   filter.status   = status;
     if (schoolId) filter.schoolId = Number(schoolId);
     if (district) filter.district = district;
+    if (locationMismatch) filter.locationMismatch = locationMismatch === 'true';
 
     // Contractors see only their own work
     if (req.user?.role === 'contractor') {
-      filter['assignment.assignedTo'] = req.user.id;
+      filter['assignment.assignedTo'] = new mongoose.Types.ObjectId(req.user.id);
     }
 
-    const orders = await WorkOrder.find(filter)
-      .sort({ createdAt: -1 })
-      .populate('assignment.assignedTo', 'name phone')
-      .populate('assignment.assignedBy', 'name')
-      .lean();
+    let orders;
+    if (locationMismatch === 'true') {
+      // Use aggregation to fetch school coordinates for comparison
+      orders = await WorkOrder.aggregate([
+        { $match: filter },
+        {
+          $lookup: {
+            from: 'schools',
+            localField: 'schoolId',
+            foreignField: 'schoolId',
+            as: 'school'
+          }
+        },
+        { $unwind: { path: '$school', preserveNullAndEmptyArrays: true } },
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'assignment.assignedTo',
+            foreignField: '_id',
+            as: 'contractor'
+          }
+        },
+        { $unwind: { path: '$contractor', preserveNullAndEmptyArrays: true } },
+        { $sort: { createdAt: -1 } }
+      ]);
+    } else {
+      orders = await WorkOrder.find(filter)
+        .sort({ createdAt: -1 })
+        .populate('assignment.assignedTo', 'name phone')
+        .populate('assignment.assignedBy', 'name')
+        .lean();
+    }
 
     res.json({ success: true, workOrders: orders });
   } catch (err) {
@@ -131,6 +160,18 @@ export const completeTask = async (req, res) => {
     workOrder.completedAt = now;
     workOrder.locationMismatch = locationMismatch;
     await workOrder.save();
+
+    // 1.5 Create GPS Mismatch Alert if detected
+    if (locationMismatch) {
+      const school = await School.findOne({ schoolId: workOrder.schoolId });
+      await Alert.create({
+        schoolId: workOrder.schoolId,
+        district: school?.district || workOrder.district || 'Unknown',
+        category: workOrder.category,
+        type: 'GPS_MISMATCH',
+        message: `🚩 GPS Mismatch: Contractor submitted completion for ${school?.name || 'School ' + workOrder.schoolId} from a distant location. Verify required.`,
+      });
+    }
 
     // 2. Data for Repair Log
     const beforeRecord = await SchoolConditionRecord.findOne({

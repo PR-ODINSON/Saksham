@@ -21,7 +21,7 @@ const alertSchema = new mongoose.Schema({
   type: {
     type: String,
     enum: {
-      values: ['FAILURE_30_DAYS', 'FAILURE_60_DAYS', 'HIGH_PRIORITY'],
+      values: ['FAILURE_30_DAYS', 'FAILURE_60_DAYS', 'HIGH_PRIORITY', 'GPS_MISMATCH'],
       message: '{VALUE} is not a valid alert type'
     },
     required: [true, 'Alert type is required']
