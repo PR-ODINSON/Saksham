@@ -174,19 +174,6 @@ export const submitReport = async (req, res) => {
       ...(imageUrls.length ? { images: imageUrls } : {}),
     };
 
-    // When a peon re-submits a category for a week that has already been
-    // forwarded to the DEO, reset the forwarding/review state so the
-    // principal sees the updated bundle as "pending" and can re-forward.
-    // Otherwise the bundle stays stuck as "already forwarded" forever and
-    // the pipeline can never advance.
-    const isPeonResubmit = req.user?.role === 'peon';
-    const unsetClause = isPeonResubmit
-      ? { $unset: { forwardedAt: '', forwardedBy: '', reviewedAt: '', reviewedBy: '', reviewNote: '' } }
-      : {};
-
-    const record = await SchoolConditionRecord.findOneAndUpdate(
-      { schoolId: Number(schoolId), category, weekNumber: Number(weekNumber) },
-      { $set: updatePayload, ...unsetClause },
     // ── FALLBACK: Load missing metadata from School doc ─────────────────────
     const finalPayload = await augmentWithSchoolMetadata(updatePayload, req.user);
 
@@ -428,17 +415,9 @@ export const submitWeeklyReport = async (req, res) => {
         ...(imageUrls.length ? { images: imageUrls } : {}),
       };
 
-      // Same reset rule as the single-category endpoint: a peon
-      // re-submitting an already-forwarded week reopens the bundle so the
-      // principal can review and re-forward the new evidence.
-      const isPeonResubmit = req.user?.role === 'peon';
-      const unsetClause = isPeonResubmit
-        ? { $unset: { forwardedAt: '', forwardedBy: '', reviewedAt: '', reviewedBy: '', reviewNote: '' } }
-        : {};
-
       const record = await SchoolConditionRecord.findOneAndUpdate(
         { schoolId: Number(schoolId), category: cat, weekNumber: Number(weekNumber) },
-        { $set: updatePayload, ...unsetClause },
+        updatePayload,
         { upsert: true, new: true, runValidators: true },
       );
 
