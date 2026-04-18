@@ -1,0 +1,54 @@
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import AppLayout from './components/AppLayout.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
+import Login from './pages/Login.jsx';
+import SchoolView from './pages/SchoolView.jsx';
+import DEODashboard from './pages/DEODashboard.jsx';
+import WeeklyInputForm from './pages/WeeklyInputForm.jsx';
+import WorkOrders from './pages/WorkOrders.jsx';
+import './App.css';
+
+// Role-based default dashboard redirect
+function DashboardIndex() {
+  const { user } = useAuth();
+  if (!user) return null;
+  if (user.role === 'school') return <SchoolView />;
+  if (user.role === 'deo' || user.role === 'admin') return <DEODashboard />;
+  if (user.role === 'contractor') return <WorkOrders />;
+  return <SchoolView />;
+}
+
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <Routes>
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/login" element={<Login />} />
+
+          <Route
+            path="/dashboard/*"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Routes>
+                    <Route index element={<DashboardIndex />} />
+                    <Route path="report" element={<WeeklyInputForm />} />
+                    <Route path="work-orders" element={<WorkOrders />} />
+                    <Route path="work-orders/new" element={<WorkOrders />} />
+                  </Routes>
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Catch-all */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      </AuthProvider>
+    </Router>
+  );
+}
+
+export default App;
