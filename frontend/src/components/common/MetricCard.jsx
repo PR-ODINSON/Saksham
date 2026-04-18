@@ -29,20 +29,27 @@ const MetricCard = ({
   };
 
   return (
-    <div className={`rounded-lg border p-6 shadow-sm flex flex-col justify-between transition-all hover:translate-y-[-2px] ${variants[variant]} ${className}`}>
-      <div className="flex items-center justify-between mb-4">
-        <span className="text-[10px] font-bold uppercase tracking-widest opacity-70 leading-none">{label}</span>
-        {Icon && <Icon size={18} className={iconColors[variant]} />}
+    <div className={`rounded-xl border p-5 shadow-sm flex flex-col justify-between transition-all hover:shadow-md hover:translate-y-[-2px] ${variants[variant]} ${className}`}>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[10px] font-black uppercase tracking-[0.15em] opacity-60 leading-none">{label}</span>
+        <div className={`p-2 rounded-lg ${variant === 'default' ? 'bg-slate-50' : 'bg-white/50'}`}>
+          {Icon && <Icon size={18} className={iconColors[variant]} />}
+        </div>
       </div>
       <div>
-        <div className="text-3xl font-bold tracking-tight">{value}</div>
+        <div className="text-3xl font-black tracking-tighter tabular-nums whitespace-nowrap">{value}</div>
         {trend && (
-          <div className={`text-[10px] font-bold uppercase tracking-wider mt-1.5 flex items-center gap-1 ${
-            trend === 'up' ? 'text-emerald-600' : trend === 'down' ? 'text-red-600' : 'text-slate-400'
+          <div className={`text-[10px] font-black uppercase tracking-wider mt-2 flex items-center gap-1.5 ${
+            trend === 'up' ? 'text-emerald-700' : trend === 'down' ? 'text-red-700' : 'text-slate-500'
           }`}>
-            {trendValue && <span>{trendValue}</span>}
-            {trend === 'up' && '↑'}
-            {trend === 'down' && '↓'}
+             <div className={`px-1.5 py-0.5 rounded ${
+               trend === 'up' ? 'bg-emerald-100' : trend === 'down' ? 'bg-red-100' : 'bg-slate-100'
+             }`}>
+               {trend === 'up' && '↑'}
+               {trend === 'down' && '↓'}
+               {trend === 'stable' && '—'}
+             </div>
+            {trendValue && <span className="opacity-80">{trendValue}</span>}
           </div>
         )}
       </div>

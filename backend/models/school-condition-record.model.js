@@ -83,6 +83,30 @@ const schoolConditionRecordSchema = new mongoose.Schema({
   roofLeakFlag: {
     type: Boolean
   },
+  brokenTap: {
+    type: Boolean
+  },
+  cloggedDrain: {
+    type: Boolean
+  },
+  tankOverflow: {
+    type: Boolean
+  },
+  lowWaterPressure: {
+    type: Boolean
+  },
+  wallSeepage: {
+    type: Boolean
+  },
+  brokenDoor: {
+    type: Boolean
+  },
+  brokenWindow: {
+    type: Boolean
+  },
+  pestInfestation: {
+    type: Boolean
+  },
 
   // Field evidence — photoUploaded kept for backward-compat; images holds paths
   photoUploaded: {

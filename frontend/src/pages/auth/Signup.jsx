@@ -101,7 +101,7 @@ const Signup = () => {
         <div className="relative z-10 my-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border-2 border-blue-500/30 mb-6 backdrop-blur-sm">
              <Activity size={14} className="text-blue-400" />
-             <span className="text-[10px] font-black text-blue-400 tracking-[0.2em] uppercase">Predictive Engine v3</span>
+             <span className="text-[12px] font-black text-blue-400 tracking-[0.2em] uppercase">Predictive Engine v3</span>
           </div>
           <h1 className="text-5xl lg:text-6xl font-black text-white leading-[1.1] mb-6" style={{ fontFamily: 'var(--font-display)' }}>
             Build The <br />
@@ -123,7 +123,7 @@ const Signup = () => {
                  <AlertTriangle size={16} className="text-red-400" />
                </div>
                <div>
-                 <p className="text-[10px] font-black text-red-400 uppercase tracking-widest">High Risk Detected</p>
+                 <p className="text-[12px] font-black text-red-400 uppercase tracking-widest">High Risk Detected</p>
                  <p className="text-sm font-bold text-white">Structural Block B</p>
                </div>
              </div>
@@ -182,7 +182,7 @@ const Signup = () => {
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Role Grid */}
             <div className="space-y-3">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Select Access Level (RBAC)</label>
+              <label className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Select Access Level (RBAC)</label>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                 {ROLES.map((role) => (
                   <button 
@@ -196,7 +196,7 @@ const Signup = () => {
                     }`}
                   >
                     {role.icon}
-                    <span className="text-[10px] font-black uppercase tracking-widest">{role.label}</span>
+                    <span className="text-[12px] font-black uppercase tracking-widest">{role.label}</span>
                   </button>
                 ))}
               </div>
@@ -243,7 +243,7 @@ const Signup = () => {
 
 const InputGroup = ({ icon, label, ...props }) => (
   <div className="space-y-2">
-    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">{label}</label>
+    <label className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">{label}</label>
     <div className="relative group">
       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
         {icon}

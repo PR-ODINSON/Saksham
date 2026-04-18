@@ -113,7 +113,7 @@ export default function Login() {
         <div className="relative z-10 my-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border-2 border-blue-500/30 mb-6 backdrop-blur-sm">
              <Activity size={14} className="text-blue-400" />
-             <span className="text-[10px] font-black text-blue-400 tracking-[0.2em] uppercase">Predictive Engine v3</span>
+             <span className="text-[12px] font-black text-blue-400 tracking-[0.2em] uppercase">Predictive Engine v3</span>
           </div>
           <h1 className="text-5xl lg:text-6xl font-black text-white leading-[1.1] mb-6" style={{ fontFamily: 'var(--font-display)' }}>
             Welcome To <br />
@@ -134,7 +134,7 @@ export default function Login() {
                  <ShieldCheck size={16} className="text-emerald-400" />
                </div>
                <div>
-                 <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">System Secure</p>
+                 <p className="text-[12px] font-black text-emerald-400 uppercase tracking-widest">System Secure</p>
                  <p className="text-sm font-bold text-white">Encrypted Connection</p>
                </div>
              </div>
@@ -224,7 +224,7 @@ export default function Login() {
           <div className="mt-12 pt-8 border-t-2 border-slate-200">
             <div className="flex items-center gap-2 mb-4">
               <ShieldCheck size={14} className="text-blue-600" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">
+              <span className="text-[12px] font-black uppercase tracking-widest text-slate-500">
                 Sandbox Identities · password: password123
               </span>
             </div>
@@ -235,7 +235,7 @@ export default function Login() {
                   key={hint.role}
                   type="button"
                   onClick={() => fillDemo(hint)}
-                  className={`p-3 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest transition-all flex flex-col items-start gap-2 group
+                  className={`p-3 rounded-xl border-2 text-[12px] font-black uppercase tracking-widest transition-all flex flex-col items-start gap-2 group
                     ${active === hint.role
                       ? hint.accent + " shadow-[4px_4px_0_currentColor]"
                       : "bg-white border-slate-200 text-slate-500 hover:border-[#0f172a] hover:text-[#0f172a]"
@@ -248,7 +248,7 @@ export default function Login() {
                     </span>
                     {active === hint.role && <CheckCircle2 size={12} className="shrink-0" />}
                   </div>
-                  <span className="text-[9px] font-bold opacity-60 normal-case tracking-normal">
+                  <span className="text-[13px] font-bold opacity-60 normal-case tracking-normal">
                     {hint.email}
                   </span>
                 </button>
@@ -268,7 +268,7 @@ export default function Login() {
 
 const InputGroup = ({ icon, label, ...props }) => (
   <div className="space-y-2">
-    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">{label}</label>
+    <label className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">{label}</label>
     <div className="relative group">
       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
         {icon}
