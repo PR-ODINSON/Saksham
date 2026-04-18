@@ -9,9 +9,11 @@ import connectDB from './config/database.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 import { protect, authorize } from './middlewares/auth.middleware.js';
 
-// Route modules
+// Controllers
 import { seedDatabase }       from './controllers/seed.controller.js';
 import { getMaintenanceQueue } from './controllers/risk.controller.js';
+
+// Routes
 import authRoutes             from './routes/auth.routes.js';
 import profileRoutes          from './routes/profile.routes.js';
 import adminRoutes            from './routes/admin.routes.js';
@@ -20,6 +22,11 @@ import reportRoutes           from './routes/report.routes.js';
 import riskRoutes             from './routes/risk.routes.js';
 import workOrderRoutes        from './routes/workorder.routes.js';
 import taskRoutes             from './routes/task.routes.js';
+// New routes from git pull
+import alertRoutes            from './routes/alert.routes.js';
+import analyticsRoutes        from './routes/analytics.routes.js';
+import maintenanceRoutes      from './routes/maintenance.routes.js';
+import schoolConditionRoutes  from './routes/schoolCondition.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -43,11 +50,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api', apiLimiter);
-
-// Static file serving for uploaded images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ─── Seed (demo setup) ────────────────────────────────────────────────────────
+// ─── Seed ─────────────────────────────────────────────────────────────────────
 app.get('/api/seed-demo', seedDatabase);
 
 // ─── Health ───────────────────────────────────────────────────────────────────
@@ -55,54 +60,53 @@ app.get('/health', (_req, res) => {
   res.json({
     status: 'ok',
     app: 'Saksham — Predictive Maintenance Engine (PS-03)',
-    version: '2.0.0',
-    spec_endpoints: {
-      'POST /api/reports':             'Submit weekly condition report',
-      'GET  /api/reports/:school_id':  'Get reports for a school',
-      'GET  /api/risk/:school_id':     'Per-category predictions for one school',
-      'GET  /api/risk/all':            'All stored predictions',
-      'GET  /api/maintenance-queue':   'District-level priority queue (girls-school boost applied)',
-      'POST /api/tasks/assign':        'Assign work order to contractor',
-      'GET  /api/tasks':               'List all tasks / work orders',
-      'POST /api/tasks/complete':      'Mark task complete + upload photo proof',
-      'GET  /api/admin/load-csv':      'Load TS-PS3.csv into DB (admin only)',
+    version: '3.0.0',
+    endpoints: {
+      'POST /api/reports':               'Submit weekly condition report',
+      'GET  /api/reports/:school_id':    'Get records for a school',
+      'GET  /api/risk/:school_id':       'Risk predictions for one school',
+      'GET  /api/risk/all':              'All predictions',
+      'GET  /api/maintenance-queue':     'Priority queue (girls-school boost)',
+      'POST /api/tasks/assign':          'Assign work order',
+      'GET  /api/tasks':                 'List tasks',
+      'POST /api/tasks/complete':        'Complete task + repair log',
+      'GET  /api/alerts':                'Unresolved alerts',
+      'GET  /api/analytics':             'District analytics',
+      'GET  /api/schools':               'List all schools',
+      'GET  /api/admin/load-csv':        'Load TS-PS3.csv (admin)',
     },
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  PS-03 SPEC ROUTES
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── PS-03 Core Routes ────────────────────────────────────────────────────────
+app.use('/api/reports',  reportRoutes);
+app.use('/api/risk',     riskRoutes);
+app.use('/api/tasks',    taskRoutes);
 
-// Reports
-app.use('/api/reports', reportRoutes);
-
-// Risk predictions
-app.use('/api/risk', riskRoutes);
-
-// Maintenance queue — district-level, sorted by risk + girls-school boost
 app.get(
   '/api/maintenance-queue',
-  protect,
-  authorize('deo', 'admin', 'contractor'),
+  protect, authorize('deo', 'admin', 'contractor'),
   getMaintenanceQueue,
 );
 
-// Tasks / work orders
-app.use('/api/tasks', taskRoutes);
+// ─── New Routes (from git pull) ───────────────────────────────────────────────
+app.use('/api/alerts',             alertRoutes);
+app.use('/api/analytics',          analyticsRoutes);
+app.use('/api/maintenance',        maintenanceRoutes);
+app.use('/api/school-conditions',  schoolConditionRoutes);
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  LEGACY ROUTES (kept for frontend/existing-client compatibility)
-// ─────────────────────────────────────────────────────────────────────────────
-app.use('/api/auth',             authRoutes);
-app.use('/api/me',               profileRoutes);
-app.use('/api/admin',            adminRoutes);
-app.use('/api/schools',          schoolRoutes);
+// ─── Auth & Users ─────────────────────────────────────────────────────────────
+app.use('/api/auth',  authRoutes);
+app.use('/api/me',    profileRoutes);
+app.use('/api/admin', adminRoutes);
+
+// ─── Schools ──────────────────────────────────────────────────────────────────
+app.use('/api/schools', schoolRoutes);
+
+// ─── Legacy aliases (backwards compat) ───────────────────────────────────────
 app.use('/api/condition-report', reportRoutes);
 app.use('/api/risk-scores',      riskRoutes);
 app.use('/api/work-orders',      workOrderRoutes);
-app.use('/api/assign-task',      workOrderRoutes);
-app.use('/api/complete-task',    workOrderRoutes);
 
 // ─── Error handling ───────────────────────────────────────────────────────────
 app.use((_req, res) => {
@@ -114,15 +118,10 @@ app.use((err, _req, res, _next) => {
   if (err.name === 'MulterError') {
     return res.status(400).json({ success: false, message: 'File upload error: ' + err.message });
   }
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Internal server error',
-  });
+  res.status(err.status || 500).json({ success: false, message: err.message || 'Internal server error' });
 });
 
 app.listen(PORT, () => {
-  console.log(`\n✓ Saksham PS-03 — Predictive Maintenance Backend`);
-  console.log(`✓ Running on: http://localhost:${PORT}`);
-  console.log(`✓ Health:     http://localhost:${PORT}/health`);
-  console.log(`✓ CSV Load:   GET http://localhost:${PORT}/api/admin/load-csv\n`);
+  console.log(`\n✓ Saksham PS-03 Backend — port ${PORT}`);
+  console.log(`✓ Health: http://localhost:${PORT}/health\n`);
 });

@@ -1,28 +1,28 @@
-import WorkOrder from '../models/WorkOrder.js';
-import School from '../models/School.js';
-import RiskPrediction from '../models/RiskPrediction.js';
+/**
+ * Work Order controller — PS-03
+ * Uses the new WorkOrder schema: decisionId, schoolId (Number), deadline, status.
+ */
+import { WorkOrder, MaintenanceDecision, RepairLog, SchoolConditionRecord } from '../models/index.js';
 
-// GET /api/work-orders  (alias: GET /api/tasks)
+// GET /api/tasks  |  GET /api/work-orders
 export const getWorkOrders = async (req, res) => {
   try {
-    const { status, schoolId, assignedTo } = req.query;
+    const { status, schoolId, district } = req.query;
     const filter = {};
+    if (status)   filter.status   = status;
+    if (schoolId) filter.schoolId = Number(schoolId);
+    if (district) filter.district = district;
 
-    if (status) filter.status = status;
-    if (schoolId) filter.schoolId = schoolId;
-
-    // Contractors only see their own assigned work
-    if (req.user.role === 'contractor') {
-      filter.assignedTo = req.user.id;
-    } else if (assignedTo) {
-      filter.assignedTo = assignedTo;
+    // Contractors see only their own work
+    if (req.user?.role === 'contractor') {
+      filter['assignment.assignedTo'] = req.user.id;
     }
 
     const orders = await WorkOrder.find(filter)
       .sort({ createdAt: -1 })
-      .populate('schoolId', 'name district address')
-      .populate('assignedTo', 'name phone')
-      .populate('assignedBy', 'name');
+      .populate('assignment.assignedTo', 'name phone')
+      .populate('assignment.assignedBy', 'name')
+      .lean();
 
     res.json({ success: true, workOrders: orders });
   } catch (err) {
@@ -30,43 +30,47 @@ export const getWorkOrders = async (req, res) => {
   }
 };
 
-// POST /api/work-orders/assign  (alias: POST /api/tasks/assign)
+// POST /api/tasks/assign  |  POST /api/work-orders/assign
 export const assignTask = async (req, res) => {
   try {
-    const {
-      schoolId, reportId, category, subCategory,
-      description, priority, estimatedDays, riskScore,
-      assignedTo, dueDate,
-    } = req.body;
+    const { decisionId, schoolId, district, category, assignedTo, priorityScore, deadline } = req.body;
 
-    if (!schoolId || !category || !description) {
+    if (!schoolId || !category || !deadline) {
       return res.status(400).json({
         success: false,
-        message: 'schoolId, category and description are required',
+        message: 'Required: schoolId, category, deadline',
       });
     }
 
-    const school = await School.findById(schoolId);
-    if (!school) return res.status(404).json({ success: false, message: 'School not found' });
+    // Resolve decisionId if not provided — use latest pending decision for school+category
+    let resolvedDecisionId = decisionId;
+    if (!resolvedDecisionId) {
+      const decision = await MaintenanceDecision.findOne({
+        schoolId: Number(schoolId),
+        category,
+        'status.status': 'pending',
+      }).sort({ 'decision.computedPriorityScore': -1 });
+      if (decision) {
+        resolvedDecisionId = decision._id;
+        // Update decision status to 'assigned'
+        decision.status.status = 'assigned';
+        await decision.save();
+      }
+    }
 
     const workOrder = await WorkOrder.create({
-      schoolId,
-      reportId,
+      decisionId:    resolvedDecisionId || undefined,
+      schoolId:      Number(schoolId),
+      district:      district || '',
       category,
-      subCategory,
-      description,
-      priority: priority || 'medium',
-      estimatedDays,
-      riskScore: riskScore || 0,
-      assignedTo: assignedTo || null,
-      assignedBy: req.user.id,
-      assignedAt: assignedTo ? new Date() : null,
-      status: assignedTo ? 'assigned' : 'pending',
-      dueDate: dueDate ? new Date(dueDate) : null,
+      assignment: {
+        assignedTo: assignedTo || undefined,
+        assignedBy: req.user?.id || undefined,
+      },
+      priorityScore: Number(priorityScore) || 0,
+      status:   'assigned',
+      deadline: new Date(deadline),
     });
-
-    await workOrder.populate('schoolId', 'name district');
-    await workOrder.populate('assignedTo', 'name phone');
 
     res.status(201).json({ success: true, workOrder });
   } catch (err) {
@@ -74,83 +78,72 @@ export const assignTask = async (req, res) => {
   }
 };
 
-// POST /api/work-orders/complete  (alias: POST /api/tasks/complete)
-// After completion: reduce stored risk_score by 30 (min 0) — PS-03 learning rule
+// POST /api/tasks/complete  |  POST /api/work-orders/complete
+// PS-03 learning rule: create a RepairLog recording before/after state
 export const completeTask = async (req, res) => {
   try {
-    const { workOrderId, completionNotes } = req.body;
-
-    // Support file upload via multer (req.file) or plain URL in body
-    const completionImageUrl = req.file
-      ? `/uploads/${req.file.filename}`
-      : req.body.completionImageUrl;
+    const { workOrderId, afterConditionScore, notes } = req.body;
 
     const workOrder = await WorkOrder.findById(workOrderId);
     if (!workOrder) {
       return res.status(404).json({ success: false, message: 'Work order not found' });
     }
 
-    const isContractor = req.user.role === 'contractor' &&
-      workOrder.assignedTo?.toString() === req.user.id;
-    const isDEOOrAdmin  = ['deo', 'admin'].includes(req.user.role);
-
-    if (!isContractor && !isDEOOrAdmin) {
+    const isContractor = req.user?.role === 'contractor' &&
+      workOrder.assignment?.assignedTo?.toString() === req.user.id;
+    const isAuthorised = isContractor || ['deo', 'admin'].includes(req.user?.role);
+    if (!isAuthorised) {
       return res.status(403).json({ success: false, message: 'Not authorised' });
     }
 
-    workOrder.status             = 'completed';
-    workOrder.completedAt        = new Date();
-    workOrder.completionNotes    = completionNotes;
-    workOrder.completionImageUrl = completionImageUrl;
-    workOrder.verifiedBy         = isDEOOrAdmin ? req.user.id : null;
+    workOrder.status = 'completed';
     await workOrder.save();
 
-    // ── PS-03 Learning Rule: repair completed → reduce risk score by 30 ──
-    if (workOrder.category && PS03_CATEGORIES.includes(workOrder.category)) {
-      await _reduceRiskAfterRepair(workOrder.schoolId, workOrder.category);
+    // Fetch before-state from latest SchoolConditionRecord
+    const beforeRecord = await SchoolConditionRecord.findOne({
+      schoolId: workOrder.schoolId,
+      category: workOrder.category,
+    }).sort({ weekNumber: -1 });
+
+    // Create repair log (PS-03 history)
+    const completionTimeDays = Math.round(
+      (Date.now() - workOrder.createdAt.getTime()) / 86400000,
+    );
+
+    const repairLog = await RepairLog.create({
+      workOrderId:    workOrder._id,
+      schoolId:       workOrder.schoolId,
+      category:       workOrder.category,
+      before: {
+        conditionScore: beforeRecord?.conditionScore ?? 5,
+        issues: {
+          waterLeak:    beforeRecord?.waterLeak,
+          wiringExposed: beforeRecord?.wiringExposed,
+          roofLeakFlag: beforeRecord?.roofLeakFlag,
+          notes,
+        },
+      },
+      after: {
+        conditionScore: Number(afterConditionScore) || 2,
+      },
+      completionTimeDays,
+      contractorDelayDays: 0,
+      slaBreached: false,
+    });
+
+    // Update decision status to 'completed'
+    if (workOrder.decisionId) {
+      await MaintenanceDecision.findByIdAndUpdate(
+        workOrder.decisionId,
+        { 'status.status': 'completed' },
+      );
     }
 
-    res.json({ success: true, workOrder });
+    res.json({ success: true, workOrder, repairLog });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-
-/**
- * Reduce the stored risk_score by 30 (min 0) after a repair is completed.
- * Also updates the cached school lastRiskScore.
- */
-async function _reduceRiskAfterRepair(schoolId, category) {
-  try {
-    const prediction = await RiskPrediction.findOne({ schoolId, category });
-    if (!prediction) return;
-
-    const newScore = Math.max(0, prediction.riskScore - 30);
-    prediction.riskScore = newScore;
-    prediction.reason    = `${prediction.reason} [repair completed — score reduced]`;
-    // Recalculate failure window based on new score
-    if (newScore > 66) prediction.failureWindow = 30;
-    else if (newScore > 33) prediction.failureWindow = 45;
-    else prediction.failureWindow = 60;
-    await prediction.save();
-
-    // Update cached school score
-    const allPreds = await RiskPrediction.find({ schoolId }).lean();
-    if (allPreds.length > 0) {
-      const maxScore = Math.max(...allPreds.map(p => p.riskScore));
-      const maxLevel = maxScore > 66 ? 'high' : maxScore > 33 ? 'medium' : 'low';
-      await School.findByIdAndUpdate(schoolId, {
-        lastRiskScore: maxScore,
-        lastRiskCategory: maxLevel,
-        lastAssessedAt: new Date(),
-      });
-    }
-  } catch {
-    // Non-critical — don't fail the whole request
-  }
-}
-
-const PS03_CATEGORIES = ['plumbing', 'electrical', 'structural'];
 
 // PATCH /api/work-orders/:id/status
 export const updateTaskStatus = async (req, res) => {
@@ -160,10 +153,7 @@ export const updateTaskStatus = async (req, res) => {
       req.params.id,
       { status },
       { new: true },
-    )
-      .populate('schoolId', 'name district')
-      .populate('assignedTo', 'name');
-
+    );
     if (!workOrder) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, workOrder });
   } catch (err) {

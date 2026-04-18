@@ -1,43 +1,75 @@
-import School from '../models/School.js';
-import User from '../models/user.model.js';
+/**
+ * School controller — PS-03
+ * No standalone School collection anymore.
+ * School info is embedded in SchoolConditionRecord.
+ * These endpoints aggregate distinct school profiles from those records.
+ */
+import { SchoolConditionRecord } from '../models/index.js';
 
+// GET /api/schools
 export const getAllSchools = async (req, res) => {
   try {
     const { district } = req.query;
-    const filter = district ? { district } : {};
-    const schools = await School.find(filter).sort({ lastRiskScore: -1 });
-    res.json({ success: true, schools });
+    const match = district ? { district } : {};
+
+    const schools = await SchoolConditionRecord.aggregate([
+      { $match: match },
+      { $sort: { weekNumber: -1 } },
+      {
+        $group: {
+          _id: '$schoolId',
+          schoolId:     { $first: '$schoolId' },
+          district:     { $first: '$district' },
+          block:        { $first: '$block' },
+          schoolType:   { $first: '$schoolType' },
+          isGirlsSchool:{ $first: '$isGirlsSchool' },
+          numStudents:  { $first: '$numStudents' },
+          buildingAge:  { $first: '$buildingAge' },
+          materialType: { $first: '$materialType' },
+          weatherZone:  { $first: '$weatherZone' },
+          maxPriorityScore: { $max: '$priorityScore' },
+          latestWeek:   { $max: '$weekNumber' },
+        },
+      },
+      { $sort: { maxPriorityScore: -1 } },
+    ]);
+
+    res.json({ success: true, schools, total: schools.length });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
+// GET /api/schools/:id  (numeric school_id)
 export const getSchoolById = async (req, res) => {
   try {
-    const school = await School.findById(req.params.id);
-    if (!school) return res.status(404).json({ success: false, message: 'School not found' });
-    res.json({ success: true, school });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-export const createSchool = async (req, res) => {
-  try {
-    const school = await School.create(req.body);
-    res.status(201).json({ success: true, school });
-  } catch (err) {
-    res.status(400).json({ success: false, message: err.message });
-  }
-};
-
-export const getMySchool = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).populate('schoolId');
-    if (!user?.schoolId) {
-      return res.status(404).json({ success: false, message: 'No school linked to this account' });
+    const schoolId = Number(req.params.id);
+    if (isNaN(schoolId)) {
+      return res.status(400).json({ success: false, message: 'id must be a number' });
     }
-    res.json({ success: true, school: user.schoolId });
+
+    const records = await SchoolConditionRecord.find({ schoolId })
+      .sort({ weekNumber: -1 })
+      .lean();
+
+    if (!records.length) {
+      return res.status(404).json({ success: false, message: 'School not found' });
+    }
+
+    const profile = {
+      schoolId:     records[0].schoolId,
+      district:     records[0].district,
+      block:        records[0].block,
+      schoolType:   records[0].schoolType,
+      isGirlsSchool:records[0].isGirlsSchool,
+      numStudents:  records[0].numStudents,
+      buildingAge:  records[0].buildingAge,
+      materialType: records[0].materialType,
+      weatherZone:  records[0].weatherZone,
+      totalRecords: records.length,
+    };
+
+    res.json({ success: true, school: profile });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

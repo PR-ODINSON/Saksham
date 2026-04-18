@@ -1,138 +1,104 @@
-import ConditionReport from '../models/ConditionReport.js';
-import School from '../models/School.js';
-import User from '../models/user.model.js';
-import { analyseSchool, riskLevel, scoreReportItems } from '../services/predictionEngine.js';
-import { computeAndStoreRisk } from './risk.controller.js';
+/**
+ * Report controller — PS-03
+ * POST /api/reports  → creates a SchoolConditionRecord
+ * GET  /api/reports/:school_id → returns records for one school
+ */
+import { SchoolConditionRecord } from '../models/index.js';
 
-const PS03_CATEGORIES = ['plumbing', 'electrical', 'structural'];
+const VALID_CATEGORIES = ['plumbing', 'electrical', 'structural'];
+const VALID_CONDITIONS = [1, 2, 3, 4, 5]; // conditionScore 1–5
 
-// POST /api/condition-report  (alias: POST /api/reports)
+// POST /api/reports
 export const submitReport = async (req, res) => {
   try {
-    const { schoolId, weekOf, items, overallNotes } = req.body;
+    const {
+      schoolId, district, block, schoolType, isGirlsSchool, numStudents,
+      buildingAge, materialType, weatherZone,
+      category, weekNumber, conditionScore,
+      issueFlag, waterLeak, wiringExposed, crackWidthMM,
+      toiletFunctionalRatio, powerOutageHours, roofLeakFlag,
+    } = req.body;
 
-    if (!schoolId || !items || items.length === 0) {
-      return res.status(400).json({ success: false, message: 'schoolId and items are required' });
+    // Structured input validation — no free text
+    if (!schoolId || !category || !weekNumber || !conditionScore) {
+      return res.status(400).json({
+        success: false,
+        message: 'Required: schoolId, category, weekNumber, conditionScore',
+      });
+    }
+    if (!VALID_CATEGORIES.includes(category)) {
+      return res.status(400).json({ success: false, message: `Invalid category. Must be one of: ${VALID_CATEGORIES.join(', ')}` });
+    }
+    if (!VALID_CONDITIONS.includes(Number(conditionScore))) {
+      return res.status(400).json({ success: false, message: 'conditionScore must be 1–5' });
     }
 
-    // Validate category + condition values only (no free text)
-    const VALID_CATEGORIES  = ['plumbing', 'electrical', 'structural', 'sanitation', 'furniture'];
-    const VALID_CONDITIONS  = ['good', 'moderate', 'poor'];
-    for (const item of items) {
-      if (!VALID_CATEGORIES.includes(item.category)) {
-        return res.status(400).json({ success: false, message: `Invalid category: ${item.category}` });
-      }
-      if (!VALID_CONDITIONS.includes(item.condition)) {
-        return res.status(400).json({ success: false, message: `Invalid condition: ${item.condition}` });
-      }
-    }
+    // Image URL from multer upload (optional)
+    const photoUploaded = !!(req.file || req.body.photoUploaded);
 
-    const school = await School.findById(schoolId);
-    if (!school) return res.status(404).json({ success: false, message: 'School not found' });
+    const record = await SchoolConditionRecord.findOneAndUpdate(
+      { schoolId: Number(schoolId), category, weekNumber: Number(weekNumber) },
+      {
+        schoolId: Number(schoolId), district, block, schoolType,
+        isGirlsSchool: Boolean(isGirlsSchool),
+        numStudents: Number(numStudents) || 0,
+        buildingAge:  Number(buildingAge)  || 0,
+        materialType, weatherZone, category,
+        weekNumber: Number(weekNumber),
+        conditionScore: Number(conditionScore),
+        issueFlag: Boolean(issueFlag),
+        waterLeak: Boolean(waterLeak),
+        wiringExposed: Boolean(wiringExposed),
+        crackWidthMM: Number(crackWidthMM) || 0,
+        toiletFunctionalRatio: Number(toiletFunctionalRatio) || 0,
+        powerOutageHours: Number(powerOutageHours) || 0,
+        roofLeakFlag: Boolean(roofLeakFlag),
+        photoUploaded,
+      },
+      { upsert: true, new: true, runValidators: true },
+    );
 
-    // Handle optional image uploads (multer attaches req.files)
-    const fileUrls = (req.files || []).map(f => `/uploads/${f.filename}`);
-
-    // Attach image_url to the first item that has no imageUrl, or just log it
-    const enrichedItems = items.map((item, idx) => ({
-      ...item,
-      imageUrl: item.imageUrl || fileUrls[idx] || undefined,
-    }));
-
-    const score = scoreReportItems(enrichedItems);
-    const level = riskLevel(score);
-
-    const report = await ConditionReport.create({
-      schoolId,
-      submittedBy: req.user?.id || undefined,
-      weekOf: weekOf ? new Date(weekOf) : getWeekStart(),
-      items: enrichedItems,
-      overallNotes,
-      riskScore: score,
-      riskLevel: level,
-    });
-
-    // ── Trigger per-category predictions (PS-03 pipeline) ─────────────────
-    // Run in background so response is fast; only for PS-03 categories
-    const affectedCategories = [
-      ...new Set(enrichedItems.map(i => i.category).filter(c => PS03_CATEGORIES.includes(c))),
-    ];
-    for (const cat of affectedCategories) {
-      computeAndStoreRisk(schoolId, cat).catch(() => {});
-    }
-
-    // Also refresh the composite cached score for the school dashboard
-    const recentReports = await ConditionReport.find({ schoolId })
-      .sort({ weekOf: -1 })
-      .limit(4);
-    const analysis = analyseSchool(recentReports, school.buildingAge);
-    School.findByIdAndUpdate(schoolId, {
-      lastRiskScore:    analysis.score,
-      lastRiskCategory: analysis.level,
-      lastAssessedAt:   new Date(),
-    }).catch(() => {});
-
-    res.status(201).json({ success: true, report, analysis });
+    res.status(201).json({ success: true, record });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    res.status(400).json({ success: false, message: err.message });
   }
 };
 
-// GET /api/condition-report?schoolId=xxx&limit=8  (alias: GET /api/reports/:school_id)
-export const getReports = async (req, res) => {
-  try {
-    const { schoolId, limit = 8 } = req.query;
-
-    // School-role users can only see their own school's reports
-    let resolvedSchoolId = schoolId;
-    if (req.user?.role === 'school') {
-      const user = await User.findById(req.user.id);
-      resolvedSchoolId = user?.schoolId?.toString();
-    }
-
-    const filter  = resolvedSchoolId ? { schoolId: resolvedSchoolId } : {};
-    const reports = await ConditionReport.find(filter)
-      .sort({ weekOf: -1 })
-      .limit(Number(limit))
-      .populate('submittedBy', 'name')
-      .populate('schoolId', 'name district');
-
-    res.json({ success: true, reports });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-// GET /api/reports/:school_id  — spec endpoint, returns reports for one school
+// GET /api/reports/:school_id
 export const getReportsBySchool = async (req, res) => {
   try {
-    const { school_id } = req.params;
-
-    const school = school_id.match(/^[0-9a-fA-F]{24}$/)
-      ? await School.findById(school_id)
-      : await School.findOne({ csvSchoolId: Number(school_id) });
-
-    if (!school) {
-      return res.status(404).json({ success: false, message: 'School not found' });
+    const schoolId = Number(req.params.school_id);
+    if (isNaN(schoolId)) {
+      return res.status(400).json({ success: false, message: 'school_id must be a number' });
     }
 
-    const reports = await ConditionReport.find({ schoolId: school._id })
-      .sort({ weekOf: -1 })
-      .limit(12)
-      .populate('submittedBy', 'name')
+    const records = await SchoolConditionRecord.find({ schoolId })
+      .sort({ weekNumber: -1, category: 1 })
       .lean();
 
-    res.json({ success: true, reports, total: reports.length });
+    res.json({ success: true, records, total: records.length });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 };
 
-// ── Helper ──────────────────────────────────────────────────────────────────
+// GET /api/reports  (list, with optional filters)
+export const getReports = async (req, res) => {
+  try {
+    const { schoolId, district, category, weekNumber, limit = 50 } = req.query;
+    const filter = {};
+    if (schoolId)   filter.schoolId   = Number(schoolId);
+    if (district)   filter.district   = district;
+    if (category)   filter.category   = category;
+    if (weekNumber) filter.weekNumber = Number(weekNumber);
 
-function getWeekStart() {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(now.setDate(diff));
-}
+    const records = await SchoolConditionRecord.find(filter)
+      .sort({ weekNumber: -1 })
+      .limit(Number(limit))
+      .lean();
+
+    res.json({ success: true, records, total: records.length });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};

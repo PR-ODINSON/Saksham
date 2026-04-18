@@ -2,33 +2,33 @@ import { exec } from 'child_process';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import User from '../models/user.model.js';
-import School from '../models/School.js';
-import ConditionReport from '../models/ConditionReport.js';
-import WorkOrder from '../models/WorkOrder.js';
-import RiskPrediction from '../models/RiskPrediction.js';
+import { SchoolConditionRecord, MaintenanceDecision, WorkOrder, Alert, DistrictAnalytics } from '../models/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export const getAdminStats = async (_req, res) => {
   try {
-    const [users, schools, reports, workOrders, predictions] = await Promise.all([
+    const [users, records, decisions, workOrders, alerts] = await Promise.all([
       User.countDocuments(),
-      School.countDocuments(),
-      ConditionReport.countDocuments(),
+      SchoolConditionRecord.countDocuments(),
+      MaintenanceDecision.countDocuments(),
       WorkOrder.countDocuments(),
-      RiskPrediction.countDocuments(),
+      Alert.countDocuments({ isResolved: false }),
     ]);
 
-    const criticalSchools  = await School.countDocuments({ lastRiskCategory: { $in: ['critical', 'high'] } });
-    const pendingOrders    = await WorkOrder.countDocuments({ status: 'pending' });
-    const completedOrders  = await WorkOrder.countDocuments({ status: 'completed' });
-    const highRiskPreds    = await RiskPrediction.countDocuments({ riskLevel: 'high' });
+    const highPriority    = await MaintenanceDecision.countDocuments({ 'decision.priorityLevel': { $in: ['high', 'urgent'] } });
+    const failWithin30    = await SchoolConditionRecord.countDocuments({ willFailWithin30Days: true });
+    const slaBreaches     = await SchoolConditionRecord.countDocuments({ slaBreach: true });
+    const districtCount   = await DistrictAnalytics.countDocuments();
 
     res.json({
       success: true,
       stats: {
-        users, schools, reports, workOrders, predictions,
-        criticalSchools, pendingOrders, completedOrders, highRiskPreds,
+        users, records, decisions, workOrders,
+        unresolvedAlerts: alerts,
+        highPriorityDecisions: highPriority,
+        failuresWithin30Days: failWithin30,
+        slaBreaches, districtCount,
       },
     });
   } catch (err) {
@@ -38,7 +38,7 @@ export const getAdminStats = async (_req, res) => {
 
 export const getAllUsers = async (_req, res) => {
   try {
-    const users = await User.find().select('-password').populate('schoolId', 'name district');
+    const users = await User.find().select('-password');
     res.json({ success: true, users });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -56,24 +56,18 @@ export const deleteUser = async (req, res) => {
 
 /**
  * GET /api/admin/load-csv
- * Spawns the CSV pipeline script as a child process and streams status.
- * Responds immediately with 202 Accepted and logs output to server console.
+ * Spawns the CSV pipeline script and responds immediately.
  */
-export const loadCSVData = (req, res) => {
+export const loadCSVData = (_req, res) => {
   const scriptPath = path.resolve(__dirname, '../scripts/loadCSV.js');
 
   res.status(202).json({
     success: true,
-    message: 'CSV pipeline started. Check server logs for progress. This may take 1–3 minutes.',
-    script: scriptPath,
+    message: 'CSV pipeline started. Check server logs for progress (1–3 min).',
   });
 
-  // Run the pipeline as a detached child process so it doesn't block the server
   const child = exec(`node "${scriptPath}"`, { cwd: path.resolve(__dirname, '..') });
-
-  child.stdout.on('data', data => process.stdout.write(data));
-  child.stderr.on('data', data => process.stderr.write(data));
-  child.on('close', code => {
-    console.log(`\n✓ CSV pipeline exited with code ${code}`);
-  });
+  child.stdout.on('data', d => process.stdout.write(d));
+  child.stderr.on('data', d => process.stderr.write(d));
+  child.on('close', code => console.log(`\n✓ CSV pipeline exited: ${code}`));
 };

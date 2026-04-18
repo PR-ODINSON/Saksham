@@ -1,16 +1,15 @@
 /**
- * CSV Data Pipeline — PS-03
- * ─────────────────────────
- * Reads TS-PS3.csv from the project root and populates:
- *   1. schools            (unique schools from CSV)
- *   2. condition_reports  (grouped by school + week)
- *   3. risk_predictions   (per-category predictions for every school)
+ * CSV Data Pipeline — PS-03 (v2)
+ * ───────────────────────────────
+ * Maps TS-PS3.csv directly into the new schema:
  *
- * Run from the backend/ directory:
+ *  CSV row  →  school_condition_records  (1:1, 50 000 docs)
+ *           →  maintenance_decisions     (for rows with issueFlag=true)
+ *           →  alerts                   (for rows with failure predictions)
+ *           →  district_analytics       (aggregated per district)
+ *
+ * Run from backend/:
  *   node scripts/loadCSV.js
- *
- * Run via npm script (add to package.json):
- *   "load-csv": "node scripts/loadCSV.js"
  */
 
 import 'dotenv/config';
@@ -21,250 +20,270 @@ import { fileURLToPath } from 'url';
 import mongoose from 'mongoose';
 
 import connectDB from '../config/database.js';
-import School from '../models/School.js';
-import ConditionReport from '../models/ConditionReport.js';
-import RiskPrediction from '../models/RiskPrediction.js';
-import { predictRiskForCategory } from '../services/predictionEngine.js';
+import {
+  SchoolConditionRecord,
+  MaintenanceDecision,
+  Alert,
+  DistrictAnalytics,
+} from '../models/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const CSV_PATH  = path.resolve(__dirname, '../../TS-PS3.csv');
 
-// TS-PS3.csv sits at the repo root (one level above backend/)
-const CSV_PATH = path.resolve(__dirname, '../../TS-PS3.csv');
-
-// ─── Condition score → condition label ───────────────────────────────────────
-// condition_score 1-2 → good | 3 → moderate | 4-5 → poor
-function mapConditionScore(score) {
-  const s = Number(score);
-  if (s <= 2) return 'good';
-  if (s === 3) return 'moderate';
-  return 'poor';
-}
-
-// ─── Week number → Date ───────────────────────────────────────────────────────
-// Week 1 = Jan 1, 2024 (Monday reference)
-function weekToDate(weekNum) {
-  const base = new Date(2024, 0, 1); // Jan 1, 2024
-  base.setDate(base.getDate() + (Number(weekNum) - 1) * 7);
-  return base;
-}
-
-// ─── Batch upsert helper ──────────────────────────────────────────────────────
-async function batchUpsert(Model, documents, filterFn, batchSize = 200) {
-  let inserted = 0;
-  for (let i = 0; i < documents.length; i += batchSize) {
-    const batch = documents.slice(i, i + batchSize);
-    await Promise.all(
-      batch.map(doc =>
-        Model.findOneAndUpdate(filterFn(doc), doc, { upsert: true, new: true }).catch(() => null),
-      ),
-    );
-    inserted += batch.length;
-    process.stdout.write(`\r  ${inserted}/${documents.length}`);
-  }
-  process.stdout.write('\n');
-}
-
-// ─── Parse CSV via readline (handles large files without buffering all lines) ─
+// ─── CSV parser (readline — handles large files efficiently) ─────────────────
 async function parseCSV(filePath) {
   return new Promise((resolve, reject) => {
     if (!fs.existsSync(filePath)) {
-      return reject(new Error(`CSV file not found: ${filePath}`));
+      return reject(new Error(`CSV not found at: ${filePath}`));
     }
-
-    const rows = [];
-    let headers = null;
-
+    const rows    = [];
+    let   headers = null;
     const rl = readline.createInterface({
       input: fs.createReadStream(filePath, { encoding: 'utf8' }),
       crlfDelay: Infinity,
     });
-
     rl.on('line', line => {
       if (!line.trim()) return;
       const values = line.split(',');
-      if (!headers) {
-        headers = values.map(h => h.trim());
-        return;
-      }
+      if (!headers) { headers = values.map(h => h.trim()); return; }
       const row = {};
-      headers.forEach((h, i) => { row[h] = (values[i] || '').trim(); });
+      headers.forEach((h, i) => { row[h] = (values[i] ?? '').trim(); });
       rows.push(row);
     });
-
-    rl.on('close', () => resolve(rows));
+    rl.on('close',  () => resolve(rows));
     rl.on('error', reject);
   });
 }
 
-// ─── Main pipeline ────────────────────────────────────────────────────────────
+// ─── Enum guard — returns value only if it's in the allowed list ─────────────
+function enumOrUndef(value, allowed) {
+  return allowed.includes(value) ? value : undefined;
+}
+
+// ─── Map one CSV row → SchoolConditionRecord document ───────────────────────
+function rowToRecord(row) {
+  return {
+    schoolId:             Number(row.school_id),
+    district:             row.district,
+    block:                row.block  || undefined,
+    schoolType:           enumOrUndef(row.school_type, ['Primary', 'Secondary']),
+    isGirlsSchool:        row.girls_school === '1',
+    numStudents:          Number(row.num_students)  || 0,
+    buildingAge:          Number(row.building_age)  || 0,
+    materialType:         enumOrUndef(row.material_type,  ['RCC', 'Brick', 'Mixed', 'Temporary']),
+    weatherZone:          enumOrUndef(row.weather_zone,   ['Dry', 'Heavy Rain', 'Coastal', 'Tribal']),
+    category:             enumOrUndef(row.category,       ['plumbing', 'electrical', 'structural']),
+    weekNumber:           Number(row.week_number),
+    conditionScore:       Number(row.condition_score),
+    issueFlag:            row.issue_flag             === '1',
+    waterLeak:            row.water_leak             === '1',
+    wiringExposed:        row.wiring_exposed         === '1',
+    crackWidthMM:         parseFloat(row.crack_width_mm)            || 0,
+    toiletFunctionalRatio:parseFloat(row.toilet_functional_ratio)   || 0,
+    powerOutageHours:     parseFloat(row.power_outage_hours_weekly) || 0,
+    roofLeakFlag:         row.roof_leak_flag  === '1',
+    photoUploaded:        row.photo_uploaded  === '1',
+    daysToFailure:        row.days_to_failure !== '' ? parseFloat(row.days_to_failure) : undefined,
+    willFailWithin30Days: row.failure_within_30_days === '1',
+    willFailWithin60Days: row.failure_within_60_days === '1',
+    priorityScore:        parseFloat(row.priority_score) || 0,
+    repairDone:           row.repair_done === '1',
+    daysSinceRepair:      row.days_since_repair !== '' ? Number(row.days_since_repair) : undefined,
+    contractorDelayDays:  Number(row.contractor_delay_days) || 0,
+    slaBreach:            row.sla_breach === '1',
+  };
+}
+
+// ─── Batch insert (ordered:false = skip dup-key errors, continue rest) ───────
+async function batchInsert(Model, docs, batchSize = 500) {
+  if (docs.length === 0) { console.log('  (nothing to insert)'); return; }
+  let done = 0;
+  for (let i = 0; i < docs.length; i += batchSize) {
+    await Model.insertMany(docs.slice(i, i + batchSize), { ordered: false })
+      .catch(() => {}); // ignore duplicate key errors
+    done += Math.min(batchSize, docs.length - i);
+    process.stdout.write(`\r  ${done.toLocaleString()} / ${docs.length.toLocaleString()}`);
+  }
+  process.stdout.write('\n');
+}
+
+// ─── Priority level from numeric score ──────────────────────────────────────
+function toPriorityLevel(score) {
+  if (score >= 80) return 'urgent';
+  if (score >= 60) return 'high';
+  if (score >= 40) return 'medium';
+  return 'low';
+}
+
+// ─── Explainability reasons ──────────────────────────────────────────────────
+function buildReasons(r, computedScore) {
+  const reasons = [];
+  if (r.conditionScore >= 4)   reasons.push(`Condition score ${r.conditionScore}/5 — poor`);
+  else if (r.conditionScore === 3) reasons.push(`Condition score ${r.conditionScore}/5 — moderate`);
+  if (r.willFailWithin30Days)  reasons.push('Failure predicted within 30 days');
+  else if (r.willFailWithin60Days) reasons.push('Failure predicted within 60 days');
+  if (r.buildingAge > 20)      reasons.push(`Building age ${r.buildingAge} years`);
+  if (r.weatherZone && r.weatherZone !== 'Dry') reasons.push(`${r.weatherZone} weather zone`);
+  if (r.waterLeak)             reasons.push('Active water leak');
+  if (r.wiringExposed)         reasons.push('Exposed wiring');
+  if (r.roofLeakFlag)          reasons.push('Roof leak present');
+  if (r.slaBreach)             reasons.push('SLA breach on record');
+  if (r.isGirlsSchool && r.category === 'plumbing') {
+    reasons.push("Girls' school — plumbing priority boost (+15)");
+  }
+  return reasons;
+}
+
+// ─── Main ────────────────────────────────────────────────────────────────────
 async function main() {
-  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log('  PS-03 CSV Data Pipeline — TS-PS3.csv');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('  PS-03 CSV Pipeline (v2) — TS-PS3.csv → MongoDB');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
   await connectDB();
 
-  // ── Step 1: Parse CSV ────────────────────────────────────────────────────
-  console.log(`[1/5] Reading CSV: ${CSV_PATH}`);
+  // ── 1. Parse CSV ────────────────────────────────────────────────────────
+  console.log(`[1/5] Reading CSV…`);
   const rows = await parseCSV(CSV_PATH);
-  console.log(`      → ${rows.length.toLocaleString()} rows loaded\n`);
+  console.log(`      → ${rows.length.toLocaleString()} rows\n`);
 
-  // ── Step 2: Build unique school records ──────────────────────────────────
-  console.log('[2/5] Building school records…');
-  const schoolMap = {};
-  for (const row of rows) {
-    const id = row.school_id;
-    if (!id) continue;
-    if (!schoolMap[id]) {
-      schoolMap[id] = {
-        csvSchoolId: Number(id),
-        name:        `${row.district} Govt School #${id}`,
-        district:    row.district    || 'Unknown',
-        block:       row.block       || '',
-        buildingAge: Number(row.building_age) || 10,
-        studentCount: Number(row.num_students) || 0,
-        material:    row.material_type || 'Other',
-        weatherZone: row.weather_zone  || 'Dry',
-        isGirlsSchool: row.girls_school === '1',
-      };
-    }
-  }
+  // ── 2. Load school_condition_records (1 row = 1 doc) ─────────────────────
+  console.log('[2/5] Loading → school_condition_records');
+  const records = rows.map(rowToRecord).filter(r => r.schoolId && r.category && r.weekNumber);
+  await batchInsert(SchoolConditionRecord, records);
+  const totalRecords = await SchoolConditionRecord.countDocuments();
+  console.log(`      ✓ ${totalRecords.toLocaleString()} documents\n`);
 
-  const schoolDefs = Object.values(schoolMap);
-  console.log(`      → ${schoolDefs.length} unique schools`);
-
-  // Upsert schools (match on csvSchoolId)
-  await batchUpsert(School, schoolDefs, doc => ({ csvSchoolId: doc.csvSchoolId }));
-  console.log('      ✓ Schools upserted\n');
-
-  // Build csvSchoolId → MongoDB _id lookup
-  const dbSchools = await School.find({ csvSchoolId: { $in: Object.keys(schoolMap).map(Number) } })
-    .select('_id csvSchoolId buildingAge weatherZone isGirlsSchool')
+  // ── 3. Generate maintenance_decisions ────────────────────────────────────
+  console.log('[3/5] Generating → maintenance_decisions');
+  // Decisions are created for every record that has an issue flag set
+  const decisionSources = await SchoolConditionRecord.find({ issueFlag: true })
+    .select('_id schoolId district category weekNumber conditionScore priorityScore numStudents isGirlsSchool buildingAge weatherZone waterLeak wiringExposed roofLeakFlag slaBreach willFailWithin30Days willFailWithin60Days repairDone')
     .lean();
-  const schoolIdLookup = {};
-  for (const s of dbSchools) { schoolIdLookup[s.csvSchoolId] = s; }
 
-  // ── Step 3: Group rows into per-(school, week) condition reports ──────────
-  console.log('[3/5] Grouping into weekly condition reports…');
-  const reportMap = {};
-
-  for (const row of rows) {
-    const csvId = Number(row.school_id);
-    const week  = Number(row.week_number);
-    if (!csvId || !week) continue;
-
-    const school = schoolIdLookup[csvId];
-    if (!school) continue;
-
-    const cat = row.category;
-    if (!['plumbing', 'electrical', 'structural'].includes(cat)) continue;
-
-    const key = `${school._id}-${week}`;
-    if (!reportMap[key]) {
-      reportMap[key] = {
-        schoolId: school._id,
-        weekOf:   weekToDate(week),
-        items:    [],
-        _scoreSum: 0, _scoreCount: 0,
-      };
+  const decisions = decisionSources.map(r => {
+    // Girls' school plumbing gets a +15 priority boost
+    let computedScore = r.priorityScore;
+    if (r.category === 'plumbing' && r.isGirlsSchool) {
+      computedScore = Math.min(100, computedScore + 15);
     }
-
-    const condition = mapConditionScore(row.condition_score);
-    reportMap[key].items.push({ category: cat, condition });
-    reportMap[key]._scoreSum   += Number(row.condition_score) || 3;
-    reportMap[key]._scoreCount += 1;
-  }
-
-  // Convert to plain report documents (drop helper fields)
-  const reportDocs = Object.values(reportMap).map(r => {
-    const avgScore = r._scoreCount ? r._scoreSum / r._scoreCount : 3;
-    // Simple risk label based on avg condition_score
-    const riskLabel = avgScore <= 2 ? 'low' : avgScore <= 3 ? 'moderate' : avgScore <= 4 ? 'high' : 'critical';
     return {
+      recordId:  r._id,
       schoolId:  r.schoolId,
-      weekOf:    r.weekOf,
-      items:     r.items,
-      riskScore: Math.round(((avgScore - 1) / 4) * 100),
-      riskLevel: riskLabel,
+      district:  r.district,
+      category:  r.category,
+      weekNumber: r.weekNumber,
+      decision: {
+        computedPriorityScore: Math.round(computedScore),
+        priorityLevel:         toPriorityLevel(computedScore),
+      },
+      impact: {
+        studentsAffected: r.numStudents || 0,
+        isGirlsSchool:    r.isGirlsSchool || false,
+        criticalFacility: r.conditionScore >= 4,
+      },
+      explainability: {
+        reasons: buildReasons(r, computedScore),
+      },
+      status: { status: 'pending' },
     };
   });
 
-  console.log(`      → ${reportDocs.length} weekly reports`);
+  await batchInsert(MaintenanceDecision, decisions);
+  console.log(`      ✓ ${(await MaintenanceDecision.countDocuments()).toLocaleString()} documents\n`);
 
-  // Upsert reports (match on schoolId + weekOf)
-  await batchUpsert(
-    ConditionReport,
-    reportDocs,
-    doc => ({ schoolId: doc.schoolId, weekOf: doc.weekOf }),
-  );
-  console.log('      ✓ Reports upserted\n');
+  // ── 4. Generate alerts ───────────────────────────────────────────────────
+  console.log('[4/5] Generating → alerts');
+  const alertSources = await SchoolConditionRecord.find({
+    $or: [
+      { willFailWithin30Days: true },
+      { willFailWithin60Days: true },
+      { priorityScore: { $gte: 80 } },
+    ],
+  })
+    .select('schoolId district category weekNumber conditionScore willFailWithin30Days willFailWithin60Days priorityScore repairDone')
+    .lean();
 
-  // ── Step 4: Compute per-category risk predictions ─────────────────────────
-  console.log('[4/5] Computing per-category risk predictions…');
-  const PS03_CATEGORIES = ['plumbing', 'electrical', 'structural'];
-  const uniqueSchoolIds = [...new Set(reportDocs.map(r => r.schoolId.toString()))];
+  const alerts = alertSources.map(r => {
+    let type;
+    if (r.willFailWithin30Days)    type = 'FAILURE_30_DAYS';
+    else if (r.willFailWithin60Days) type = 'FAILURE_60_DAYS';
+    else                            type = 'HIGH_PRIORITY';
 
-  let predCount = 0;
-  for (const schoolIdStr of uniqueSchoolIds) {
-    const school = dbSchools.find(s => s._id.toString() === schoolIdStr);
-    if (!school) continue;
+    const condLabel = r.conditionScore >= 4 ? 'poor' : r.conditionScore === 3 ? 'moderate' : 'good';
+    const action    = type === 'FAILURE_30_DAYS'  ? 'Failure predicted within 30 days — urgent action needed.'
+                    : type === 'FAILURE_60_DAYS'  ? 'Failure predicted within 60 days.'
+                    :                               'High priority maintenance required.';
+    return {
+      schoolId:   r.schoolId,
+      district:   r.district,
+      category:   r.category,
+      type,
+      message:    `School #${r.schoolId} (${r.district}) — ${r.category} is ${condLabel} in week ${r.weekNumber}. ${action}`,
+      isResolved: r.repairDone || false,
+    };
+  });
 
-    for (const category of PS03_CATEGORIES) {
-      // Fetch last 3 reports for this school and extract the category condition
-      const reports = await ConditionReport.find({ schoolId: school._id })
-        .sort({ weekOf: -1 })
-        .limit(3)
-        .lean();
+  await batchInsert(Alert, alerts);
+  console.log(`      ✓ ${(await Alert.countDocuments()).toLocaleString()} documents\n`);
 
-      const conditionHistory = reports.reduce((acc, report) => {
-        const item = (report.items || []).find(i => i.category === category);
-        if (item) acc.push({ condition: item.condition, weekOf: report.weekOf });
-        return acc;
-      }, []);
-
-      const { riskScore, failureWindow, riskLevel, reason } = predictRiskForCategory(
-        conditionHistory,
-        school.buildingAge,
-        school.weatherZone,
-      );
-
-      await RiskPrediction.findOneAndUpdate(
-        { schoolId: school._id, category },
-        { riskScore, failureWindow, riskLevel, reason, predictedAt: new Date() },
-        { upsert: true, new: true },
-      );
-
-      predCount++;
-    }
-
-    // Update school cached score
-    const preds = await RiskPrediction.find({ schoolId: school._id }).lean();
-    if (preds.length > 0) {
-      const maxScore = Math.max(...preds.map(p => p.riskScore));
-      const maxLevel = maxScore > 66 ? 'high' : maxScore > 33 ? 'medium' : 'low';
-      await School.findByIdAndUpdate(school._id, {
-        lastRiskScore: maxScore, lastRiskCategory: maxLevel, lastAssessedAt: new Date(),
-      });
-    }
-
-    process.stdout.write(`\r  ${predCount} predictions computed`);
-  }
-  process.stdout.write('\n');
-  console.log('      ✓ Predictions stored\n');
-
-  // ── Step 5: Summary ───────────────────────────────────────────────────────
-  const [schoolCount, reportCount, predTotal] = await Promise.all([
-    School.countDocuments(),
-    ConditionReport.countDocuments(),
-    RiskPrediction.countDocuments(),
+  // ── 5. Generate district_analytics ──────────────────────────────────────
+  console.log('[5/5] Computing → district_analytics');
+  const districtGroups = await SchoolConditionRecord.aggregate([
+    {
+      $group: {
+        _id:    '$district',
+        uniqueSchools:    { $addToSet: '$schoolId' },
+        avgCondScore:     { $avg: '$conditionScore' },
+        highPriority:     { $sum: { $cond: [{ $gte: ['$priorityScore', 60] }, 1, 0] } },
+        fail30:           { $sum: { $cond: ['$willFailWithin30Days', 1, 0] } },
+        fail60:           { $sum: { $cond: ['$willFailWithin60Days', 1, 0] } },
+        plumbingHigh:     { $sum: { $cond: [{ $and: [{ $eq: ['$category', 'plumbing'] },   { $gte: ['$priorityScore', 60] }] }, 1, 0] } },
+        electricalHigh:   { $sum: { $cond: [{ $and: [{ $eq: ['$category', 'electrical'] }, { $gte: ['$priorityScore', 60] }] }, 1, 0] } },
+        structuralHigh:   { $sum: { $cond: [{ $and: [{ $eq: ['$category', 'structural'] }, { $gte: ['$priorityScore', 60] }] }, 1, 0] } },
+        slaBreach:        { $sum: { $cond: ['$slaBreach', 1, 0] } },
+      },
+    },
   ]);
 
-  console.log('[5/5] Pipeline complete ✓');
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  console.log(`  Schools in DB:      ${schoolCount}`);
-  console.log(`  Reports in DB:      ${reportCount}`);
-  console.log(`  Predictions in DB:  ${predTotal}`);
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  const analyticsRows = districtGroups.map(d => ({
+    district:                d._id,
+    totalSchools:            d.uniqueSchools.length,
+    avgConditionScore:       Math.round(d.avgCondScore * 100) / 100,
+    highPriorityCount:       d.highPriority,
+    failureWithin30DaysCount: d.fail30,
+    failureWithin60DaysCount: d.fail60,
+    categoryBreakdown: {
+      plumbing:   d.plumbingHigh,
+      electrical: d.electricalHigh,
+      structural: d.structuralHigh,
+    },
+    slaBreachCount: d.slaBreach,
+    generatedAt:    new Date(),
+  }));
+
+  await batchInsert(DistrictAnalytics, analyticsRows, 100);
+  const totalDistricts = await DistrictAnalytics.countDocuments();
+  console.log(`      ✓ ${totalDistricts} district analytics entries\n`);
+
+  // ── Summary ──────────────────────────────────────────────────────────────
+  const [r, d, a, da] = await Promise.all([
+    SchoolConditionRecord.countDocuments(),
+    MaintenanceDecision.countDocuments(),
+    Alert.countDocuments(),
+    DistrictAnalytics.countDocuments(),
+  ]);
+
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log('  Collection                   Documents');
+  console.log('  ─────────────────────────────────────────');
+  console.log(`  school_condition_records     ${r.toLocaleString()}`);
+  console.log(`  maintenance_decisions        ${d.toLocaleString()}`);
+  console.log(`  alerts                       ${a.toLocaleString()}`);
+  console.log(`  district_analytics           ${da}`);
+  console.log(`  work_orders                  0   (created via API)`);
+  console.log(`  repair_logs                  0   (created via API)`);
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
   await mongoose.disconnect();
   process.exit(0);
