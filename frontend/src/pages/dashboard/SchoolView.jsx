@@ -169,14 +169,14 @@ export default function SchoolView() {
     <div className="min-h-screen bg-[#f8fafc]">
       {/* Massive Hero Banner */}
       <div className="relative w-full h-[400px] bg-slate-900">
-        <img src={imageUrl} alt="School Banner" className="w-full h-full object-cover opacity-60" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+        <img src={imageUrl} alt="School Banner" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-black/40 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
         
         <div className="absolute bottom-24 left-0 right-0">
           <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <div className="flex gap-2 mb-3">
-                <Badge variant="info" className="bg-blue-600/20 text-blue-100 border-blue-500/30 backdrop-blur-md">
+                <Badge variant="info" className="bg-white/10 text-white border-white/20 backdrop-blur-md">
                   <MapPin size={12} className="mr-1.5" /> {school?.district || "Unspecified Region"}
                 </Badge>
                 <Badge variant="default" className="bg-white/10 text-white border-white/20 backdrop-blur-md">
@@ -198,7 +198,7 @@ export default function SchoolView() {
               <Button onClick={() => navigate("/peon/dashboard")} variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-md shadow-xl">
                 Submit Audit
               </Button>
-              <Button onClick={() => navigate(roleSubPath(user?.role, "reports"))} variant="primary" className="bg-blue-600 hover:bg-blue-500 text-white border-none shadow-xl shadow-blue-900/20">
+              <Button onClick={() => navigate(roleSubPath(user?.role, "reports"))} variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-md shadow-xl">
                 Resource Registry
               </Button>
             </div>

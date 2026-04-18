@@ -188,76 +188,73 @@ export default function WorkOrders() {
     setOrders(orders.map(o => o._id === updated._id ? updated : o));
   };
 
-  const filtered = orders.filter(o => {
-    const sMatch = statusFilter === "all" || o.status === statusFilter;
-    const cMatch = categoryFilter === "all" || o.category === categoryFilter;
-    return sMatch && cMatch;
-  });
+  const filtered = orders.filter(o => statusFilter === "all" || o.status === statusFilter);
+  const districtStr = user?.district || "District";
+  const imgIndex = (districtStr.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 10;
+ 
   const breachedCount = orders.filter(o => o.slaBreach).length;
+
+
+  const activeCount = orders.filter(o => ['pending', 'assigned', 'in_progress'].includes(o.status)).length;
+  const completedCount = orders.filter(o => o.status === 'completed').length;
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <div className="max-w-7xl mx-auto pt-8 sm:pt-12 pb-12 px-4 sm:px-8 space-y-8">
-        <PageHeader
-          title="Infrastructure Directives"
-          subtitle={user?.role === "contractor" ? "Allocated Tasks Requiring Operational Resolution" : "Operational Oversight of District-wide Maintenance Assignments"}
-          icon={Hammer}
-          actions={
-            <div className="flex flex-wrap items-center gap-3">
-              {/* Category Filter */}
-              <div className="relative">
-                <select 
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="appearance-none bg-white border border-slate-200 text-[#003366] text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 pr-10 rounded-lg outline-none focus:border-blue-900 transition-all shadow-sm cursor-pointer"
-                >
-                  <option value="all">ALL CATEGORIES</option>
-                  <option value="structural">STRUCTURAL</option>
-                  <option value="plumbing">PLUMBING</option>
-                  <option value="electrical">ELECTRICITY</option>
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                  <ChevronDown size={14} />
-                </div>
-              </div>
-
-              {/* Status Filter */}
-              <div className="relative">
-                <select 
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="appearance-none bg-white border border-slate-200 text-[#003366] text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 pr-10 rounded-lg outline-none focus:border-blue-900 transition-all shadow-sm cursor-pointer"
-                >
-                  {["all", "pending", "assigned", "in_progress", "completed"].map(s => (
-                    <option key={s} value={s}>
-                      {s === "all" ? "ALL REGISTRY" : (STATUS_CONFIG[s]?.label || s).toUpperCase()} 
-                      ({s === "all" ? orders.length : orders.filter(o => o.status === s).length})
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                  <ChevronDown size={14} />
-                </div>
-              </div>
-
-              {canAssign && (
-                <Button onClick={() => setShowNew(true)} variant="primary" className="text-[10px] font-bold uppercase tracking-widest">
-                  New Directive
-                </Button>
-              )}
+      {/* Massive Hero Banner */}
+      <div className="relative w-full h-[400px] bg-slate-900">
+        <img src="https://images.unsplash.com/photo-1621905251189-08b45d6a269e?q=80&w=1200&auto=format&fit=crop" alt="Directives Banner" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-black/40 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+        
+        <div className="absolute bottom-24 left-0 right-0">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-md">
+                Infrastructure Directives
+              </h1>
+              <p className="mt-2 text-sm font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                <Hammer size={14} /> {user?.role === "contractor" ? "Allocated Tasks Requiring Operational Resolution" : "Operational Oversight of District-wide Maintenance Assignments"}
+              </p>
             </div>
-          }
-        />
+            
+            <div className="flex items-center gap-4">
+               {canAssign && (
+                 <Button onClick={() => setShowNew(true)} variant="secondary" className="font-black uppercase tracking-widest text-[10px] bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md shadow-xl">
+                   Authorize Directive
+                 </Button>
+               )}
+            </div>
+          </div>
+        </div>
+      </div>
 
-        {breachedCount > 0 && (
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-8 pb-12">
+        {/* REPORT METRICS - Floating Over Banner */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 -mt-16 relative z-10">
           <MetricCard
-            label="SLA Compliance Alert"
-            value={breachedCount}
-            variant="critical"
-            trendValue="Directives exceeding authorized timelines"
+            label="Total Directives"
+            value={orders.length}
+            variant="info"
+            icon={Hammer}
+          />
+          <MetricCard
+            label="Active Orders"
+            value={activeCount}
+            variant="high"
             icon={Clock}
           />
-        )}
+          <MetricCard
+            label="Completed"
+            value={completedCount}
+            variant="success"
+            icon={Shield}
+          />
+          <MetricCard
+            label="SLA Breaches"
+            value={breachedCount}
+            variant={breachedCount > 0 ? "critical" : "default"}
+            icon={breachedCount > 0 ? Clock : Shield}
+          />
+        </div>
 
 
         {/* Orders list */}
