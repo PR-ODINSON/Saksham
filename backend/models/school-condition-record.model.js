@@ -169,8 +169,12 @@ const schoolConditionRecordSchema = new mongoose.Schema({
   collection: 'school_condition_records'
 });
 
-// Compound index: { schoolId, category, weekNumber } unique
-schoolConditionRecordSchema.index({ schoolId: 1, category: 1, weekNumber: 1 }, { unique: true });
+// Compound index for fast (schoolId, category, weekNumber) lookups.
+// NOTE: testing mode — uniqueness is intentionally NOT enforced so peons may
+// submit multiple reports per week per category. To re-enable strict
+// once-per-week behaviour, add `{ unique: true }` here AND drop the existing
+// non-unique index on the live collection before re-creating it.
+schoolConditionRecordSchema.index({ schoolId: 1, category: 1, weekNumber: 1 });
 // Additional indexes for Phase 2
 schoolConditionRecordSchema.index({ schoolId: 1, district: 1, category: 1 });
 

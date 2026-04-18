@@ -177,11 +177,11 @@ export const submitReport = async (req, res) => {
     // ── FALLBACK: Load missing metadata from School doc ─────────────────────
     const finalPayload = await augmentWithSchoolMetadata(updatePayload, req.user);
 
-    const record = await SchoolConditionRecord.findOneAndUpdate(
-      { schoolId: Number(schoolId), category, weekNumber: Number(weekNumber) },
-      finalPayload,
-      { upsert: true, new: true, runValidators: true },
-    );
+    // TESTING MODE: previously this upserted into a single (schoolId, category,
+    // weekNumber) doc, so a peon could only ever have ONE submission per week
+    // per category. We now `create` a fresh document on every submission so all
+    // reports are kept and downstream ML / forwarding can work on them.
+    const record = await SchoolConditionRecord.create(finalPayload);
 
     // ── Run ML prediction engine after save ────────────────────────────────
     // Fetch full week history for this school + category (needed for slope / trend)
@@ -415,11 +415,10 @@ export const submitWeeklyReport = async (req, res) => {
         ...(imageUrls.length ? { images: imageUrls } : {}),
       };
 
-      const record = await SchoolConditionRecord.findOneAndUpdate(
-        { schoolId: Number(schoolId), category: cat, weekNumber: Number(weekNumber) },
-        updatePayload,
-        { upsert: true, new: true, runValidators: true },
-      );
+      // TESTING MODE: see note in submitReport — multiple weekly bundles per
+      // (school, week) are now allowed; create a new record per category on
+      // every submission instead of upserting the existing one.
+      const record = await SchoolConditionRecord.create(updatePayload);
 
       // Run ML prediction for this category
       const weekHistoryDocs = await SchoolConditionRecord.find({
