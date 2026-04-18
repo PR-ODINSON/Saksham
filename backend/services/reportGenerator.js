@@ -315,23 +315,35 @@ export async function generateAndSendPDF(reportId) {
         body(doc, `Review note: ${r.reviewNote}`, { indent: 4, color: '#1d4ed8' });
       }
 
-      // Evidence photos
+      // Evidence photos — render in a wrapping grid that advances rowY on each new row
       const imgPaths = (r.images || []).map(resolveImagePath).filter(Boolean);
       if (imgPaths.length) {
-        ensureSpace(doc, 110);
+        ensureSpace(doc, 140);
         body(doc, 'Evidence Photos:', { bold: true, indent: 4 });
         doc.y += 4;
-        const IMG_W = 120, IMG_GAP = 12;
+
+        const IMG_W = 120, IMG_H = 90, IMG_GAP = 10;
         let imgX = L + 4;
-        const imgY = doc.y;
+        let rowY = doc.y;
         for (const imgPath of imgPaths) {
+          if (imgX + IMG_W > R) {
+            // wrap to next row
+            imgX  = L + 4;
+            rowY += IMG_H + IMG_GAP;
+            // ensure new row fits, otherwise add a page
+            if (rowY + IMG_H > 770) {
+              doc.addPage();
+              rowY = 60;
+            }
+          }
           try {
-            if (imgX + IMG_W > R) { imgX = L + 4; doc.y = imgY + IMG_W + IMG_GAP; ensureSpace(doc, 110); }
-            doc.image(imgPath, imgX, doc.y, { width: IMG_W, height: IMG_W, cover: [IMG_W, IMG_W] });
-            imgX += IMG_W + IMG_GAP;
+            doc.image(imgPath, imgX, rowY, { fit: [IMG_W, IMG_H], align: 'center', valign: 'center' });
           } catch (_) { /* skip unembeddable images */ }
+          imgX += IMG_W + IMG_GAP;
         }
-        doc.y = imgY + IMG_W + IMG_GAP;
+        doc.y = rowY + IMG_H + IMG_GAP;
+      } else if (r.photoUploaded === false || (!r.images || r.images.length === 0)) {
+        body(doc, 'Evidence Photos: None attached', { color: '#94a3b8', indent: 4 });
       }
       doc.y += 6;
     }

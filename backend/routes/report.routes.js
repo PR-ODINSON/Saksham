@@ -1,19 +1,33 @@
 import express from 'express';
 import { protect, authorize } from '../middlewares/auth.middleware.js';
-import { submitReport, getReports, getReportsBySchool, reviewReport, forwardReport } from '../controllers/report.controller.js';
+import { submitReport, submitWeeklyReport, getReports, getReportsBySchool, reviewReport, forwardReport } from '../controllers/report.controller.js';
 import { generateAndSendPDF } from '../services/reportGenerator.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
 import upload from '../config/multer.js';
 
 const router = express.Router();
 
-// POST /api/reports  — submit a weekly condition report (structured input only)
+// POST /api/reports  — submit a single category report (legacy, kept for compat)
 router.post(
   '/',
   protect,
   authorize('peon', 'principal', 'deo', 'admin'),
   upload.array('images', 5),
   submitReport,
+);
+
+// POST /api/reports/weekly  — bundled submission: all 3 categories + 3 photos
+// Photos are MANDATORY for peon submissions (enforced in controller).
+router.post(
+  '/weekly',
+  protect,
+  authorize('peon', 'principal', 'deo', 'admin'),
+  upload.fields([
+    { name: 'image_plumbing',   maxCount: 1 },
+    { name: 'image_electrical', maxCount: 1 },
+    { name: 'image_structural', maxCount: 1 },
+  ]),
+  submitWeeklyReport,
 );
 
 // GET /api/reports  — list reports (filtered by query ?schoolId=xxx)

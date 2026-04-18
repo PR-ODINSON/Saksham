@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, animate } from 'framer-motion';
 import { useNavigate } from "react-router-dom";
 import { get } from "../../services/api";
+import { useAuth } from "../../context/AuthContext";
+import { roleSubPath } from "../../utils/roleRoutes.js";
 import EvidenceDrawer from "../../components/common/EvidenceDrawer";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
@@ -59,6 +61,7 @@ export default function DEODashboard() {
   const [schoolsList, setSchoolsList] = useState([]);
   
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -106,7 +109,7 @@ export default function DEODashboard() {
           icon={LayoutList}
           actions={
             <Button 
-              onClick={() => navigate("/dashboard/work-orders")}
+              onClick={() => navigate(roleSubPath(user?.role, "work-orders"))}
               variant="primary"
             >
               Command Center
@@ -179,7 +182,7 @@ export default function DEODashboard() {
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={(e) => { e.stopPropagation(); navigate(`/dashboard/work-orders/new?schoolId=${s.schoolId}&school=${encodeURIComponent(s.schoolName)}&category=${s.highestPriorityCategory}&score=${s.priorityScore}`); }}
+                            onClick={(e) => { e.stopPropagation(); navigate(`${roleSubPath(user?.role, "work-orders/new")}?schoolId=${s.schoolId}&school=${encodeURIComponent(s.schoolName)}&category=${s.highestPriorityCategory}&score=${s.priorityScore}`); }}
                           >
                             Resolve
                           </Button>

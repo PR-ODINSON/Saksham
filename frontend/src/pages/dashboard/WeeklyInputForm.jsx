@@ -319,36 +319,47 @@ export default function WeeklyInputForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
     setError("");
 
-    const schoolMeta = {
-      district:      school?.district      || "",
-      block:         school?.block         || "",
-      schoolType:    school?.schoolType    || "",
-      isGirlsSchool: school?.isGirlsSchool ?? false,
-      numStudents:   school?.numStudents   || 0,
-      buildingAge:   school?.buildingAge   || 0,
-      materialType:  school?.materialType  || "",
-      weatherZone:   school?.weatherZone   || "Dry",
-    };
+    // ── Client-side validation ────────────────────────────────────────────────
+    // Every category needs a condition score
+    const missingScore = CATEGORIES.filter(c => !catStates[c.id].conditionScore);
+    if (missingScore.length) {
+      setError(`Please rate Condition Score for: ${missingScore.map(c => c.label).join(", ")}`);
+      return;
+    }
+    // Peon: every category MUST have a photo attached
+    if (user?.role === "peon") {
+      const missingPhoto = CATEGORIES.filter(c => !catPhotos[c.id]);
+      if (missingPhoto.length) {
+        setError(`Photo is mandatory. Missing for: ${missingPhoto.map(c => c.label).join(", ")}`);
+        return;
+      }
+    }
 
-    const categoryResults = [];
+    setSubmitting(true);
 
-    for (const cat of CATEGORIES) {
-      const s     = catStates[cat.id];
-      const photo = catPhotos[cat.id];
+    // ── Build single bundled multipart submission ─────────────────────────────
+    const fd = new FormData();
+    fd.append("schoolId",      String(schoolId));
+    fd.append("weekNumber",    String(Number(weekNumber)));
+    fd.append("district",      school?.district      || "");
+    fd.append("block",         school?.block         || "");
+    fd.append("schoolType",    school?.schoolType    || "");
+    fd.append("isGirlsSchool", String(school?.isGirlsSchool ?? false));
+    fd.append("numStudents",   String(school?.numStudents   || 0));
+    fd.append("buildingAge",   String(school?.buildingAge   || 0));
+    fd.append("materialType",  school?.materialType  || "");
+    fd.append("weatherZone",   school?.weatherZone   || "Dry");
 
-      const basePayload = {
-        schoolId,
-        ...schoolMeta,
+    const categoriesPayload = CATEGORIES.map(cat => {
+      const s = catStates[cat.id];
+      return {
         category:              cat.id,
-        weekNumber:            Number(weekNumber),
         conditionScore:        Number(s.conditionScore),
         issueFlag:             s.issueFlag,
         waterLeak:             s.waterLeak,
         wiringExposed:         s.wiringExposed,
-        powerOutageHours:      Number(s.powerOutageHours)      || 0,
         roofLeakFlag:          s.roofLeakFlag,
         brokenTap:             s.brokenTap,
         cloggedDrain:          s.cloggedDrain,
@@ -359,33 +370,39 @@ export default function WeeklyInputForm() {
         brokenWindow:          s.brokenWindow,
         pestInfestation:       s.pestInfestation,
         crackWidthMM:          Number(s.crackWidthMM)          || 0,
-        toiletFunctionalRatio: Number(s.toiletFunctionalRatio) ?? 0,
+        toiletFunctionalRatio: Number(s.toiletFunctionalRatio) || 0,
+        powerOutageHours:      Number(s.powerOutageHours)      || 0,
       };
+    });
+    fd.append("categories", JSON.stringify(categoriesPayload));
 
-      let res;
-      if (photo) {
-        const fd = new FormData();
-        for (const [k, v] of Object.entries(basePayload)) {
-          fd.append(k, String(v));
-        }
-        fd.append("images", photo);
-        res = await postFile("/api/condition-report", fd);
-      } else {
-        res = await post("/api/condition-report", basePayload);
-      }
+    // Attach one photo per category as a named field (image_<category>)
+    for (const cat of CATEGORIES) {
+      const p = catPhotos[cat.id];
+      if (p) fd.append(`image_${cat.id}`, p);
+    }
 
-      categoryResults.push({
+    const res = await postFile("/api/reports/weekly", fd);
+    setSubmitting(false);
+
+    if (!res.success && !res.results) {
+      setError(res.message || "Submission failed. Please try again.");
+      return;
+    }
+
+    // Normalise results into the shape used by the acknowledgement screen
+    const categoryResults = CATEGORIES.map(cat => {
+      const r = (res.results || []).find(x => x.category === cat.id) || {};
+      return {
         category:   cat.id,
         label:      cat.label,
         icon:       cat.icon,
-        emoji:      cat.emoji,
-        success:    res.success,
-        message:    res.message || (res.success ? "Recorded" : "Failed"),
-        prediction: res.prediction || null,
-      });
-    }
+        success:    r.success ?? false,
+        message:    r.message || (r.success ? "Recorded" : "Failed"),
+        prediction: r.prediction || null,
+      };
+    });
 
-    setSubmitting(false);
     setResults(categoryResults);
   };
 
@@ -408,7 +425,7 @@ export default function WeeklyInputForm() {
             </div>
             <div className="text-right">
               <p className="text-[10px] font-black uppercase text-slate-400">Reference Number</p>
-              <p className="text-sm font-black text-[#003366]">SAK-{weekNumber}-{schoolId.slice(-6).toUpperCase()}</p>
+              <p className="text-sm font-black text-[#003366]">SAK-{weekNumber}-{String(schoolId).slice(-6).toUpperCase()}</p>
               <p className="text-[10px] font-bold text-slate-500 mt-1">{new Date().toLocaleString()}</p>
             </div>
           </div>

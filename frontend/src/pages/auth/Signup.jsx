@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { post } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
+import { dashboardPathFor } from "../../utils/roleRoutes.js";
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Building2, User, Mail, Lock, Phone, MapPin, 
@@ -74,7 +75,7 @@ const Signup = () => {
     });
     
     if (result.success) {
-      navigate('/dashboard');
+      navigate(dashboardPathFor(result.user?.role || formData.role));
     } else {
       setFormError(result.message || 'Registration failed. Try again.');
     }

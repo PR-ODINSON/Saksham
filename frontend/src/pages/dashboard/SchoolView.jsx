@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { get } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { roleSubPath } from "../../utils/roleRoutes.js";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Badge from "../../components/common/Badge";
@@ -151,7 +152,7 @@ export default function SchoolView() {
           icon={Building}
           actions={
             <Button
-              onClick={() => navigate("/dashboard/reports")}
+              onClick={() => navigate(roleSubPath(user?.role, "reports"))}
               variant="primary"
             >
               Resource Registry

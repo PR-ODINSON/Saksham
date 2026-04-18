@@ -184,6 +184,222 @@ export const submitReport = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/reports/weekly
+ * Bundled weekly submission — peon (or principal) submits ALL three categories
+ * (plumbing, electrical, structural) + one photo per category in a SINGLE call.
+ * Stored as 3 SchoolConditionRecord docs (one per category) sharing the same
+ * { schoolId, weekNumber } so the PDF generator groups them as one report.
+ *
+ * Multipart fields expected (via upload.fields):
+ *   - image_plumbing   (file, required for peon)
+ *   - image_electrical (file, required for peon)
+ *   - image_structural (file, required for peon)
+ *   - schoolId, weekNumber, district, block, schoolType, isGirlsSchool,
+ *     numStudents, buildingAge, materialType, weatherZone
+ *   - categories  (JSON-stringified array of per-category payloads)
+ */
+export const submitWeeklyReport = async (req, res) => {
+  try {
+    const {
+      schoolId, district, block, schoolType, isGirlsSchool, numStudents,
+      buildingAge, materialType, weatherZone, weekNumber,
+    } = req.body;
+
+    let categories = req.body.categories;
+    if (typeof categories === 'string') {
+      try { categories = JSON.parse(categories); }
+      catch (_) {
+        return res.status(400).json({ success: false, message: 'categories must be valid JSON' });
+      }
+    }
+    if (!Array.isArray(categories) || categories.length === 0) {
+      return res.status(400).json({ success: false, message: 'categories array is required' });
+    }
+    if (!schoolId || !weekNumber) {
+      return res.status(400).json({ success: false, message: 'schoolId and weekNumber are required' });
+    }
+
+    // Build a per-category image map from req.files (upload.fields layout)
+    // req.files is an object: { image_plumbing: [file], image_electrical: [file], ... }
+    const filesByCat = {};
+    for (const cat of VALID_CATEGORIES) {
+      const arr = req.files?.[`image_${cat}`];
+      if (arr && arr[0]) filesByCat[cat] = arr[0];
+    }
+
+    // For peon role, every submitted category MUST have an image attached.
+    if (req.user?.role === 'peon') {
+      const missing = categories
+        .filter(c => !filesByCat[c.category])
+        .map(c => c.category);
+      if (missing.length) {
+        return res.status(400).json({
+          success: false,
+          message: `Photo is mandatory for peon submissions. Missing photo for: ${missing.join(', ')}`,
+        });
+      }
+    }
+
+    // Common (school-level) metadata applied to every per-category record
+    const baseMeta = {
+      schoolId: Number(schoolId),
+      district, block, schoolType,
+      isGirlsSchool: parseBool(isGirlsSchool),
+      numStudents: Number(numStudents) || 0,
+      buildingAge: Number(buildingAge) || 0,
+      materialType, weatherZone,
+      weekNumber: Number(weekNumber),
+    };
+
+    const categoryResults = [];
+
+    for (const c of categories) {
+      const cat = c.category;
+      if (!VALID_CATEGORIES.includes(cat)) {
+        categoryResults.push({ category: cat, success: false, message: `Invalid category: ${cat}` });
+        continue;
+      }
+      if (!VALID_CONDITIONS.includes(Number(c.conditionScore))) {
+        categoryResults.push({ category: cat, success: false, message: 'conditionScore must be 1–5' });
+        continue;
+      }
+
+      const imgFile = filesByCat[cat];
+      const imageUrls = imgFile ? [`/uploads/${imgFile.filename}`] : [];
+
+      const updatePayload = {
+        ...baseMeta,
+        category: cat,
+        conditionScore: Number(c.conditionScore),
+        issueFlag:        parseBool(c.issueFlag),
+        waterLeak:        parseBool(c.waterLeak),
+        wiringExposed:    parseBool(c.wiringExposed),
+        crackWidthMM:     Number(c.crackWidthMM) || 0,
+        toiletFunctionalRatio: Number(c.toiletFunctionalRatio) || 0,
+        powerOutageHours: Number(c.powerOutageHours) || 0,
+        roofLeakFlag:     parseBool(c.roofLeakFlag),
+        brokenTap:        parseBool(c.brokenTap),
+        cloggedDrain:     parseBool(c.cloggedDrain),
+        tankOverflow:     parseBool(c.tankOverflow),
+        lowWaterPressure: parseBool(c.lowWaterPressure),
+        wallSeepage:      parseBool(c.wallSeepage),
+        brokenDoor:       parseBool(c.brokenDoor),
+        brokenWindow:     parseBool(c.brokenWindow),
+        pestInfestation:  parseBool(c.pestInfestation),
+        photoUploaded:    imageUrls.length > 0,
+        ...(imageUrls.length ? { images: imageUrls } : {}),
+      };
+
+      const record = await SchoolConditionRecord.findOneAndUpdate(
+        { schoolId: Number(schoolId), category: cat, weekNumber: Number(weekNumber) },
+        updatePayload,
+        { upsert: true, new: true, runValidators: true },
+      );
+
+      // Run ML prediction for this category
+      const weekHistoryDocs = await SchoolConditionRecord.find({
+        schoolId: Number(schoolId),
+        category: cat,
+      }).sort({ weekNumber: 1 }).lean();
+
+      const weekHistory = weekHistoryDocs.map(r => ({
+        conditionScore: r.conditionScore,
+        weekNumber: r.weekNumber,
+      }));
+
+      const toiletRatioVal =
+        c.toiletFunctionalRatio !== undefined && c.toiletFunctionalRatio !== ''
+          ? Number(c.toiletFunctionalRatio)
+          : null;
+
+      const prediction = await predictRiskForCategory({
+        weekHistory,
+        buildingAge:   Number(buildingAge) || 20,
+        weatherZone:   weatherZone || 'Dry',
+        category:      cat,
+        isGirlsSchool: parseBool(isGirlsSchool),
+        numStudents:   Number(numStudents) || 0,
+        flags: {
+          waterLeak:             parseBool(c.waterLeak),
+          wiringExposed:         parseBool(c.wiringExposed),
+          roofLeakFlag:          parseBool(c.roofLeakFlag),
+          issueFlag:             parseBool(c.issueFlag),
+          crackWidthMM:          Number(c.crackWidthMM) || 0,
+          toiletFunctionalRatio: toiletRatioVal,
+          powerOutageHours:      Number(c.powerOutageHours) || 0,
+          brokenTap: parseBool(c.brokenTap),
+          cloggedDrain: parseBool(c.cloggedDrain),
+          tankOverflow: parseBool(c.tankOverflow),
+          lowWaterPressure: parseBool(c.lowWaterPressure),
+          wallSeepage: parseBool(c.wallSeepage),
+          brokenDoor: parseBool(c.brokenDoor),
+          brokenWindow: parseBool(c.brokenWindow),
+          pestInfestation: parseBool(c.pestInfestation),
+        },
+      });
+
+      const updatedRecord = await SchoolConditionRecord.findByIdAndUpdate(
+        record._id,
+        {
+          priorityScore:        prediction.riskScore,
+          daysToFailure:        prediction.estimated_days_to_failure,
+          willFailWithin30Days: prediction.within_30_days,
+          willFailWithin60Days: prediction.within_60_days,
+        },
+        { new: true },
+      );
+
+      categoryResults.push({
+        category: cat,
+        success:  true,
+        message:  'Recorded',
+        record:   updatedRecord,
+        prediction: {
+          riskScore:                 prediction.riskScore,
+          riskLevel:                 prediction.riskLevel,
+          estimated_days_to_failure: prediction.estimated_days_to_failure,
+          within_30_days:            prediction.within_30_days,
+          within_60_days:            prediction.within_60_days,
+          deterioration_rate:        prediction.deterioration_rate,
+          evidence:                  prediction.evidence,
+          reason:                    prediction.reason,
+        },
+      });
+    }
+
+    // Single socket emit per submission (covers all 3 categories)
+    const school = await School.findOne({ schoolId: Number(schoolId) }).lean();
+    const schoolName = school?.name || `School ${schoolId}`;
+    const io = getIO();
+    if (io) {
+      io.to(`school:${schoolId}`).emit('report:submitted', {
+        schoolId, schoolName, weekNumber: Number(weekNumber),
+        categories: categoryResults.map(r => r.category),
+      });
+      io.to('admin').emit('report:submitted', {
+        schoolId, schoolName, weekNumber: Number(weekNumber),
+        categories: categoryResults.map(r => r.category),
+      });
+    }
+
+    writeAuditLog(req, 'weekly_report_submitted', 'SchoolConditionRecord', null, {
+      schoolId: Number(schoolId),
+      weekNumber: Number(weekNumber),
+      categories: categoryResults.map(r => r.category),
+    });
+
+    res.status(201).json({
+      success: categoryResults.every(r => r.success),
+      schoolId: Number(schoolId),
+      weekNumber: Number(weekNumber),
+      results: categoryResults,
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+};
+
 // GET /api/reports/:school_id
 export const getReportsBySchool = async (req, res) => {
   try {

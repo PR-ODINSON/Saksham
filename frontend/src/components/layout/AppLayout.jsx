@@ -3,29 +3,31 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Building2, LogOut, Menu, X, ChevronDown, Activity, LayoutDashboard, FileText, School, Zap, Crosshair, Hammer, Shield, Globe, ClipboardList } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
+import { dashboardPathFor } from '../../utils/roleRoutes.js';
 
+// Each role's nav uses its own URL prefix (/peon/dashboard, /principal/dashboard, ...)
 const ROLE_NAV = {
   peon: [
-    // Removed Submit Report — peons land directly on the form
+    // Peons land directly on the weekly input form — no extra nav
   ],
   principal: [
-    { path: '/dashboard', label: 'Principal Dashboard', icon: <LayoutDashboard size={18} strokeWidth={2.5} />, exact: true },
-    { path: '/dashboard/reports', label: 'View Reports', icon: <FileText size={18} strokeWidth={2.5} /> },
+    { path: '/principal/dashboard',         label: 'Principal Dashboard', icon: <LayoutDashboard size={18} strokeWidth={2.5} />, exact: true },
+    { path: '/principal/dashboard/reports', label: 'View Reports',        icon: <FileText size={18} strokeWidth={2.5} /> },
   ],
   deo: [
-    { path: '/dashboard', label: 'Predictive Queue', icon: <Zap size={18} strokeWidth={2.5} />, exact: true },
-    { path: '/dashboard/map', label: 'Live Map', icon: <Globe size={18} strokeWidth={2.5} /> },
-    { path: '/dashboard/work-orders', label: 'Command Center', icon: <Crosshair size={18} strokeWidth={2.5} /> },
+    { path: '/deo/dashboard',              label: 'Predictive Queue', icon: <Zap size={18} strokeWidth={2.5} />, exact: true },
+    { path: '/deo/dashboard/map',          label: 'Live Map',         icon: <Globe size={18} strokeWidth={2.5} /> },
+    { path: '/deo/dashboard/work-orders',  label: 'Command Center',   icon: <Crosshair size={18} strokeWidth={2.5} /> },
   ],
   contractor: [
-    { path: '/dashboard', label: 'My Tasks', icon: <Hammer size={18} strokeWidth={2.5} />, exact: true },
-    { path: '/dashboard/work-orders', label: 'All Orders', icon: <FileText size={18} strokeWidth={2.5} /> },
+    { path: '/contractor/dashboard',              label: 'My Tasks',  icon: <Hammer size={18} strokeWidth={2.5} />, exact: true },
+    { path: '/contractor/dashboard/work-orders',  label: 'All Orders', icon: <FileText size={18} strokeWidth={2.5} /> },
   ],
   admin: [
-    { path: '/dashboard', label: 'Admin Panel', icon: <Shield size={18} strokeWidth={2.5} />, exact: true },
-    { path: '/dashboard/map', label: 'Live Map', icon: <Globe size={18} strokeWidth={2.5} /> },
-    { path: '/dashboard/work-orders', label: 'All Orders', icon: <FileText size={18} strokeWidth={2.5} /> },
-    { path: '/dashboard/audit', label: 'Audit Log', icon: <ClipboardList size={18} strokeWidth={2.5} /> },
+    { path: '/admin/dashboard',              label: 'Admin Panel', icon: <Shield size={18} strokeWidth={2.5} />, exact: true },
+    { path: '/admin/dashboard/map',          label: 'Live Map',    icon: <Globe size={18} strokeWidth={2.5} /> },
+    { path: '/admin/dashboard/work-orders',  label: 'All Orders',  icon: <FileText size={18} strokeWidth={2.5} /> },
+    { path: '/admin/dashboard/audit',        label: 'Audit Log',   icon: <ClipboardList size={18} strokeWidth={2.5} /> },
   ],
 };
 
@@ -77,6 +79,7 @@ export default function AppLayout({ children }) {
 
   const role = user?.role || 'peon';
   const navItems = ROLE_NAV[role] || ROLE_NAV.peon;
+  const dashboardHome = dashboardPathFor(role);
 
   const isActive = (path, exact) => exact ? location.pathname === path : location.pathname.startsWith(path);
 
@@ -128,7 +131,7 @@ export default function AppLayout({ children }) {
           <div className="flex items-center justify-between gap-4">
             {/* Branding Section */}
             <div className="flex items-center gap-6">
-              <Link to="/dashboard" className="flex items-center gap-4 group">
+              <Link to={dashboardHome} className="flex items-center gap-4 group">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white border-2 border-slate-100 flex items-center justify-center shadow-sm p-1.5 transition-transform group-hover:scale-105">
                   <div className="w-full h-full rounded-full border border-blue-100 flex items-center justify-center bg-blue-50/30">
                      <Building2 size={24} className="text-[#003366]" />
@@ -227,7 +230,7 @@ export default function AppLayout({ children }) {
         <div className="bg-[#003366] text-white hidden md:block border-t border-white/10 relative">
           <div className="max-w-7xl mx-auto px-4 lg:px-8 flex items-center h-12">
             <nav className="flex items-center h-full text-[10.5px] font-black uppercase tracking-widest">
-              <Link to="/dashboard" className={`h-full flex items-center px-6 border-r border-white/5 hover:bg-[#002244] transition-all gap-2.5 ${isActive('/dashboard', true) ? 'gov-nav-active' : ''}`}>
+              <Link to={dashboardHome} className={`h-full flex items-center px-6 border-r border-white/5 hover:bg-[#002244] transition-all gap-2.5 ${isActive(dashboardHome, true) ? 'gov-nav-active' : ''}`}>
                 <LayoutDashboard size={16} /> Dashboard
               </Link>
               {navItems.map(item => (
@@ -266,7 +269,7 @@ export default function AppLayout({ children }) {
               <button onClick={() => setMobileOpen(false)}><X size={28} className="text-slate-400" /></button>
             </div>
             <nav className="flex flex-col gap-2">
-              <Link onClick={() => setMobileOpen(false)} to="/dashboard" className="px-4 py-4 rounded-lg bg-slate-50 text-[#003366] font-black uppercase tracking-widest text-xs flex items-center gap-3">
+              <Link onClick={() => setMobileOpen(false)} to={dashboardHome} className="px-4 py-4 rounded-lg bg-slate-50 text-[#003366] font-black uppercase tracking-widest text-xs flex items-center gap-3">
                 <LayoutDashboard size={20} /> Dashboard
               </Link>
               {navItems.map(item => (

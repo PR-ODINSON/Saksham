@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { get, post } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
+import { dashboardPathFor } from "../../utils/roleRoutes.js";
 import { motion } from "framer-motion";
 import {
   Building2, Lock, Mail, ArrowRight,
@@ -82,7 +83,7 @@ export default function Login() {
     const result = await login(form.email, form.password);
     setLoading(false);
     if (result.success) {
-      navigate("/dashboard");
+      navigate(dashboardPathFor(result.user?.role));
     } else {
       setError(result.message || "Invalid credentials. Please try again.");
     }

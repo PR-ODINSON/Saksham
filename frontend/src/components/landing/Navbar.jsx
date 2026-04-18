@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, Building2, ChevronRight, Activity, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import { dashboardPathFor } from '../../utils/roleRoutes.js';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [hoveredLink, setHoveredLink] = useState(null);
-  
-  const navigate = useNavigate(); // Initialize navigate
 
-  // This would typically come from your Auth Context or Redux store
-  // For now, I'm using a placeholder. Replace this with your actual auth logic.
-  const [isLoggedIn, setIsLoggedIn] = useState(false); 
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
 
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
@@ -26,11 +26,11 @@ const Navbar = () => {
   // Handler function for redirection
   const handleDashboardRedirect = () => {
     if (isLoggedIn) {
-      navigate('/dashboard');
+      navigate(dashboardPathFor(user.role));
     } else {
       navigate('/login');
     }
-    setMobileMenuOpen(false); // Close mobile menu if open
+    setMobileMenuOpen(false);
   };
 
   const navLinks = [

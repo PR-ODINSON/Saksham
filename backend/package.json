@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "load-csv": "node scripts/loadCSV.js"
+    "load-csv": "node scripts/loadCSV.js",
+    "clear": "node scripts/clearAll.js",
+    "clear:hard": "node scripts/clearAll.js --hard"
   },
   "keywords": [
     "school",
