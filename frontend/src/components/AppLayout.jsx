@@ -81,14 +81,15 @@ export default function AppLayout({ children }) {
       {/* Floating Navbar Container */}
       <div className="fixed top-0 left-0 right-0 z-50 px-4 pt-4 sm:px-6 transition-all duration-300">
         <header 
-          className={`max-w-7xl mx-auto transition-all duration-500 relative overflow-hidden ${
+          /* REMOVED overflow-hidden FROM HERE */
+          className={`max-w-7xl mx-auto transition-all duration-500 relative ${
             isScrolled 
               ? 'bg-white/95 backdrop-blur-xl border-2 border-[#0f172a] shadow-[8px_8px_0_rgba(15,23,42,0.15)] rounded-[20px] py-3 px-5' 
               : 'bg-white/80 backdrop-blur-md border-2 border-[#0f172a] shadow-[4px_4px_0_rgba(15,23,42,0.05)] rounded-[20px] py-4 px-6'
           }`}
         >
-          {/* Scroll Progress Bar */}
-          <motion.div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: '#2563eb', scaleX, transformOrigin: '0%', zIndex: 10 }} />
+          {/* Scroll Progress Bar (Added border radius to fit the container without overflow-hidden) */}
+          <motion.div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 4, background: '#2563eb', scaleX, transformOrigin: '0%', zIndex: 10, borderBottomLeftRadius: '18px', borderBottomRightRadius: '18px' }} />
           
           <div className="flex items-center justify-between gap-4">
             {/* Brand */}
