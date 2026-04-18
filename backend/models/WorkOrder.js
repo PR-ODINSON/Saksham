@@ -1,50 +1,64 @@
 import mongoose from 'mongoose';
 
-const workOrderSchema = new mongoose.Schema(
-  {
-    schoolId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'School',
-      required: true,
-      index: true,
-    },
-    reportId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'ConditionReport',
-    },
-    category: {
-      type: String,
-      enum: ['plumbing', 'electrical', 'structural', 'sanitation', 'furniture'],
-      required: true,
-    },
-    subCategory: { type: String },
-    description: { type: String, required: true },
-    priority: {
-      type: String,
-      enum: ['low', 'medium', 'high', 'critical'],
-      default: 'medium',
-    },
-    estimatedDays: { type: Number }, // predicted time to failure / urgency
-    riskScore: { type: Number, default: 0 },
-
-    // Assignment
-    assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    assignedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-    assignedAt: { type: Date },
-
-    // Execution
-    status: {
-      type: String,
-      enum: ['pending', 'assigned', 'in_progress', 'completed', 'cancelled'],
-      default: 'pending',
-    },
-    dueDate: { type: Date },
-    completedAt: { type: Date },
-    completionNotes: { type: String },
-    completionImageUrl: { type: String },
-    verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+/**
+ * WorkOrder Schema
+ * Stores work assignments generated from maintenance decisions.
+ */
+const workOrderSchema = new mongoose.Schema({
+  decisionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'MaintenanceDecision',
+    required: [true, 'Maintenance decision reference is required']
   },
-  { timestamps: true }
-);
+  schoolId: {
+    type: Number,
+    required: [true, 'School ID is required']
+  },
+  district: {
+    type: String,
+    required: [true, 'District is required']
+  },
+  category: {
+    type: String,
+    required: [true, 'Category (e.g., electrical, plumbing) is required']
+  },
+  assignment: {
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false
+    },
+    assignedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false
+    }
+  },
+  priorityScore: {
+    type: Number,
+    required: [true, 'Priority score is required']
+  },
+  status: {
+    type: String,
+    enum: {
+      values: ['assigned', 'in_progress', 'completed', 'delayed'],
+      message: '{VALUE} is not a valid status'
+    },
+    default: 'assigned',
+    required: true
+  },
+  deadline: {
+    type: Date,
+    required: [true, 'Deadline date is required']
+  }
+}, {
+  timestamps: true,
+  collection: 'work_orders'
+});
 
-export default mongoose.model('WorkOrder', workOrderSchema);
+// Index for optimizing queries for specific staff members and their active tasks
+workOrderSchema.index({ 'assignment.assignedTo': 1, status: 1 });
+
+const WorkOrder = mongoose.model('WorkOrder', workOrderSchema);
+
+export default WorkOrder;
