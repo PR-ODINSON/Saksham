@@ -3,37 +3,42 @@ import { get, post, patch } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import CompletionModal from "../components/CompletionModal";
+import { Building, Zap, Wrench, Droplets, Grid } from 'lucide-react';
 
 const STATUS_CONFIG = {
-  pending: { label: "Pending", color: "text-slate-400", bg: "bg-slate-700/40 border-slate-600" },
-  assigned: { label: "Assigned", color: "text-blue-400", bg: "bg-blue-500/10 border-blue-500/40" },
-  in_progress: { label: "In Progress", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/40" },
-  completed: { label: "Completed", color: "text-emerald-400", bg: "bg-emerald-500/10 border-emerald-500/40" },
-  cancelled: { label: "Cancelled", color: "text-slate-500", bg: "bg-slate-800 border-slate-700" },
+  pending: { label: "Pending", color: "text-slate-600" },
+  assigned: { label: "Assigned", color: "text-blue-700" },
+  in_progress: { label: "In Progress", color: "text-amber-700" },
+  completed: { label: "Completed", color: "text-emerald-700" },
+  cancelled: { label: "Cancelled", color: "text-slate-500" },
 };
 
 const PRIORITY_CONFIG = {
-  critical: "bg-red-500 text-white",
-  high: "bg-orange-500 text-white",
-  medium: "bg-amber-500 text-white",
-  low: "bg-slate-600 text-slate-200",
+  critical: "bg-red-50 text-red-700 border-red-300",
+  high: "bg-orange-50 text-orange-700 border-orange-300",
+  medium: "bg-amber-50 text-amber-700 border-amber-300",
+  low: "bg-slate-50 text-slate-700 border-slate-300",
 };
 
 const CATEGORY_ICONS = {
-  structural: "🏗️", electrical: "⚡", plumbing: "🔧", sanitation: "🚿", furniture: "🪑",
+  structural: <Building size={20} strokeWidth={2.5} />, 
+  electrical: <Zap size={20} strokeWidth={2.5} />, 
+  plumbing: <Wrench size={20} strokeWidth={2.5} />, 
+  sanitation: <Droplets size={20} strokeWidth={2.5} />, 
+  furniture: <Grid size={20} strokeWidth={2.5} />,
 };
 
 function SLAMetricCard({ count }) {
   return (
-    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-5 flex items-center justify-between">
+    <div className="bg-red-50 border-2 border-[#0f172a] rounded-[20px] p-6 flex items-center justify-between shadow-[6px_6px_0_#0f172a]">
       <div>
-        <p className="text-red-400 text-xs font-bold uppercase tracking-wider mb-1">SLA Compliance Alert</p>
-        <p className="text-2xl font-black text-white">{count} Work Orders</p>
-        <p className="text-red-300/60 text-xs mt-1">Breached SLA deadline this month</p>
+        <p className="text-red-600 text-xs font-black uppercase tracking-widest mb-1">SLA Compliance Alert</p>
+        <p className="text-3xl font-black text-[#0f172a]">{count} Work Orders</p>
+        <p className="text-slate-600 text-xs mt-1 font-bold">Breached SLA deadline this month</p>
       </div>
-      <div className="h-12 w-12 rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-900/40 animate-pulse">
-        <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      <div className="h-14 w-14 rounded-2xl bg-white border-2 border-[#0f172a] flex items-center justify-center shadow-[4px_4px_0_#0f172a] animate-pulse">
+        <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </div>
     </div>
@@ -58,7 +63,6 @@ function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Load contractor users
     get("/api/admin/users").then(d => {
       if (d.success) setContractors(d.users.filter(u => u.role === "contractor"));
     });
@@ -79,35 +83,36 @@ function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
-          <h2 className="text-lg font-semibold text-white">Create Work Order</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>
+    <div className="fixed inset-0 bg-white/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+      <div className="bg-white border-2 border-[#0f172a] rounded-[24px] w-full max-w-lg shadow-[12px_12px_0_#0f172a] overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-5 border-b-2 border-slate-100 bg-slate-50">
+          <h2 className="text-xl font-black text-[#0f172a]">Create Work Order</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl bg-white border-2 border-slate-200 text-[#0f172a] flex items-center justify-center hover:border-[#0f172a] transition-all shadow-sm">✕</button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && <div className="px-3 py-2 rounded-lg bg-red-500/20 border border-red-500/40 text-red-300 text-sm">{error}</div>}
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {error && <div className="px-4 py-3 rounded-xl bg-red-50 border-2 border-red-200 text-red-600 font-bold text-sm">{error}</div>}
 
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="text-xs text-slate-400 mb-1 block">School</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 block">School</label>
               <select value={form.schoolId} onChange={e => setForm({ ...form, schoolId: e.target.value })} required
-                className="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 border-2 border-slate-200 text-[#0f172a] font-bold text-sm focus:outline-none focus:border-[#0f172a] focus:shadow-[4px_4px_0_#0f172a] transition-all appearance-none cursor-pointer">
                 <option value="">Select school…</option>
                 {schools.map(s => <option key={s._id} value={s._id}>{s.name || s.schoolId}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-slate-400 mb-1 block">Category</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 block">Category</label>
               <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                {Object.entries(CATEGORY_ICONS).map(([k, v]) => <option key={k} value={k}>{v} {k}</option>)}
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 border-2 border-slate-200 text-[#0f172a] font-bold text-sm focus:outline-none focus:border-[#0f172a] focus:shadow-[4px_4px_0_#0f172a] transition-all appearance-none cursor-pointer">
+                <option value="">Select category...</option>
+                {Object.keys(CATEGORY_ICONS).map((k) => <option key={k} value={k}>{k.charAt(0).toUpperCase() + k.slice(1)}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-slate-400 mb-1 block">Priority</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 block">Priority</label>
               <select value={form.priority} onChange={e => setForm({ ...form, priority: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 border-2 border-slate-200 text-[#0f172a] font-bold text-sm focus:outline-none focus:border-[#0f172a] focus:shadow-[4px_4px_0_#0f172a] transition-all appearance-none cursor-pointer">
                 <option value="critical">Critical</option>
                 <option value="high">High</option>
                 <option value="medium">Medium</option>
@@ -115,30 +120,32 @@ function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
               </select>
             </div>
             <div className="col-span-2">
-              <label className="text-xs text-slate-400 mb-1 block">Description *</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 block">Description *</label>
               <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} required rows={2}
                 placeholder="Describe the issue and required work…"
-                className="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 border-2 border-slate-200 text-[#0f172a] font-bold text-sm resize-none focus:outline-none focus:border-[#0f172a] focus:shadow-[4px_4px_0_#0f172a] transition-all placeholder:text-slate-400" />
             </div>
             <div>
-              <label className="text-xs text-slate-400 mb-1 block">Assign to Contractor</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 block">Contractor</label>
               <select value={assignedTo} onChange={e => setAssignedTo(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 border-2 border-slate-200 text-[#0f172a] font-bold text-sm focus:outline-none focus:border-[#0f172a] focus:shadow-[4px_4px_0_#0f172a] transition-all appearance-none cursor-pointer">
                 <option value="">Unassigned</option>
                 {contractors.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-slate-400 mb-1 block">Due Date</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1.5 block">Due Date</label>
               <input type="date" value={form.dueDate} onChange={e => setForm({ ...form, dueDate: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 border-2 border-slate-200 text-[#0f172a] font-bold text-sm focus:outline-none focus:border-[#0f172a] focus:shadow-[4px_4px_0_#0f172a] transition-all" />
             </div>
           </div>
 
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg border border-slate-600 text-slate-300 text-sm hover:bg-slate-700">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium disabled:opacity-50">
-              {saving ? "Creating…" : "Create Work Order"}
+          <div className="flex gap-4 pt-4">
+            <button type="button" onClick={onClose} className="flex-1 py-3.5 rounded-xl border-2 border-slate-200 text-slate-600 font-black text-sm hover:border-[#0f172a] hover:text-[#0f172a] transition-all bg-white">
+              Cancel
+            </button>
+            <button type="submit" disabled={saving} className="flex-1 py-3.5 rounded-xl bg-[#0f172a] hover:bg-blue-600 text-white font-black text-sm transition-all border-2 border-[#0f172a] shadow-[4px_4px_0_#2563eb] active:translate-y-1 active:translate-x-1 active:shadow-none disabled:opacity-50">
+              {saving ? "Creating…" : "Create Assignment"}
             </button>
           </div>
         </form>
@@ -180,7 +187,6 @@ export default function WorkOrders() {
   useEffect(() => { fetchOrders(); }, [fetchOrders]);
   useEffect(() => { get("/api/schools").then(d => d.success && setSchools(d.schools)); }, []);
 
-  // Auto-open new work order form if redirected from DEO dashboard
   useEffect(() => {
     if (prefill.schoolId && canAssign) setShowNew(true);
   }, []);
@@ -193,37 +199,40 @@ export default function WorkOrders() {
   const breachedCount = orders.filter(o => o.slaBreach).length;
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl mx-auto">
-      <div className="flex items-center justify-between">
+    <div className="p-6 space-y-8 max-w-6xl mx-auto font-body text-[#0f172a]">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Maintenance Work Orders</h1>
-          <p className="text-slate-400 text-sm mt-0.5">
-            {user?.role === "contractor" ? "Your assigned tasks" : "Track and manage repair assignments"}
+          <h1 className="text-4xl font-black text-[#0f172a] tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>Maintenance Orders</h1>
+          <p className="text-slate-500 font-bold mt-2">
+            {user?.role === "contractor" ? "Your active assigned tasks" : "Track and manage assignments globally"}
           </p>
         </div>
         {canAssign && (
-          <button onClick={() => setShowNew(true)} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium flex items-center gap-2 shadow-lg shadow-blue-900/20 active:translate-y-0.5">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          <button onClick={() => setShowNew(true)} className="px-6 py-3.5 rounded-2xl bg-[#0f172a] hover:bg-blue-600 text-white text-sm font-black flex items-center justify-center gap-2 border-2 border-[#0f172a] shadow-[4px_4px_0_#2563eb] transition-all active:translate-y-1 active:translate-x-1 active:shadow-none">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M12 4v16m8-8H4" />
             </svg>
             New Assignment
           </button>
         )}
       </div>
 
-      {/* SLA Metric Card */}
       {breachedCount > 0 && <SLAMetricCard count={breachedCount} />}
 
       {/* Status filter tabs */}
-      <div className="flex gap-2 flex-wrap bg-slate-800/20 p-1.5 rounded-xl border border-slate-700/50">
+      <div className="flex gap-2 flex-wrap bg-slate-100 p-2 rounded-2xl border-2 border-slate-200">
         {["all", "pending", "assigned", "in_progress", "completed"].map(s => (
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
-            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${statusFilter === s ? "bg-blue-600 text-white shadow-md" : "text-slate-400 hover:text-white hover:bg-slate-700/50"}`}
+            className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all flex items-center gap-2 border-2 ${
+              statusFilter === s 
+                ? "bg-[#0f172a] text-white border-[#0f172a] shadow-[3px_3px_0_#2563eb]" 
+                : "bg-transparent text-slate-500 border-transparent hover:border-slate-300 hover:bg-white hover:text-[#0f172a]"
+            }`}
           >
-            {s === "all" ? "All Orders" : STATUS_CONFIG[s]?.label}
-            <span className={`ml-2 text-[10px] px-1.5 rounded-md ${statusFilter === s ? "bg-blue-400/30" : "bg-slate-700"}`}>
+            {s === "all" ? "ALL ORDERS" : STATUS_CONFIG[s]?.label.toUpperCase()}
+            <span className={`px-2 py-0.5 rounded-md text-[10px] ${statusFilter === s ? "bg-white/20" : "bg-slate-200 text-slate-600"}`}>
               {s === "all" ? orders.length : orders.filter(o => o.status === s).length}
             </span>
           </button>
@@ -232,13 +241,16 @@ export default function WorkOrders() {
 
       {/* Orders list */}
       {loading ? (
-        <div className="text-center py-24 text-slate-500 animate-pulse font-medium">Synchronizing work order registry...</div>
+        <div className="flex flex-col items-center justify-center py-24 space-y-4">
+           <div className="w-12 h-12 border-4 border-slate-200 border-t-[#0f172a] rounded-full animate-spin" />
+           <p className="text-slate-400 font-black tracking-[0.2em] text-[10px] uppercase animate-pulse">Syncing Registry...</p>
+        </div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-24 bg-slate-800/20 rounded-2xl border-2 border-dashed border-slate-700">
-          <p className="text-slate-500 italic">No matching work orders found in the registry.</p>
+        <div className="text-center py-24 bg-white rounded-[2rem] border-2 border-dashed border-slate-300">
+          <p className="text-slate-400 font-bold italic">No matching work orders found in the registry.</p>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid gap-6">
           {filtered.map(order => {
             const sc = STATUS_CONFIG[order.status];
             const pc = PRIORITY_CONFIG[order.priority];
@@ -246,72 +258,78 @@ export default function WorkOrders() {
             const canComplete = isAssignedToMe || canAssign;
             
             return (
-              <div key={order._id} className={`border rounded-xl p-5 transition-all hover:border-slate-500 shadow-sm ${sc.bg} ${order.slaBreach ? 'border-red-500/50 shadow-red-900/10' : ''}`}>
-                <div className="flex items-start justify-between gap-6">
+              <div key={order._id} className={`bg-white border-2 rounded-[2rem] p-6 transition-all hover:-translate-y-1 hover:shadow-[8px_8px_0_#0f172a] group ${
+                order.slaBreach ? 'border-red-500 shadow-[6px_6px_0_#ef4444]' : 'border-[#0f172a] shadow-[4px_4px_0_#0f172a]'
+              }`}>
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 flex-wrap mb-2">
-                      <span className="text-xl">{CATEGORY_ICONS[order.category] || "🔧"}</span>
-                      <span className="font-black text-white capitalize text-lg tracking-tight">{order.category}</span>
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${pc}`}>{order.priority}</span>
+                    <div className="flex items-center gap-3 flex-wrap mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-slate-50 border-2 border-[#0f172a] flex items-center justify-center shadow-[2px_2px_0_#0f172a] text-[#0f172a]">
+                        {CATEGORY_ICONS[order.category] || <Wrench size={20} strokeWidth={2.5} />}
+                      </div>
+                      <span className="font-black text-[#0f172a] uppercase text-xl tracking-tight">{order.category}</span>
+                      <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border-2 ${pc}`}>{order.priority}</span>
                       
                       {order.slaBreach && (
-                        <span className="px-2.5 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-black animate-pulse uppercase">
+                        <span className="px-3 py-1 rounded-lg bg-red-100 border-2 border-red-500 text-red-600 text-[10px] font-black animate-pulse uppercase tracking-widest shadow-[2px_2px_0_#ef4444]">
                           ⚠️ SLA BREACH
                         </span>
                       )}
                     </div>
                     
-                    <p className="text-slate-300 text-sm mb-4 leading-relaxed font-medium">{order.description}</p>
+                    <p className="text-slate-600 text-sm mb-6 font-bold leading-relaxed">{order.description}</p>
                     
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-black/20 p-3 rounded-lg border border-slate-700/50">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-2xl border-2 border-slate-200">
                       <div>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Location</p>
-                        <p className="text-xs text-white truncate font-semibold">🏫 {order.schoolId?.name || "Unknown School"}</p>
+                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1.5">Location</p>
+                        <p className="text-xs text-[#0f172a] truncate font-bold">🏫 {order.schoolId?.name || "Unknown"}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Contractor</p>
-                        <p className="text-xs text-white font-semibold">👷 {order.assignedTo?.name || "Unassigned"}</p>
+                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1.5">Contractor</p>
+                        <p className="text-xs text-[#0f172a] font-bold">👷 {order.assignedTo?.name || "Unassigned"}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Target Date</p>
-                        <p className={`text-xs font-semibold ${order.slaBreach ? 'text-red-400' : 'text-white'}`}>
-                          📅 {order.dueDate ? new Date(order.dueDate).toLocaleDateString() : 'No Deadline'}
+                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1.5">Target Date</p>
+                        <p className={`text-xs font-black ${order.slaBreach ? 'text-red-600' : 'text-[#0f172a]'}`}>
+                          📅 {order.dueDate ? new Date(order.dueDate).toLocaleDateString() : 'None'}
                         </p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Contractor Delay</p>
-                        <p className={`text-xs font-black ${order.contractorDelayDays > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                        <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1.5">Delay</p>
+                        <p className={`text-xs font-black ${order.contractorDelayDays > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
                           ⏱ {order.contractorDelayDays || 0} Days
                         </p>
                       </div>
                     </div>
 
                     {order.status === "completed" && order.completionNotes && (
-                      <div className="mt-4 text-xs text-emerald-300 bg-emerald-500/10 rounded-lg p-3 border border-emerald-500/20">
-                        <span className="font-bold text-emerald-400 uppercase text-[10px] block mb-1">Resolution Summary</span>
-                        {order.completionNotes}
+                      <div className="mt-4 text-xs text-emerald-700 bg-emerald-50 rounded-xl p-4 border-2 border-emerald-200">
+                        <span className="font-black tracking-widest uppercase text-[9px] block mb-1.5">Resolution Notes</span>
+                        <span className="font-bold">{order.completionNotes}</span>
                       </div>
                     )}
                   </div>
 
                   <div className="flex flex-col items-end gap-3 shrink-0">
-                    <span className={`px-3 py-1 rounded-lg text-xs font-black border uppercase tracking-widest bg-slate-900 ${sc.color}`}>{sc.label}</span>
+                    <div className={`px-4 py-2 rounded-xl text-[10px] font-black border-2 border-[#0f172a] uppercase tracking-widest bg-white shadow-[2px_2px_0_#0f172a] ${sc.color}`}>
+                      {sc.label}
+                    </div>
                     
                     {order.status !== "completed" && order.status !== "cancelled" && canComplete && (
                       <button
                         onClick={() => setCompletingOrder(order)}
-                        className="w-full px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all shadow-md shadow-emerald-900/20 active:translate-y-0.5"
+                        className="w-full px-5 py-3.5 rounded-xl bg-white border-2 border-[#0f172a] text-[#0f172a] hover:bg-emerald-50 hover:text-emerald-700 text-[10px] font-black transition-all shadow-[4px_4px_0_#0f172a] active:translate-y-1 active:translate-x-1 active:shadow-none uppercase tracking-widest"
                       >
-                        CLOSE ORDER
+                        Close Order
                       </button>
                     )}
                     
                     {canAssign && order.status === "pending" && (
                       <button
                         onClick={() => patch(`/api/tasks/${order._id}/status`, { status: "assigned" }).then(r => r.success && updateOrderInList(r.workOrder))}
-                        className="w-full px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-black transition-all shadow-md shadow-blue-900/20 active:translate-y-0.5"
+                        className="w-full px-5 py-3.5 rounded-xl bg-[#0f172a] hover:bg-blue-600 text-white border-2 border-[#0f172a] text-[10px] font-black transition-all shadow-[4px_4px_0_#2563eb] active:translate-y-1 active:translate-x-1 active:shadow-none uppercase tracking-widest"
                       >
-                        ASSIGN NOW
+                        Assign Now
                       </button>
                     )}
                   </div>

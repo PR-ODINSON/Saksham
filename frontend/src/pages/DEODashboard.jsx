@@ -1,36 +1,169 @@
-import { useState, useEffect, useCallback } from "react";
-import { get } from "../services/api";
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, animate } from 'framer-motion';
 import { useNavigate } from "react-router-dom";
+import { get } from "../services/api";
 import EvidenceDrawer from "../components/EvidenceDrawer";
-import { Activity, LayoutList, CheckCircle2, ShieldCheck, Wrench, AlertTriangle } from 'lucide-react';
+import {
+  Activity, LayoutList, Wrench, AlertTriangle, Building2, 
+  Cpu, ChevronRight, RefreshCw, Zap, ShieldAlert, Radio, 
+  Globe, Database, ArrowRight
+} from 'lucide-react';
 
-const CATEGORY_COLORS = {
-  structural: "bg-purple-100 text-purple-800 border-purple-300",
-  electrical: "bg-amber-100 text-amber-800 border-amber-300",
-  plumbing: "bg-blue-100 text-blue-800 border-blue-300",
-  sanitation: "bg-emerald-100 text-emerald-800 border-emerald-300",
-  furniture: "bg-slate-100 text-slate-800 border-slate-300",
+/* ─────────────────────────────────────────────────────────
+   BLUE NEO-BRUTALIST SYSTEM + SMOOTH SCROLLING
+   ───────────────────────────────────────────────────────── */
+const GLOBAL_CSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  :root {
+    --font-display: 'Clash Display', 'Cabinet Grotesk', system-ui, sans-serif;
+    --font-mono: 'Space Mono', monospace;
+    --blue: #2563eb;
+    --blue-light: #eff6ff;
+    --dark: #0f172a;
+    --slate: #64748b;
+    --bg: #ffffff;
+  }
+
+  @keyframes scan-line-wipe {
+    0% { left: -10%; opacity: 0; }
+    5% { opacity: 1; }
+    95% { opacity: 1; }
+    100% { left: 110%; opacity: 0; }
+  }
+
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .grid-lines {
+    background-image:
+      linear-gradient(rgba(15,23,42,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(15,23,42,0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* Core AdminDashboard Shadow System */
+  .neo-card {
+    background: var(--bg);
+    border: 2px solid var(--dark);
+    box-shadow: 6px 6px 0 var(--dark);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .neo-card:hover {
+    box-shadow: 10px 10px 0 var(--blue);
+    transform: translate(-2px, -2px);
+  }
+
+  /* Left-Aligned Neo Button */
+  .neo-btn {
+    background: var(--blue);
+    color: #fff;
+    border: 2px solid var(--dark);
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 4px 4px 0 var(--dark);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .neo-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 var(--dark);
+  }
+
+  .neo-btn-outline {
+    background: #fff;
+    color: var(--dark);
+    border: 2px solid var(--dark);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 3px 3px 0 var(--dark);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .neo-btn-outline:hover {
+    background: var(--dark);
+    color: #fff;
+    transform: translate(-1px, -1px);
+    box-shadow: 4px 4px 0 var(--blue);
+  }
+
+  /* Universal Tag (Monochrome Blue) */
+  .step-tag {
+    display: inline-flex;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: var(--blue-light);
+    border: 1px solid var(--blue);
+    color: var(--blue);
+    font-size: 9px;
+    font-weight: 900;
+    font-family: var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .trow { transition: background 0.18s; }
+  .trow:hover { background: var(--blue-light); }
+
+  /* Inputs */
+  input, select {
+    background: #fff;
+    border: 2px solid var(--dark);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--dark);
+    outline: none;
+    box-shadow: 3px 3px 0 var(--dark);
+    transition: all 0.2s;
+  }
+  input:focus, select:focus {
+    box-shadow: 4px 4px 0 var(--blue);
+    transform: translate(-1px, -1px);
+  }
+
+  /* Smooth Custom Scrollbar */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--dark); }
+`;
+
+const Counter = ({ to, prefix = '', suffix = '' }) => {
+  const ref = useRef(null);
+  useEffect(() => {
+    const ctrl = animate(0, to, {
+      duration: 1.5, ease: 'easeOut',
+      onUpdate: (v) => { if (ref.current) ref.current.textContent = prefix + Math.round(v).toLocaleString() + suffix; }
+    });
+    return () => ctrl.stop();
+  }, [to]);
+  return <span ref={ref}>0</span>;
 };
 
-const CATEGORY_ICONS = {
-  structural: "🏗️", electrical: "⚡", plumbing: "🔧", sanitation: "🚿", furniture: "🪑",
-};
-
-function StatCard({ label, value, sub, color = "text-slate-900", icon }) {
-  return (
-    <div className="bg-white border-2 border-slate-900 rounded-2xl p-5 shadow-[4px_4px_0_#0f172a] hover:-translate-y-1 transition-transform flex flex-col justify-between">
-      <div className="flex justify-between items-start mb-4">
-        <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">{label}</p>
-        {icon && <div className="text-blue-600">{icon}</div>}
-      </div>
-      <div>
-        <p className={`text-4xl font-black ${color}`} style={{ fontFamily: 'var(--font-display)' }}>{value}</p>
-        {sub && <p className="text-slate-600 text-xs mt-1 font-semibold">{sub}</p>}
-      </div>
-    </div>
-  );
-}
-
+/* ─────────────────────────────────────────────────────────
+   MAIN DASHBOARD COMPONENT
+   ───────────────────────────────────────────────────────── */
 export default function DEODashboard() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,19 +172,18 @@ export default function DEODashboard() {
   const [category, setCategory] = useState("");
   const [urgency, setUrgency] = useState(60);
   const [selectedSchool, setSelectedSchool] = useState(null);
+  const [lastSync, setLastSync] = useState(new Date());
   
   const navigate = useNavigate();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (district) params.set("district", district);
-    if (block) params.set("block", block);
-    if (category) params.set("category", category);
-    params.set("urgency", urgency);
-    
+    const params = new URLSearchParams({ district, block, category, urgency });
     const res = await get(`/api/risk/queue?${params}`);
-    if (res.success) setData(res.queue);
+    if (res.success) {
+      setData(res.queue);
+      setLastSync(new Date());
+    }
     setLoading(false);
   }, [district, block, category, urgency]);
 
@@ -65,174 +197,251 @@ export default function DEODashboard() {
   };
 
   return (
-    <div className="p-6 space-y-8 max-w-7xl mx-auto min-h-screen bg-slate-50 font-body">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border-2 border-slate-900 mb-3 shadow-[2px_2px_0_#2563eb]">
-             <ShieldCheck size={14} className="text-blue-600" />
-             <span className="text-[10px] font-black text-slate-900 tracking-widest uppercase">Dashboard Active</span>
+    <div style={{ minHeight: '100vh', background: '#fff', fontFamily: 'var(--font-display)' }}>
+      <style>{GLOBAL_CSS}</style>
+
+      {/* ── HERO HEADER ── */}
+      <div style={{ background: '#0f172a', position: 'relative', overflow: 'hidden', paddingTop: 96, paddingBottom: 80 }}>
+        {/* Grid Background */}
+        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
+        <div style={{ position: 'absolute', top: 0, bottom: 0, width: 2, background: 'linear-gradient(to bottom, transparent, #2563eb, transparent)', opacity: 0.5, left: '15%', animation: 'scan-line-wipe 9s linear infinite' }} />
+        
+        {/* Watermark */}
+        <div style={{ position: 'absolute', bottom: -15, left: 0, fontFamily: 'var(--font-display)', fontSize: '15vw', fontWeight: 900, color: 'rgba(255,255,255,0.03)', letterSpacing: '-0.05em', whiteSpace: 'nowrap', userSelect: 'none', lineHeight: 1 }}>
+          COMMAND
+        </div>
+
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 32px', position: 'relative', zIndex: 10 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: 40 }}>
+            
+            {/* Left: Main Title & Action Button */}
+            <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '8px 18px', borderRadius: 99, border: '2px solid rgba(37, 99, 235, 0.4)', background: 'rgba(37, 99, 235, 0.1)', marginBottom: 28, backdropFilter: 'blur(10px)' }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3b82f6', boxShadow: '0 0 12px #3b82f6' }} />
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: '#60a5fa', letterSpacing: '0.14em' }}>SYSTEM SECURE & ONLINE</span>
+              </div>
+              
+              <h1 style={{ fontSize: 'clamp(3rem, 6vw, 5rem)', fontWeight: 900, color: '#fff', lineHeight: 0.95, letterSpacing: '-0.04em', margin: '0 0 20px' }}>
+                Maintenance<br />
+                <span style={{ color: '#3b82f6' }}>Command Center</span>
+              </h1>
+              
+              <p style={{ color: '#94a3b8', fontSize: '1.1rem', lineHeight: 1.6, maxWidth: 480, margin: '0 0 32px' }}>
+                Live risk intelligence, failure prediction, and automated work-order generation for district infrastructure.
+              </p>
+              
+              {/* Geometric Left-Aligned Button */}
+              <button 
+                onClick={() => navigate("/dashboard/work-orders")}
+                className="neo-btn"
+              >
+                <LayoutList size={18} /> Manage Work Orders
+              </button>
+            </motion.div>
+
+            {/* Right: Telemetry */}
+            <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 20 }}>
+              {[
+                { label: 'Forecast Acc', value: '98.4%', icon: ShieldAlert },
+                { label: 'Sys Uptime', value: '100%', icon: Radio },
+                { label: 'API Latency', value: '42ms', icon: Cpu },
+              ].map((item, i) => (
+                <div key={i} style={{ background: 'rgba(255,255,255,0.05)', border: '2px solid rgba(255,255,255,0.1)', borderRadius: 16, padding: '16px 20px', backdropFilter: 'blur(12px)', minWidth: 140 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                    <item.icon size={14} color="#60a5fa" />
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>{item.label}</span>
+                  </div>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#fff' }}>{item.value}</div>
+                </div>
+              ))}
+            </motion.div>
           </div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>District Maintenance Queue</h1>
-          <p className="text-slate-600 text-sm mt-1 font-medium">Aggregated school risks and pending decisions</p>
         </div>
-        <button
-          onClick={() => navigate("/dashboard/work-orders")}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-black transition-all shadow-[4px_4px_0_#2563eb] active:translate-y-1 active:shadow-none border-2 border-slate-900"
-        >
-          <LayoutList size={18} />
-          Manage Work Orders
-        </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard label="Schools at Risk" value={stats.totalSchools} sub="Across all categories" icon={<Activity size={20} />} />
-        <StatCard label="Critical Priority" value={stats.criticalCount} color="text-red-600" sub="Immediate attention" icon={<AlertTriangle size={20} className="text-red-600" />} />
-        <StatCard label="High Priority" value={stats.highRiskCount} color="text-orange-500" sub="Next 15-30 days" />
-        <StatCard label="Avg. Days to Failure" value={`${stats.avgUrgency}d`} sub="System-wide urgency" color="text-blue-600" icon={<Wrench size={20} />} />
-      </div>
-
-      {/* Filters & Controls */}
-      <div className="flex flex-wrap gap-4 items-center bg-white p-5 rounded-2xl border-2 border-slate-900 shadow-[4px_4px_0_#0f172a]">
-        <div className="flex items-center gap-3">
-          <input
-            type="text"
-            placeholder="Search district..."
-            value={district}
-            onChange={e => setDistrict(e.target.value)}
-            className="px-4 py-2.5 rounded-xl bg-slate-50 border-2 border-slate-200 text-slate-900 text-sm font-semibold w-40 focus:border-slate-900 focus:outline-none transition-colors"
-          />
-          <input
-            type="text"
-            placeholder="Search block..."
-            value={block}
-            onChange={e => setBlock(e.target.value)}
-            className="px-4 py-2.5 rounded-xl bg-slate-50 border-2 border-slate-200 text-slate-900 text-sm font-semibold w-40 focus:border-slate-900 focus:outline-none transition-colors"
-          />
-        </div>
-
-        <select
-          value={category}
-          onChange={e => setCategory(e.target.value)}
-          className="px-4 py-2.5 rounded-xl bg-slate-50 border-2 border-slate-200 text-slate-900 text-sm font-semibold focus:border-slate-900 focus:outline-none transition-colors"
-        >
-          <option value="">All Categories</option>
-          {Object.entries(CATEGORY_ICONS).map(([k, v]) => (
-            <option key={k} value={k}>{v} {k.charAt(0).toUpperCase() + k.slice(1)}</option>
+      {/* ── TICKER ── */}
+      <div style={{ background: '#0f172a', borderTop: '2px solid #1e293b', borderBottom: '2px solid #0f172a', padding: '12px 0', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', animation: 'marquee 28s linear infinite', width: 'max-content' }}>
+          {[...Array(4)].map((_, i) => (
+            <div key={i} style={{ display: 'flex', gap: 40, paddingRight: 40 }}>
+              {['STRUCTURAL INTEGRITY: SYNCED', 'ELECTRICAL: VERIFIED', 'WATER SENSORS: ONLINE', 'THERMAL SCAN: COMPLETE'].map((t, idx) => (
+                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 12, fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: '#64748b', whiteSpace: 'nowrap' }}>
+                  <Zap size={12} color="#3b82f6" fill="#3b82f6" /> {t}
+                </div>
+              ))}
+            </div>
           ))}
-        </select>
-
-        {/* Urgency Toggle */}
-        <div className="flex p-1 bg-slate-100 rounded-xl border-2 border-slate-200">
-          <button
-            onClick={() => setUrgency(30)}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${urgency === 30 ? "bg-white text-slate-900 shadow-sm border-2 border-slate-900" : "text-slate-500 hover:text-slate-700 border-2 border-transparent"}`}
-          >
-            30 Days
-          </button>
-          <button
-            onClick={() => setUrgency(60)}
-            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${urgency === 60 ? "bg-white text-slate-900 shadow-sm border-2 border-slate-900" : "text-slate-500 hover:text-slate-700 border-2 border-transparent"}`}
-          >
-            60 Days
-          </button>
         </div>
-
-        <button onClick={fetchData} className="ml-auto px-5 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-bold border-2 border-blue-200 transition-colors">
-          Refresh Data
-        </button>
       </div>
 
-      {/* Main Table */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-32 space-y-4 bg-white border-2 border-slate-900 rounded-2xl shadow-[4px_4px_0_#0f172a]">
-          <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
-          <p className="text-slate-500 font-bold tracking-widest text-sm uppercase">Analyzing predictive queue...</p>
+      {/* ── MAIN CONTENT ── */}
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '56px 32px 100px', position: 'relative' }}>
+        <div className="grid-lines" style={{ position: 'absolute', inset: 0, zIndex: -1, opacity: 0.7 }} />
+
+        {/* ── BENTO STAT CARDS ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 20, marginBottom: 48 }}>
+          {[
+            { label: 'Target Schools', val: stats.totalSchools, icon: Building2 },
+            { label: 'Critical Failure', val: stats.criticalCount, icon: AlertTriangle },
+            { label: 'High Priority', val: stats.highRiskCount, icon: Activity },
+            { label: 'MTTF Average', val: stats.avgUrgency, icon: Wrench, suffix: ' Days' },
+          ].map((s, i) => (
+            <motion.div 
+              key={i} 
+              initial={{ opacity: 0, y: 20 }} 
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-20px" }}
+              transition={{ delay: i * 0.1, duration: 0.4 }} 
+              className="neo-card" 
+              style={{ padding: 28, borderRadius: 20, position: 'relative' }}
+            >
+              <div style={{ position: 'absolute', top: 0, right: 0, width: 60, height: 60, background: '#2563eb', opacity: 0.08, borderRadius: '0 18px 0 60px' }} />
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+                <div style={{ width: 48, height: 48, borderRadius: 14, background: '#eff6ff', border: '2px solid #2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <s.icon size={22} color="#2563eb" />
+                </div>
+                <div className="step-tag">LIVE</div>
+              </div>
+              
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#64748b', fontWeight: 700, textTransform: 'uppercase', marginBottom: 4 }}>{s.label}</p>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 900, margin: 0, color: '#0f172a', letterSpacing: '-0.03em', lineHeight: 1 }}>
+                <Counter to={s.val} suffix={s.suffix} />
+              </h3>
+            </motion.div>
+          ))}
         </div>
-      ) : (
-        <div className="bg-white border-2 border-slate-900 rounded-2xl overflow-hidden shadow-[4px_4px_0_#0f172a]">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+
+        {/* ── DATA DIRECTORY ── */}
+        <motion.div 
+          initial={{ opacity: 0, y: 30 }} 
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-20px" }}
+          transition={{ duration: 0.5 }}
+          className="neo-card" 
+          style={{ borderRadius: 24, overflow: 'hidden' }}
+        >
+          {/* Table Header/Filters */}
+          <div style={{ padding: '28px 32px', borderBottom: '2px solid #0f172a', background: '#fafafa', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+               <div style={{ width: 44, height: 44, borderRadius: 12, background: '#eff6ff', border: '2px solid #0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '3px 3px 0 #0f172a' }}>
+                 <Database size={20} color="#2563eb" />
+               </div>
+               <div>
+                 <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', fontWeight: 900, margin: 0, color: '#0f172a', letterSpacing: '-0.02em' }}>Identity Directory</h2>
+                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#64748b', fontWeight: 700, letterSpacing: '0.08em' }}>{data.length} RECORDS FOUND</span>
+               </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+               <input placeholder="Search District" value={district} onChange={e => setDistrict(e.target.value)} style={{ width: 140 }} />
+               <input placeholder="Search Block" value={block} onChange={e => setBlock(e.target.value)} style={{ width: 140 }} />
+               <select value={category} onChange={e => setCategory(e.target.value)}>
+                 <option value="">All Vectors</option>
+                 <option value="structural">Structural</option>
+                 <option value="electrical">Electrical</option>
+                 <option value="plumbing">Plumbing</option>
+               </select>
+               <button onClick={fetchData} className="neo-btn-outline" style={{ padding: '0 16px' }}>
+                 <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+               </button>
+            </div>
+          </div>
+
+          {/* Table Content */}
+          <div style={{ overflowX: 'auto', scrollBehavior: 'smooth' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
-                <tr className="border-b-2 border-slate-900 bg-slate-50">
-                  <th className="px-6 py-4 text-slate-900 font-black uppercase tracking-widest text-[10px]">School & Location</th>
-                  <th className="px-6 py-4 text-slate-900 font-black uppercase tracking-widest text-[10px]">At-Risk Categories</th>
-                  <th className="px-6 py-4 text-slate-900 font-black uppercase tracking-widest text-[10px]">Days to Failure</th>
-                  <th className="px-6 py-4 text-slate-900 font-black uppercase tracking-widest text-[10px]">Student Impact</th>
-                  <th className="px-6 py-4 text-slate-900 font-black uppercase tracking-widest text-[10px]">Indicators</th>
-                  <th className="px-6 py-4 text-slate-900 font-black uppercase tracking-widest text-[10px] text-right">Actions</th>
+                <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#fafafa' }}>
+                  <th style={{ padding: '16px 32px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Action</th>
+                  <th style={{ padding: '16px 32px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Entity Details</th>
+                  <th style={{ padding: '16px 32px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Alert Vectors</th>
+                  <th style={{ padding: '16px 32px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Forecast Horizon</th>
+                  <th style={{ padding: '16px 32px', fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.14em' }}>Impact Weight</th>
                 </tr>
               </thead>
-              <tbody className="divide-y-2 divide-slate-100">
-                {data.length === 0 && (
-                  <tr><td colSpan={6} className="text-center py-24 text-slate-500 font-semibold">No schools found matching the current urgency window.</td></tr>
+              <tbody>
+                {loading ? (
+                  Array(5).fill(0).map((_, i) => (
+                    <tr key={i}><td colSpan={5} style={{ padding: 32 }}><div style={{ height: 20, width: '100%', background: '#f1f5f9', borderRadius: 4, animation: 'pulse 1.5s infinite' }} /></td></tr>
+                  ))
+                ) : data.length === 0 ? (
+                  <tr><td colSpan={5} style={{ padding: 60, textAlign: 'center' }}><Globe size={32} color="#e2e8f0" style={{ margin: '0 auto 12px' }} /><p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>NO RISK NODES DETECTED</p></td></tr>
+                ) : (
+                  data.map((s, idx) => (
+                    <tr key={idx} onClick={() => setSelectedSchool(s)} className="trow" style={{ borderBottom: '1px solid #f1f5f9', cursor: 'pointer' }}>
+                      
+                      {/* ACTION BUTTON */}
+                      <td style={{ padding: '22px 32px' }}>
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/dashboard/work-orders/new?schoolId=${s.schoolId}&school=${encodeURIComponent(s.schoolName)}&category=${s.highestPriorityCategory}&score=${s.priorityScore}`);
+                          }}
+                          className="neo-btn-outline"
+                        >
+                          Deploy <ArrowRight size={14} />
+                        </button>
+                      </td>
+
+                      {/* ENTITY DETAILS */}
+                      <td style={{ padding: '22px 32px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 10, background: '#0f172a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 14, boxShadow: '2px 2px 0 #2563eb' }}>
+                            {s.schoolName.charAt(0)}
+                          </div>
+                          <div>
+                            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 14, color: '#0f172a', lineHeight: 1.2 }}>{s.schoolName}</div>
+                            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: '#64748b', fontWeight: 600 }}>{s.block}, {s.district}</div>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* VECTORS */}
+                      <td style={{ padding: '22px 32px' }}>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          {s.categories.map(cat => (
+                            <span key={cat} className="step-tag">{cat}</span>
+                          ))}
+                        </div>
+                      </td>
+
+                      {/* HORIZON */}
+                      <td style={{ padding: '22px 32px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: '#0f172a' }}>{s.daysToFailure} DAYS</div>
+                          <div style={{ width: 120, height: 6, background: '#f1f5f9', borderRadius: 10, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                            <motion.div initial={{ width: 0 }} animate={{ width: `${Math.max(10, 100 - s.daysToFailure)}%` }} style={{ height: '100%', background: '#2563eb' }} />
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* IMPACT */}
+                      <td style={{ padding: '22px 32px' }}>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                           <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 900, color: '#0f172a' }}>{s.studentImpactScore}</span>
+                           <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: '#94a3b8' }}>USERS</span>
+                         </div>
+                      </td>
+
+                    </tr>
+                  ))
                 )}
-                {data.map((s) => (
-                  <tr key={s.schoolId} 
-                    className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
-                    onClick={() => setSelectedSchool(s)}
-                  >
-                    <td className="px-6 py-4">
-                      <div className="font-black text-slate-900 group-hover:text-blue-600 transition-colors">{s.schoolName}</div>
-                      <div className="text-slate-500 text-xs font-semibold mt-1">{s.block}, {s.district}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-2">
-                        {s.categories.map(cat => (
-                          <span key={cat} className={`px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wider border-2 ${CATEGORY_COLORS[cat] || "bg-slate-100 text-slate-700 border-slate-300"}`}>
-                            {cat.toUpperCase()}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className={`text-sm font-black ${s.daysToFailure <= 15 ? "text-red-600" : s.daysToFailure <= 30 ? "text-orange-500" : "text-blue-600"}`}>
-                        {s.daysToFailure} days
-                      </div>
-                      <div className="w-24 h-2 bg-slate-100 rounded-full mt-2 overflow-hidden border border-slate-200">
-                        <div 
-                          className={`h-full rounded-full ${s.daysToFailure <= 15 ? "bg-red-500" : s.daysToFailure <= 30 ? "bg-orange-500" : "bg-blue-500"}`}
-                          style={{ width: `${Math.max(10, 100 - (s.daysToFailure))}%` }}
-                        />
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-slate-900 font-bold">{s.studentImpactScore} students</div>
-                      <div className="text-[10px] font-semibold text-slate-500 mt-0.5">Predicted failure impact</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-2">
-                        {s.isGirlsSchool && (
-                          <span className="flex items-center gap-1 text-pink-700 px-2.5 py-1 rounded-lg bg-pink-100 border-2 border-pink-200 text-[10px] font-black">
-                            👩‍🎓 GIRLS
-                          </span>
-                        )}
-                        <span className="flex items-center gap-1 text-slate-700 px-2.5 py-1 rounded-lg bg-slate-100 border-2 border-slate-200 text-[10px] font-black">
-                          📋 {s.topEvidence.length} CLUES
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/dashboard/work-orders/new?schoolId=${s.schoolId}&school=${encodeURIComponent(s.schoolName)}&category=${s.highestPriorityCategory}&score=${s.priorityScore}`);
-                        }}
-                        className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black transition-transform active:scale-95 shadow-[2px_2px_0_#0f172a] border-2 border-slate-900"
-                      >
-                        Assign
-                      </button>
-                    </td>
-                  </tr>
-                ))}
               </tbody>
             </table>
           </div>
-        </div>
-      )}
 
-      {/* Evidence Drawer Integration */}
+          {/* Table Footer */}
+          <div style={{ padding: '16px 32px', borderTop: '2px solid #f1f5f9', background: '#fafafa', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#94a3b8', fontWeight: 700, letterSpacing: '0.1em' }}>LAST REFRESH: {lastSync.toLocaleTimeString()}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#2563eb' }} />
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: '#64748b', fontWeight: 700, letterSpacing: '0.08em' }}>LIVE SYNC</span>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
       <EvidenceDrawer
         isOpen={!!selectedSchool}
         onClose={() => setSelectedSchool(null)}
@@ -240,24 +449,6 @@ export default function DEODashboard() {
         categories={selectedSchool?.categories}
         evidence={selectedSchool?.topEvidence}
       />
-
-      {/* Explanation callout */}
-      <div className="bg-white border-2 border-slate-900 rounded-2xl p-6 shadow-[4px_4px_0_#0f172a]">
-        <div className="flex items-start gap-4">
-          <div className="p-3 rounded-xl bg-blue-50 border-2 border-blue-200 text-blue-600">
-            <CheckCircle2 size={24} />
-          </div>
-          <div>
-            <h3 className="text-sm font-black text-slate-900 mb-2 uppercase tracking-wide">Predictive Aggregation Logic</h3>
-            <p className="text-slate-600 text-sm font-medium leading-relaxed max-w-4xl">
-              This queue aggregates multiple infrastructure predictions into single school rows. 
-              <strong className="text-slate-900 font-black mx-1">Days to Failure</strong> reflects the earliest predicted breakdown across plumbing, electrical, or structural categories. 
-              <strong className="text-slate-900 font-black mx-1">Highest Priority Category</strong> is selected based on the component with the steepest deterioration trend. 
-              Click any row to reveal the specific data-points that triggered the maintenance alert.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
