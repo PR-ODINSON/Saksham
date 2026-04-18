@@ -6,8 +6,10 @@ import EvidenceDrawer from "../components/EvidenceDrawer";
 import {
   Activity, LayoutList, Wrench, AlertTriangle, Building2, 
   Cpu, ChevronRight, RefreshCw, Zap, ShieldAlert, Radio, 
-  Globe, Database, ArrowRight
+  Globe, Database, ArrowRight, MapPin
 } from 'lucide-react';
+// Map no longer used in Dashboard
+
 
 /* ─────────────────────────────────────────────────────────
    BLUE NEO-BRUTALIST SYSTEM + SMOOTH SCROLLING
@@ -179,16 +181,18 @@ export default function DEODashboard() {
   const [flaggedOrders, setFlaggedOrders] = useState([]);
   const [alerts, setAlerts] = useState([]);
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
+  const [schoolsList, setSchoolsList] = useState([]);
   
   const navigate = useNavigate();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({ district, block, category, urgency });
-    const [riskRes, flaggedRes, alertsRes] = await Promise.all([
+    const [riskRes, flaggedRes, alertsRes, schoolsRes] = await Promise.all([
       get(`/api/risk/queue?${params}`),
       get(`/api/tasks?locationMismatch=true`),
-      get(`/api/alerts?type=GPS_MISMATCH`)
+      get(`/api/alerts?type=GPS_MISMATCH`),
+      get(`/api/schools`)
     ]);
 
     if (riskRes.success) {
@@ -200,6 +204,9 @@ export default function DEODashboard() {
     }
     if (alertsRes.success) {
       setAlerts(alertsRes.data);
+    }
+    if (schoolsRes.success) {
+      setSchoolsList(schoolsRes.schools);
     }
     setLoading(false);
   }, [district, block, category, urgency]);
