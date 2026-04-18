@@ -3,17 +3,50 @@
  * POST /api/reports  → creates a SchoolConditionRecord + runs ML prediction
  * GET  /api/reports/:school_id → returns records for one school
  */
-import { SchoolConditionRecord, MaintenanceDecision, School } from '../models/index.js';
+import { SchoolConditionRecord, MaintenanceDecision, School, ReportImage } from '../models/index.js';
 import { predictRiskForCategory } from '../services/predictionEngine.js';
 import { predictWithLR } from '../services/lrModel.js';
+import { recomputeDistrictAnalytics } from '../services/districtAnalytics.js';
 import { getIO } from '../socket/index.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
+
+// Fire-and-forget district analytics refresh. Errors are logged but never
+// bubble up — a flaky Mongo round-trip should not fail the user's POST.
+const refreshDistrict = (district) => {
+  if (!district) return;
+  recomputeDistrictAnalytics(district).catch(err =>
+    console.warn(`[analytics] recompute failed for ${district}:`, err.message),
+  );
+};
 
 const VALID_CATEGORIES = ['plumbing', 'electrical', 'structural'];
 const VALID_CONDITIONS = [1, 2, 3, 4, 5]; // conditionScore 1–5
 
 /** Safe boolean parse — handles both JSON (boolean) and FormData (string) */
 const parseBool = (val) => val === true || val === 'true' || val === '1' || val === 1;
+
+/**
+ * Persist a multer in-memory file as a MongoDB document so the image is
+ * available from any laptop talking to the same Atlas cluster (i.e. not
+ * tied to whatever machine is hosting the backend filesystem).
+ *
+ * Returns `/api/images/<id>` — the same URL shape the frontend already
+ * concatenates onto API_BASE.
+ */
+async function persistImageToMongo(file, ctx = {}) {
+  if (!file || !file.buffer) return null;
+  const doc = await ReportImage.create({
+    schoolId:    ctx.schoolId,
+    weekNumber:  ctx.weekNumber,
+    category:    ctx.category,
+    uploadedBy:  ctx.uploadedBy,
+    originalName:file.originalname,
+    mimeType:    file.mimetype,
+    sizeBytes:   file.size,
+    data:        file.buffer,
+  });
+  return `/api/images/${doc._id}`;
+}
 
 // POST /api/reports
 export const submitReport = async (req, res) => {
@@ -42,12 +75,23 @@ export const submitReport = async (req, res) => {
       return res.status(400).json({ success: false, message: 'conditionScore must be 1–5' });
     }
 
-    // Image URLs from multer — store relative path so /uploads static can serve them
-    const imageUrls = req.files?.length
-      ? req.files.map(f => `/uploads/${f.filename}`)
+    // Image bytes from multer (memory storage) → saved as MongoDB documents.
+    // The returned URLs (/api/images/<id>) work from any laptop that can
+    // reach Atlas, so photos are no longer tied to the backend's local disk.
+    const ctxForImages = {
+      schoolId:   Number(schoolId),
+      weekNumber: Number(weekNumber),
+      category,
+      uploadedBy: req.user?._id || req.user?.id,
+    };
+    const incomingFiles = req.files?.length
+      ? req.files
       : req.file
-      ? [`/uploads/${req.file.filename}`]
+      ? [req.file]
       : [];
+    const imageUrls = (
+      await Promise.all(incomingFiles.map(f => persistImageToMongo(f, ctxForImages)))
+    ).filter(Boolean);
 
     const hasPhoto      = imageUrls.length > 0;
     const photoUploaded = hasPhoto || parseBool(req.body.photoUploaded);
@@ -193,6 +237,7 @@ export const submitReport = async (req, res) => {
       category,
       conditionScore: Number(conditionScore),
     });
+    refreshDistrict(district);
 
     res.status(201).json({
       success: true,
@@ -296,7 +341,13 @@ export const submitWeeklyReport = async (req, res) => {
       }
 
       const imgFile = filesByCat[cat];
-      const imageUrls = imgFile ? [`/uploads/${imgFile.filename}`] : [];
+      const persistedUrl = imgFile ? await persistImageToMongo(imgFile, {
+        schoolId:   Number(schoolId),
+        weekNumber: Number(weekNumber),
+        category:   cat,
+        uploadedBy: req.user?._id || req.user?.id,
+      }) : null;
+      const imageUrls = persistedUrl ? [persistedUrl] : [];
 
       const updatePayload = {
         ...baseMeta,
@@ -447,6 +498,7 @@ export const submitWeeklyReport = async (req, res) => {
       weekNumber: Number(weekNumber),
       categories: categoryResults.map(r => r.category),
     });
+    refreshDistrict(req.body.district);
 
     res.status(201).json({
       success: categoryResults.every(r => r.success),
@@ -671,6 +723,7 @@ export const forwardWeeklyReport = async (req, res) => {
     writeAuditLog(req, 'weekly_report_forwarded', 'SchoolConditionRecord', null, {
       schoolId, weekNumber, district, count: records.length,
     });
+    refreshDistrict(district);
 
     res.json({
       success: true,
@@ -706,6 +759,7 @@ export const forwardReport = async (req, res) => {
       io.to('admin').emit('report:forwarded', { reportId: doc._id, schoolId: doc.schoolId, district });
     }
     writeAuditLog(req, 'report_forwarded', 'SchoolConditionRecord', doc._id, { district });
+    refreshDistrict(district);
 
     res.json({ success: true, message: 'Forwarded', reportId: doc._id });
   } catch (err) {

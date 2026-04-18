@@ -31,6 +31,7 @@ import analyticsRoutes        from './routes/analytics.routes.js';
 import maintenanceRoutes      from './routes/maintenance.routes.js';
 import schoolConditionRoutes  from './routes/schoolCondition.routes.js';
 import usersRoutes            from './routes/users.routes.js';
+import imageRoutes            from './routes/image.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -59,6 +60,8 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api', apiLimiter);
+// Legacy path: older records still reference /uploads/* on the local disk.
+// New uploads now go to MongoDB and are served from /api/images/:id below.
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ─── Seed / Wipe ──────────────────────────────────────────────────────────────
@@ -118,6 +121,9 @@ app.use('/api/schools', schoolRoutes);
 
 // ─── Users ────────────────────────────────────────────────────────────────────
 app.use('/api/users', usersRoutes);
+
+// ─── Images (peon-uploaded photos stored in MongoDB) ─────────────────────────
+app.use('/api/images', imageRoutes);
 
 // ─── Legacy aliases (backwards compat) ───────────────────────────────────────
 app.use('/api/condition-report', reportRoutes);
