@@ -8,7 +8,7 @@
  *   - within_30_days / within_60_days
  *   - deterioration_rate
  */
-import { SchoolConditionRecord, MaintenanceDecision } from '../models/index.js';
+import { SchoolConditionRecord, MaintenanceDecision, School } from '../models/index.js';
 import { predictRiskForCategory } from '../services/predictionEngine.js';
 
 // ─── GET /api/risk/:school_id ─────────────────────────────────────────────────
@@ -223,6 +223,11 @@ export const getMaintenanceQueue = async (req, res) => {
               },
               0
             ]
+          },
+          // Treat null daysToFailure as 9999 so it still shows in the queue
+          // (null means we haven't computed it yet — always show to the DEO)
+          daysToFailureNorm: {
+            $ifNull: ['$minDaysToFailure', 9999]
           }
         }
       },
@@ -232,11 +237,11 @@ export const getMaintenanceQueue = async (req, res) => {
           schoolId: 1, schoolName: 1, district: 1, block: 1,
           isGirlsSchool: 1, studentImpactScore: 1, categories: 1,
           highestPriorityCategory: '$highestPriorityCategory.category',
-          daysToFailure:  '$minDaysToFailure',
+          daysToFailure:  '$daysToFailureNorm',
           priorityScore:  '$maxPriorityScore',
           topEvidence:    1,
-          within_30_days: { $lte: ['$minDaysToFailure', 30] },
-          within_60_days: { $lte: ['$minDaysToFailure', 60] },
+          within_30_days: { $lte: ['$daysToFailureNorm', 30] },
+          within_60_days: { $lte: ['$daysToFailureNorm', 60] },
         }
       },
       { $match: { daysToFailure: { $lte: Number(urgency) } } },
@@ -279,6 +284,52 @@ export const getRiskScores = async (req, res) => {
     ]);
 
     res.json({ success: true, riskScores: scores });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ─── GET /api/risk/heatmap ────────────────────────────────────────────────────
+// Returns aggregated heatmap data for open MaintenanceDecision records.
+export const getHeatmap = async (req, res) => {
+  try {
+    const { district } = req.query;
+
+    const matchFilter = { status: { $in: ['pending', 'assigned'] } };
+    if (district) matchFilter.district = district;
+
+    const pipeline = [
+      { $match: matchFilter },
+      {
+        $lookup: {
+          from: 'schools',
+          localField: 'schoolId',
+          foreignField: 'schoolId',
+          as: 'schoolInfo',
+        },
+      },
+      { $unwind: { path: '$schoolInfo', preserveNullAndEmptyArrays: true } },
+      {
+        $group: {
+          _id: '$schoolId',
+          schoolId:         { $first: '$schoolId' },
+          schoolName:       { $first: '$schoolInfo.name' },
+          district:         { $first: '$district' },
+          taluka:           { $first: '$schoolInfo.block' },
+          lat:              { $first: '$schoolInfo.location.lat' },
+          lng:              { $first: '$schoolInfo.location.lng' },
+          openCount:        { $sum: 1 },
+          maxPriorityScore: { $max: '$decision.computedPriorityScore' },
+          categories:       { $addToSet: '$category' },
+          latestDecisionId: { $last: '$_id' },
+        },
+      },
+      { $match: { lat: { $ne: null }, lng: { $ne: null } } },
+      { $sort: { maxPriorityScore: -1 } },
+    ];
+
+    const results = await MaintenanceDecision.aggregate(pipeline);
+    res.json({ success: true, heatmap: results });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

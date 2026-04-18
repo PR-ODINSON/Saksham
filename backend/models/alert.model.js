@@ -40,6 +40,8 @@ const alertSchema = new mongoose.Schema({
   collection: 'alerts'
 });
 
+alertSchema.index({ district: 1, type: 1, resolved: 1 });
+
 const Alert = mongoose.model('Alert', alertSchema);
 
 export default Alert;

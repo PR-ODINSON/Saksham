@@ -4,6 +4,8 @@
  */
 import mongoose from 'mongoose';
 import { WorkOrder, MaintenanceDecision, RepairLog, SchoolConditionRecord, School, Alert } from '../models/index.js';
+import { getIO } from '../socket/index.js';
+import { writeAuditLog } from '../utils/auditLogger.js';
 
 /**
  * Haversine formula to calculate distance between two points in km.
@@ -101,7 +103,7 @@ export const assignTask = async (req, res) => {
       }
     }
 
-    const workOrder = await WorkOrder.create({
+    const task = await WorkOrder.create({
       decisionId:    resolvedDecisionId || undefined,
       schoolId:      Number(schoolId),
       district:      district || '',
@@ -115,7 +117,25 @@ export const assignTask = async (req, res) => {
       deadline: new Date(deadline),
     });
 
-    res.status(201).json({ success: true, workOrder });
+    // ── Socket.IO emit + audit log ────────────────────────────────────────
+    const resolvedDistrict = district || '';
+    const io = getIO();
+    if (io) {
+      if (assignedTo) {
+        io.to(`contractor:${assignedTo}`).emit('task:assigned', { task, contractorId: assignedTo, district: resolvedDistrict });
+      }
+      if (resolvedDistrict) {
+        io.to(`deo:${resolvedDistrict}`).emit('task:assigned', { task, district: resolvedDistrict });
+      }
+      io.to('admin').emit('task:assigned', { task });
+    }
+    writeAuditLog(req, 'task_assigned', 'WorkOrder', task._id, {
+      schoolId: Number(schoolId),
+      category,
+      contractorId: assignedTo,
+    });
+
+    res.status(201).json({ success: true, workOrder: task });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }
@@ -202,7 +222,7 @@ export const completeTask = async (req, res) => {
         conditionScore: Number(afterConditionScore) || 2,
       },
       completionTimeDays,
-      contractorDelayDays: slaBreached ? Math.max(0, completionTimeDays - 30) : 0, // Simplified delay logic
+      contractorDelayDays: slaBreached ? Math.max(0, completionTimeDays - 30) : 0,
       slaBreached,
       locationMismatch,
       photoUrl
@@ -215,6 +235,25 @@ export const completeTask = async (req, res) => {
         { status: 'completed' },
       );
     }
+
+    // ── Socket.IO emit + audit log ────────────────────────────────────────
+    const taskDistrict = workOrder.district;
+    const io = getIO();
+    if (io) {
+      if (taskDistrict) {
+        io.to(`deo:${taskDistrict}`).emit('task:completed', {
+          taskId: workOrder._id,
+          district: taskDistrict,
+          schoolId: workOrder.schoolId,
+        });
+      }
+      io.to('admin').emit('task:completed', { taskId: workOrder._id });
+    }
+    writeAuditLog(req, 'task_completed', 'WorkOrder', workOrder._id, {
+      schoolId: workOrder.schoolId,
+      locationMismatch,
+      slaBreached: repairLog.slaBreached,
+    });
 
     res.json({ success: true, workOrder, repairLog });
   } catch (err) {
@@ -233,6 +272,79 @@ export const updateTaskStatus = async (req, res) => {
     );
     if (!workOrder) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, workOrder });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// PATCH /api/tasks/:id/respond  (contractor accept/reject)
+export const respondToTask = async (req, res) => {
+  try {
+    const { decision, note, scope } = req.body;
+    const taskId = req.params.id;
+
+    if (!['accepted', 'rejected'].includes(decision)) {
+      return res.status(400).json({ success: false, message: "decision must be 'accepted' or 'rejected'" });
+    }
+
+    const task = await WorkOrder.findById(taskId);
+    if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
+
+    const isContractor = req.user?.role === 'contractor' &&
+      task.assignment?.assignedTo?.toString() === req.user.id;
+    const isAuthorised = isContractor || ['deo', 'admin'].includes(req.user?.role);
+    if (!isAuthorised) {
+      return res.status(403).json({ success: false, message: 'Not authorised' });
+    }
+
+    let updatedCount = 0;
+
+    if (decision === 'rejected') {
+      task.status = 'pending';
+      task.assignment.assignedTo = undefined;
+      await task.save();
+      updatedCount = 1;
+
+      writeAuditLog(req, 'task_rejected', 'WorkOrder', task._id, { note });
+    } else if (decision === 'accepted' && scope === 'district') {
+      // Accept all pending/assigned tasks in same district for same contractor
+      const result = await WorkOrder.updateMany(
+        {
+          district:   task.district,
+          'assignment.assignedTo': task.assignment.assignedTo,
+          status: { $in: ['pending', 'assigned'] },
+        },
+        { $set: { status: 'accepted' } },
+      );
+      updatedCount = result.modifiedCount;
+
+      // Write audit for each touched doc — simplified: one log for the batch
+      writeAuditLog(req, 'task_accepted_district', 'WorkOrder', task._id, {
+        scope: 'district',
+        district: task.district,
+        updatedCount,
+        note,
+      });
+    } else {
+      // accepted + school
+      task.status = 'accepted';
+      await task.save();
+      updatedCount = 1;
+
+      writeAuditLog(req, 'task_accepted', 'WorkOrder', task._id, { scope: 'school', note });
+    }
+
+    // ── Socket.IO emit ─────────────────────────────────────────────────
+    const io = getIO();
+    if (io) {
+      const emitPayload = { taskId: task._id, decision, note, district: task.district };
+      if (task.district) {
+        io.to(`deo:${task.district}`).emit('contractor:decision', emitPayload);
+      }
+      io.to('admin').emit('contractor:decision', emitPayload);
+    }
+
+    res.json({ success: true, updated: updatedCount });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

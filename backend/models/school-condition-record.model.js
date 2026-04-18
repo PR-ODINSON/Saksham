@@ -84,9 +84,13 @@ const schoolConditionRecordSchema = new mongoose.Schema({
     type: Boolean
   },
 
-  // Field
+  // Field evidence — photoUploaded kept for backward-compat; images holds paths
   photoUploaded: {
     type: Boolean
+  },
+  images: {
+    type: [String],
+    default: [],
   },
 
   // Prediction
@@ -119,7 +123,14 @@ const schoolConditionRecordSchema = new mongoose.Schema({
   },
   slaBreach: {
     type: Boolean
-  }
+  },
+
+  // Review / forward workflow
+  reviewNote:  { type: String },
+  reviewedBy:  { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  reviewedAt:  { type: Date },
+  forwardedAt: { type: Date },
+  forwardedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, {
   timestamps: true,
   collection: 'school_condition_records'
@@ -127,6 +138,8 @@ const schoolConditionRecordSchema = new mongoose.Schema({
 
 // Compound index: { schoolId, category, weekNumber } unique
 schoolConditionRecordSchema.index({ schoolId: 1, category: 1, weekNumber: 1 }, { unique: true });
+// Additional indexes for Phase 2
+schoolConditionRecordSchema.index({ schoolId: 1, district: 1, category: 1 });
 
 const SchoolConditionRecord = mongoose.model('SchoolConditionRecord', schoolConditionRecordSchema);
 

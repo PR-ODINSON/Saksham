@@ -41,7 +41,7 @@ const workOrderSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: {
-      values: ['pending', 'assigned', 'in_progress', 'completed', 'delayed', 'cancelled'],
+      values: ['pending', 'assigned', 'accepted', 'in_progress', 'completed', 'delayed', 'cancelled'],
       message: '{VALUE} is not a valid status',
     },
     default: 'pending',

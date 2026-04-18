@@ -7,6 +7,7 @@ import {
   loadCSVData,
   getPriorityConfig,
   updatePriorityConfig,
+  getAuditLogs,
 } from '../controllers/admin.controller.js';
 
 const router = express.Router();
@@ -23,5 +24,8 @@ router.get('/load-csv', authorize('admin'), loadCSVData);
 // Priority config — DEO and admin can read; only admin can write
 router.get('/priority-config', getPriorityConfig);
 router.put('/priority-config', authorize('admin'), updatePriorityConfig);
+
+// Audit logs
+router.get('/audit-logs', authorize('admin'), getAuditLogs);
 
 export default router;

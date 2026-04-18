@@ -1,10 +1,26 @@
 /**
  * Demo seed — populates a small set of test records using the new schema.
  * GET /api/seed-demo
+ * GET /api/wipe-data  — wipes condition data only; keeps Users + Schools
  */
 import User from '../models/user.model.js';
 import { SchoolConditionRecord, MaintenanceDecision, WorkOrder, Alert, DistrictAnalytics, School } from '../models/index.js';
 import { hashPassword } from '../Methods/bcryptPassword.js';
+
+export const wipeData = async (_req, res) => {
+  try {
+    await Promise.all([
+      SchoolConditionRecord.deleteMany({}),
+      MaintenanceDecision.deleteMany({}),
+      WorkOrder.deleteMany({}),
+      Alert.deleteMany({}),
+      DistrictAnalytics.deleteMany({}),
+    ]);
+    res.json({ success: true, message: 'All condition records, decisions, work orders and alerts have been wiped. Users and schools retained.' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
 
 export const seedDatabase = async (_req, res) => {
   try {
@@ -16,6 +32,7 @@ export const seedDatabase = async (_req, res) => {
       WorkOrder.deleteMany({}),
       Alert.deleteMany({}),
       DistrictAnalytics.deleteMany({}),
+      School.deleteMany({}),
     ]);
 
     // ── Users ────────────────────────────────────────────────────────────────

@@ -9,7 +9,12 @@
     "dev": "nodemon server.js",
     "load-csv": "node scripts/loadCSV.js"
   },
-  "keywords": ["school", "maintenance", "predictive", "infrastructure"],
+  "keywords": [
+    "school",
+    "maintenance",
+    "predictive",
+    "infrastructure"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
@@ -22,6 +27,8 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^7.6.3",
     "multer": "^1.4.5-lts.1",
+    "pdfkit": "^0.18.0",
+    "socket.io": "^4.8.3",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

@@ -1,140 +1,79 @@
-# Tarkshaastra — Project Progress Document
+# Saksham / Tarkshaastra — Project Progress Report
 
-> **Project Name:** Saksham (Platform) / Tarkshaastra (Repo)
+> **Platform Name:** Saksham (सक्षम — "capable / empowered")
+> **Repo:** Tarkshaastra
 > **Problem Statement:** TS-03 — Predictive Maintenance Engine for School Infrastructure
-> **Stack:** React 18 + Vite (Frontend) · Express + Mongoose (Backend) · MongoDB (Database)
+> **Stack:** React 18 + Vite · Express 4 + Mongoose 7 · MongoDB
 > **Last Updated:** April 18, 2026
 
 ---
 
 ## Table of Contents
 
-1. [Problem Statement Analysis — TS-03](#1-problem-statement-analysis--ts-03)
-2. [PS-Required Features vs Implementation Status](#2-ps-required-features-vs-implementation-status)
+1. [Problem Statement (TS-03) Summary](#1-problem-statement-ts-03-summary)
+2. [PS-03 Requirements vs Implementation](#2-ps-03-requirements-vs-implementation)
 3. [Repository Structure](#3-repository-structure)
 4. [Technology Stack](#4-technology-stack)
-5. [Backend — Features & Implementation](#5-backend--features--implementation)
-   - 5.1 [Server Setup & Middleware](#51-server-setup--middleware)
-   - 5.2 [Authentication & Authorization](#52-authentication--authorization)
-   - 5.3 [User Profiles](#53-user-profiles)
-   - 5.4 [School Management](#54-school-management)
-   - 5.5 [Condition Reports (Weekly Input)](#55-condition-reports-weekly-input)
-   - 5.6 [Risk Prediction Engine](#56-risk-prediction-engine)
-   - 5.7 [Risk Score API](#57-risk-score-api)
-   - 5.8 [Maintenance Queue](#58-maintenance-queue)
-   - 5.9 [Tasks / Work Orders (PS-03 Flow)](#59-tasks--work-orders-ps-03-flow)
-   - 5.10 [Legacy Work Orders API](#510-legacy-work-orders-api)
-   - 5.11 [Alerts System](#511-alerts-system)
-   - 5.12 [District Analytics](#512-district-analytics)
-   - 5.13 [Maintenance Decisions, Work Orders & Repair Logs](#513-maintenance-decisions-work-orders--repair-logs)
-   - 5.14 [School Conditions](#514-school-conditions)
-   - 5.15 [Admin Panel & Priority Config](#515-admin-panel--priority-config)
-   - 5.16 [CSV Bulk Import Pipeline](#516-csv-bulk-import-pipeline)
-   - 5.17 [File Upload System](#517-file-upload-system)
-   - 5.18 [GPS Validation & Location Mismatch](#518-gps-validation--location-mismatch)
-   - 5.19 [Model Accuracy & Prediction Feedback Loop](#519-model-accuracy--prediction-feedback-loop)
+5. [Backend Architecture](#5-backend-architecture)
 6. [Database Models & Schemas](#6-database-models--schemas)
-7. [Frontend — Features & Implementation](#7-frontend--features--implementation)
-   - 7.1 [Application Routing & Layout](#71-application-routing--layout)
-   - 7.2 [Authentication Context & Flow](#72-authentication-context--flow)
-   - 7.3 [API Service Layer](#73-api-service-layer)
-   - 7.4 [Landing Page](#74-landing-page)
-   - 7.5 [Login & Signup Pages](#75-login--signup-pages)
-   - 7.6 [Protected Dashboard Shell](#76-protected-dashboard-shell)
-   - 7.7 [School View (Peon/Principal Role)](#77-school-view-peonprincipal-role)
-   - 7.8 [DEO Dashboard](#78-deo-dashboard)
-   - 7.9 [Weekly Condition Report Form](#79-weekly-condition-report-form)
-   - 7.10 [Work Orders Page (Contractor Role)](#710-work-orders-page-contractor-role)
-   - 7.11 [Completion Modal (GPS + Photo Proof)](#711-completion-modal-gps--photo-proof)
-   - 7.12 [Evidence Drawer](#712-evidence-drawer)
-   - 7.13 [Reusable UI Components](#713-reusable-ui-components)
-8. [API Endpoints Reference](#8-api-endpoints-reference)
-9. [Configuration & Tooling](#9-configuration--tooling)
-10. [Scripts & Utilities](#10-scripts--utilities)
-11. [Environment Variables](#11-environment-variables)
-12. [Deployment Configuration](#12-deployment-configuration)
-13. [Known Issues & Gaps](#13-known-issues--gaps)
+7. [Prediction Engine Deep Dive](#7-prediction-engine-deep-dive)
+8. [Frontend Architecture](#8-frontend-architecture)
+9. [API Endpoints Reference](#9-api-endpoints-reference)
+10. [CSV Pipeline & Scripts](#10-csv-pipeline--scripts)
+11. [Environment & Deployment](#11-environment--deployment)
+12. [Known Gaps & Technical Debt](#12-known-gaps--technical-debt)
 
 ---
 
-## 1. Problem Statement Analysis — TS-03
+## 1. Problem Statement (TS-03) Summary
 
-**Title:** Predictive Maintenance Engine — School Infrastructure
+**Domain:** Public Institution · AI / ML
+**Geography:** Gujarat (30,000+ government school buildings)
 
-**Domain:** Public Institution · AI/ML
+**Core problem:** School repairs happen **reactively** — after visible failure. PS-03 demands a **predictive** maintenance system:
 
-**Core Problem:**
-Gujarat has over 30,000 government school buildings, a large proportion of which have classrooms, toilets, or electrical fittings in disrepair. Repairs happen **reactively** — after failure is visible. The PS demands a **predictive** maintenance system where school staff submit weekly structured condition inputs via a simple mobile form. The system aggregates inputs, learns deterioration patterns by building age, material, and weather zone, and generates a prioritised maintenance schedule for the DEO — flagging schools **30–60 days** from critical failure across plumbing, electrical, and structural categories.
+1. Peons / watchmen submit a weekly structured dropdown form (< 2 min)
+2. Engine aggregates inputs, learns deterioration patterns by building age, material, and weather zone
+3. System flags schools **30–60 days** from critical failure across plumbing, electrical, and structural categories
+4. DEO gets a district-level **prioritised maintenance queue**
+5. Contractor confirms completion with GPS + photo
+6. Repair records feed back into the model (learning loop)
 
-### User Roles (from PS)
-
-| Role | Key Use Case |
-|---|---|
-| **School Peon/Watchman** | Opens weekly dropdown form; selects category and condition; uploads optional photo (< 2 min) |
-| **School Principal** | Views school condition summary; approves urgent repair requests |
-| **DEO** | Views prioritised district maintenance queue; assigns contractors; tracks SLA |
-| **Contractor** | Receives work order; submits photo + GPS completion confirmation |
-
-### PS Winning Logic (Differentiators)
-
-1. **Failure prediction is category-specific** — plumbing, electrical, and structural tracked independently
-2. **Prioritisation accounts for student impact** — broken toilet in girls' school ranks above cracked storage wall
-3. **Prediction cites specific inputs that triggered it** — not a black-box score (cited evidence)
-4. **DEO receives a district-level maintenance queue** — not school-by-school alert flood
-5. **System learns from completed repairs** — repair records update the deterioration model
-
-### 8 Functionalities Required by PS
-
-| # | Requirement | Implementation Status |
-|---|---|---|
-| 1 | Structured weekly condition form: dropdown + photo, no free text, completable in < 2 minutes | ✅ Done — `WeeklyInputForm.jsx` |
-| 2 | Category-specific failure prediction: plumbing, electrical, structural tracked independently | ✅ Done — `predictionEngine.js` |
-| 3 | Failure prediction with cited evidence — not a black-box score | ✅ Done — `evidence[]` array in engine |
-| 4 | Student impact prioritisation (girls' school toilet > cracked wall in storage room) | ✅ Done — `girlsMult` + `studentMult` in engine |
-| 5 | Predictive horizon: 30–60 day failure window per category per school | ✅ Done — `within_30_days`, `within_60_days` flags |
-| 6 | DEO district-level maintenance queue — not individual school alert flood | ✅ Done — `/api/risk/queue` aggregated by school |
-| 7 | Contractor work order and completion confirmation workflow | ✅ Done — `/api/tasks/assign`, `/api/tasks/complete` |
-| 8 | Model learns from completed repairs — repair records update deterioration model | ✅ Done — `RepairLog` + `predictionError` feedback loop |
+**Roles:** `peon` · `principal` · `deo` · `contractor` · `admin`
 
 ---
 
-## 2. PS-Required Features vs Implementation Status
+## 2. PS-03 Requirements vs Implementation
 
-### Fully Implemented ✅
+### Fully Implemented
 
-- **Weekly structured form** (dropdown-based, 3 categories, < 2 min UX target)
-- **Category-specific prediction engine** (plumbing, electrical, structural tracked independently with independent risk scores)
-- **Cited evidence output** (every engine call returns `evidence[]` array citing specific inputs that drove the score)
-- **Girls' school plumbing boost** (×1.5 multiplier on plumbing risk if `isGirlsSchool = true`)
-- **Student count multiplier** (proportional to enrollment, capped at ×1.30)
-- **Building age multiplier** (6-tier table from ×0.80 for new buildings to ×1.25 for 40+ year buildings)
-- **Weather zone multiplier** (Dry ×0.90, Heavy Rain ×1.15, Coastal ×1.10, etc.)
-- **30/60-day failure windows** (computed from deterioration slope via linear regression on week history)
-- **Deterioration rate** (slope in score-units/week from linear regression)
-- **District-level maintenance queue** (`/api/risk/queue` aggregates per school, not per condition record)
-- **Contractor work orders** (assign + complete flow with GPS + photo proof)
-- **GPS validation** (Haversine distance check against school's stored coordinates; flags mismatch > 5km)
-- **Location mismatch recording** (`locationMismatch` field on `WorkOrder` and `RepairLog`)
-- **Repair feedback loop** (`RepairLog` stores `predictionSnapshot` and `predictionError` with accuracy label: overestimated/accurate/underestimated)
-- **Model accuracy analytics** (`/api/analytics/model-accuracy` aggregates prediction errors by category and district)
-- **SLA tracking** (`slaBreached` flag, `contractorDelayDays`, SLA breach analytics)
-- **Dynamic priority config** (`PriorityConfig` model; admin can tune weights via API; engine cache invalidation)
-- **CSV bulk import** (50,000+ row `TS-PS3.csv` pipeline generating all four collections)
-- **Alert system** (auto-generated alerts for 30-day and 60-day failure predictions and high priority scores)
-- **District analytics** (aggregated per district with category breakdown, SLA breach count)
-- **Role-based access** (5 roles: peon, principal, deo, contractor, admin with JWT middleware)
+| # | PS-03 Requirement | Status | Where |
+|---|---|---|---|
+| 1 | Weekly dropdown form (no free text, ≤ 2 min) | Done | `WeeklyInputForm.jsx` |
+| 2 | Category-specific prediction (plumbing / electrical / structural) | Done | `predictionEngine.js → predictRiskForCategory()` |
+| 3 | Cited evidence on every prediction | Done | `evidence[]` array |
+| 4 | Student-impact prioritisation (girls' toilet > storage wall) | Done | `girlsSchool ×1.5` + student multiplier |
+| 5 | 30 / 60-day failure horizon per category | Done | `within_30_days`, `within_60_days` |
+| 6 | District-level maintenance queue (not alert flood) | Done | `GET /api/risk/queue` aggregated by school |
+| 7 | Contractor work-order + photo + GPS completion | Done | `/api/tasks/assign` + `/api/tasks/complete` |
+| 8 | Model learns from completed repairs | Done | `RepairLog.predictionSnapshot` + `predictionError` |
 
-### Partially Implemented / Missing ⚠️
+### Additional Features Built
 
-- **Principal dashboard** — principal role exists and can log in, but renders the same `SchoolView` as peon (no dedicated principal dashboard with trend analysis or contractor communication)
-- **Real-time GPS mismatch alerts** — backend records `locationMismatch` but frontend has no "Flagged" tab or push notification UI for DEOs
-- **SLA breach analytics in UI** — backend computes SLA data but DEO dashboard does not surface average delay days per contractor
-- **Prediction failure dates in DEO UI** — `within_30_days`/`within_60_days` exist in queue data but are not prominently displayed in DEO dashboard table
-- **`backend/seed.js` broken** — uses old model import paths (`./models/School.js`, `ConditionReport.js`) that don't match current filenames
-- **`backend/scripts/verify_gps.js` broken** — uses wrong import path `./backend/models/index.js` instead of `../models/index.js`
-- **Dual API paths** — `/api/tasks` and `/api/work-orders` both exist as canonical routes (technical debt)
-- **`/api/school-conditions` unprotected** — no `protect` middleware on schoolCondition routes GET handler
-- **Input validation** — no `express-validator` on report submission or task completion endpoints
+- GPS validation via Haversine with 5 km threshold → auto-creates `GPS_MISMATCH` alerts
+- Geospatial map view (Leaflet) for DEO / admin
+- Dynamic `PriorityConfig` — admin can retune scoring weights without deploy
+- CSV bulk pipeline ingests 50,000 rows of `TS-PS3.csv` into 4 collections + auto-generates alerts and district analytics
+- SLA breach tracking on work orders
+- Rate limiting (200 req / 15 min per IP)
+- File upload pipeline (multer, 10 MB image limit)
+
+### Partial / Known Gaps
+
+- No ML-model retraining endpoint (feedback loop logs errors but does not adjust weights automatically)
+- `/api/work-orders` is still a legacy alias for `/api/tasks`
+- No "GPS mismatch" tab in the DEO UI (alerts only surface in `/api/alerts`)
+- No `express-validator` or structured input validation on report / complete endpoints
 
 ---
 
@@ -142,67 +81,88 @@ Gujarat has over 30,000 government school buildings, a large proportion of which
 
 ```
 D:\Tarkshaastra\
-├── README.md                     # Project overview & setup guide
+├── README.md
+├── progress.md                          ← this file
+├── remaining.md                         ← backlog / TODO tracker
+├── TS-PS3.csv                           ← 50 000-row historical dataset
 ├── .gitignore
-├── TS-PS3.csv                    # Historical data CSV (50,000 rows) for bulk import
-├── package-lock.json             # Root lockfile
 │
-├── frontend/                     # Vite + React 18 SPA
+├── frontend/                            ← React 18 + Vite SPA
 │   ├── index.html
 │   ├── vite.config.js
 │   ├── tailwind.config.js
 │   ├── postcss.config.js
-│   ├── vercel.json               # SPA rewrite rules for Vercel
+│   ├── vercel.json                      ← SPA rewrite rules
 │   ├── package.json
 │   └── src/
-│       ├── index.js              # React root mount
-│       ├── App.jsx               # Router + route definitions
-│       ├── index.css / App.css   # Global styles (Tailwind)
-│       ├── pages/                # Top-level page components
+│       ├── App.jsx                      ← router + role-based DashboardIndex
+│       ├── index.js  /  index.css  /  App.css
+│       ├── pages/
 │       │   ├── Landing.jsx
-│       │   ├── Login.jsx
-│       │   ├── Signup.jsx
-│       │   ├── SchoolView.jsx
-│       │   ├── DEODashboard.jsx
-│       │   ├── WeeklyInputForm.jsx
-│       │   └── WorkOrders.jsx
+│       │   ├── auth/
+│       │   │   ├── Login.jsx
+│       │   │   └── Signup.jsx
+│       │   └── dashboard/
+│       │       ├── SchoolView.jsx          (principal)
+│       │       ├── DEODashboard.jsx        (deo / admin)
+│       │       ├── WeeklyInputForm.jsx     (peon entry point)
+│       │       ├── WorkOrders.jsx          (contractor / deo / admin)
+│       │       ├── ConditionLogView.jsx    (principal historical audit)
+│       │       └── GeospatialMap.jsx       (leaflet map view)
 │       ├── components/
-│       │   ├── AppLayout.jsx
-│       │   ├── ProtectedRoute.jsx
-│       │   ├── CompletionModal.jsx   # GPS + photo proof for contractor
-│       │   ├── EvidenceDrawer.jsx    # Slide-out prediction evidence panel
-│       │   ├── landing/              # 10 landing page section components
-│       │   └── ui/                   # Reusable UI primitives
+│       │   ├── common/                     ← reusable UI primitives
+│       │   │   ├── Badge.jsx  Button.jsx  Card.jsx  Input.jsx
+│       │   │   ├── MetricCard.jsx  PageHeader.jsx  Select.jsx
+│       │   │   ├── CompletionModal.jsx     (GPS + photo proof)
+│       │   │   ├── EvidenceDrawer.jsx      (slide-out evidence panel)
+│       │   │   └── ProtectedRoute.jsx
+│       │   ├── layout/
+│       │   │   └── AppLayout.jsx           (fixed header + role nav)
+│       │   ├── landing/                    (Hero2, Features2, HowItWorks2,
+│       │   │                                AppPreview, GovSchemes, CTA,
+│       │   │                                Navbar, Footer, DownloadSection,
+│       │   │                                Testimonials)
+│       │   └── ui/                         (legacy primitives — pre-refactor)
 │       ├── context/AuthContext.jsx
-│       └── services/api.js
+│       ├── services/api.js
+│       └── utils/
 │
-└── backend/                      # Express + Mongoose API server
-    ├── server.js                 # App entry, route mounting, CORS
-    ├── seed.js                   # Demo seed script (BROKEN — see issues)
+└── backend/                             ← Express + Mongoose API
+    ├── server.js                        ← app entry, route mounting
+    ├── seed.js                          ← (legacy seed; see controllers/seed.controller.js)
     ├── package.json
-    ├── .env / .env.example
+    ├── .env  /  .env.example
     ├── config/
-    │   ├── database.js           # Mongoose connection
-    │   └── multer.js             # File upload config
+    │   ├── database.js                  ← mongoose.connect wrapper
+    │   └── multer.js                    ← disk storage, image filter, 10 MB
+    ├── middlewares/
+    │   └── auth.middleware.js           ← protect + authorize(...roles)
+    ├── middleware/
+    │   └── rateLimiter.js               ← 200 req / 15 min
     ├── controllers/
+    │   ├── auth.controller.js
+    │   ├── profile.controller.js
     │   ├── admin.controller.js
+    │   ├── school.controller.js
+    │   ├── report.controller.js         ← runs prediction on submit
+    │   ├── risk.controller.js
+    │   ├── workorder.controller.js      ← assign / complete / list
     │   ├── alert.controller.js
     │   ├── analytics.controller.js
-    │   ├── auth.controller.js
     │   ├── maintenance.controller.js
-    │   ├── profile.controller.js
-    │   ├── report.controller.js
-    │   ├── risk.controller.js
-    │   ├── school.controller.js
     │   ├── schoolCondition.controller.js
-    │   ├── seed.controller.js        # API-based demo seeder
-    │   └── workorder.controller.js
-    ├── middlewares/
-    │   └── auth.middleware.js        # JWT protect + authorize
-    ├── middleware/
-    │   └── rateLimiter.js
+    │   └── seed.controller.js
+    ├── routes/
+    │   ├── auth.routes.js   profile.routes.js   admin.routes.js
+    │   ├── school.routes.js  report.routes.js    risk.routes.js
+    │   ├── task.routes.js                          ← canonical work-order routes
+    │   ├── workorder.routes.js                     (retired — server delegates)
+    │   ├── alert.routes.js  analytics.routes.js    maintenance.routes.js
+    │   └── schoolCondition.routes.js
+    ├── services/
+    │   └── predictionEngine.js          ← core rule-based AI (~500 LOC)
     ├── models/
-    │   ├── index.js                  # Central export of all models
+    │   ├── index.js                     ← central re-export
     │   ├── user.model.js
     │   ├── school.model.js
     │   ├── school-condition-record.model.js
@@ -212,861 +172,783 @@ D:\Tarkshaastra\
     │   ├── alert.model.js
     │   ├── district-analytics.model.js
     │   ├── priorityConfig.model.js
-    │   └── conditionReport.model.js  # Legacy model (pre-refactor)
-    ├── routes/
-    │   ├── admin.routes.js
-    │   ├── alert.routes.js
-    │   ├── analytics.routes.js
-    │   ├── auth.routes.js
-    │   ├── maintenance.routes.js
-    │   ├── profile.routes.js
-    │   ├── report.routes.js
-    │   ├── risk.routes.js
-    │   ├── school.routes.js
-    │   ├── schoolCondition.routes.js
-    │   ├── task.routes.js            # Primary PS-03 work order routes
-    │   └── workorder.routes.js       # Legacy alias
-    ├── services/
-    │   └── predictionEngine.js       # Core rule-based AI engine
+    │   └── conditionReport.model.js     ← legacy pre-refactor model
     ├── Methods/
-    │   └── bcryptPassword.js
+    │   └── bcryptPassword.js            ← hash / compare helpers
     ├── scripts/
-    │   ├── loadCSV.js
+    │   ├── loadCSV.js                   ← streams TS-PS3.csv
     │   ├── clearDB.js
     │   ├── listCollections.js
-    │   └── verify_gps.js             # BROKEN — wrong import path
-    └── uploads/                      # Static file serving
+    │   └── verify_gps.js
+    ├── test_images/
+    └── uploads/                         ← served at /uploads/<filename>
 ```
 
 ---
 
 ## 4. Technology Stack
 
-### Frontend
+### Frontend (`frontend/package.json`)
 | Package | Version | Purpose |
 |---|---|---|
-| React | 18 | UI framework |
-| react-router-dom | 6 | Client-side routing |
-| Vite | 5 | Build tool & dev server |
-| Tailwind CSS | 3 | Utility-first CSS framework |
-| PostCSS + Autoprefixer | — | CSS pipeline |
-| framer-motion | 12 | Animations & transitions |
-| lucide-react | 1.8 | Icon library |
+| react | ^18.2.0 | UI framework |
+| react-dom | ^18.2.0 | DOM renderer |
+| react-router-dom | ^6.18.0 | Client-side routing |
+| framer-motion | ^12.38.0 | Animations / transitions |
+| lucide-react | ^1.8.0 | Icon library |
+| leaflet | ^1.9.4 | Interactive maps |
+| react-leaflet | ^4.2.1 | React wrapper for Leaflet |
+| vite | ^5.0.8 (dev) | Build tool + dev server |
+| tailwindcss | ^3.4.0 (dev) | Utility-first CSS |
+| @vitejs/plugin-react | ^4.2.1 (dev) | React Fast Refresh |
+| autoprefixer, postcss | (dev) | CSS pipeline |
 
-### Backend
-| Package | Purpose |
-|---|---|
-| Express 4 | HTTP server framework |
-| Mongoose 7 | MongoDB ODM |
-| dotenv | Environment variable loading |
-| cors | Cross-Origin Resource Sharing |
-| cookie-parser | HTTP cookie handling |
-| jsonwebtoken 9 | JWT generation & verification |
-| bcryptjs 3 | Password hashing |
-| multer | Multipart file upload handling |
-| uuid | Unique ID generation |
-| express-rate-limit | API rate limiting |
-| nodemon (dev) | Auto-restart on file changes |
+### Backend (`backend/package.json`)
+| Package | Version | Purpose |
+|---|---|---|
+| express | ^4.18.2 | HTTP server |
+| mongoose | ^7.6.3 | MongoDB ODM |
+| jsonwebtoken | ^9.0.3 | JWT signing / verifying |
+| bcryptjs | ^3.0.3 | Password hashing |
+| cookie-parser | ^1.4.7 | HttpOnly cookie parsing |
+| cors | ^2.8.5 | CORS middleware |
+| dotenv | ^16.3.1 | Env var loading |
+| multer | ^1.4.5-lts.1 | File upload (multipart) |
+| express-rate-limit | ^8.3.1 | API rate limiting |
+| uuid | ^13.0.0 | Unique IDs |
+| nodemon | ^3.0.1 (dev) | Auto-reload |
 
 ### Database
-- **MongoDB** (via `MONGODB_URI` env var) — document store for all 8 active collections
+- **MongoDB** (Atlas or local) — 9 active collections (see §6)
 
 ---
 
-## 5. Backend — Features & Implementation
+## 5. Backend Architecture
 
-### 5.1 Server Setup & Middleware
+### 5.1 Server Bootstrap (`backend/server.js`)
 
-**File:** `backend/server.js`
-
-- Express app with **CORS** configured for `localhost:5173`, `localhost:5174`, and `FRONTEND_URL` env var
-- **`cookie-parser`** for reading HttpOnly cookies
-- **`express.json()`** + **`express.urlencoded()`** body parsing
-- **Rate limiter** on all `/api` routes — 200 requests per 15-minute window per IP
-- Static file serving for `/uploads` directory
-- `GET /health` endpoint returns server status + full API endpoint cheat sheet
-- `GET /api/seed-demo` calls `seedDatabase()` controller (no auth, seeds demo data)
-- All 11 route modules mounted
+- ES modules (`"type": "module"`)
+- Connects to MongoDB via `config/database.js`
+- Global middleware: `cookieParser`, `cors` (origins: `localhost:5173`, `localhost:5174`, `FRONTEND_URL`), `express.json`, `express.urlencoded`
+- `apiLimiter` (200 req / 15 min) mounted on `/api/*`
+- Static `/uploads/*` serves files from `backend/uploads/`
+- **Health endpoint** `GET /health` returns server metadata and a cheat-sheet of routes
+- **Demo seed** `GET /api/seed-demo` (no auth) calls `seedDatabase()`
+- Route mounts (11 route modules + 2 legacy aliases)
+- Centralised error handler (handles `MulterError` specially)
 
 ### 5.2 Authentication & Authorization
 
-**Files:** `backend/controllers/auth.controller.js`, `backend/middlewares/auth.middleware.js`, `backend/routes/auth.routes.js`
+**Controller:** `controllers/auth.controller.js` · **Middleware:** `middlewares/auth.middleware.js`
 
-**Implemented:**
-- **Registration** (`POST /api/auth/register`) — hashes password (bcrypt, 10 rounds), creates user with role, issues JWT cookie
-- **Login** (`POST /api/auth/login`) — validates credentials, sets HttpOnly `token` cookie, returns user object
-- **Logout** (`POST /api/auth/logout`) — clears cookie with expired date
-- **Get current user** (`GET /api/auth/me`) — decodes JWT from cookie or `Authorization: Bearer` header
+| Route | Method | Description |
+|---|---|---|
+| `/api/auth/register` | POST | Hash password (bcrypt, 10 rounds), create user, issue JWT cookie |
+| `/api/auth/login` | POST | Validate, set HttpOnly cookie `token` |
+| `/api/auth/logout` | POST | Clear cookie |
+| `/api/auth/me` | GET | Returns current user (reads cookie OR `Authorization: Bearer`) |
 
-**JWT Strategy:**
-- 7-day expiry by default (`JWT_EXPIRE` env)
-- Stored in HttpOnly cookie (`sameSite: 'lax'`, `secure` in production)
-- `protect` middleware validates token and attaches `req.user = { id, role }`
-- `authorize(...roles)` middleware restricts to specific role list
+- **JWT** — 7-day default expiry (`JWT_EXPIRE`), secret from `JWT_SECRET`
+- **Cookie** — HttpOnly, `sameSite: 'lax'`, `secure` in prod
+- **`protect`** middleware decodes token → `req.user = { id, role }`
+- **`authorize(...roles)`** middleware restricts to allowed roles
+- **Roles enum:** `peon` | `principal` | `deo` | `contractor` | `admin`
 
-**Roles enum:** `peon` | `principal` | `deo` | `contractor` | `admin`
+### 5.3 User Profiles (`/api/me`)
 
-**Password Utility:** `backend/Methods/bcryptPassword.js` — `hashPassword()` and `comparePassword()` exports
-
-### 5.3 User Profiles
-
-**Files:** `backend/controllers/profile.controller.js`, `backend/routes/profile.routes.js`
-
-Mounted at `/api/me` (all routes require `protect`):
-- `GET /api/me/` — get own profile with `schoolId` populated (name, district)
+All routes require `protect`:
+- `GET /api/me/` — get own profile (schoolId populated)
 - `PUT /api/me/` — update name, phone, district
-- `PUT /api/me/password` — change password (verifies current before updating)
+- `PUT /api/me/password` — change password (verifies current)
 
-### 5.4 School Management
+### 5.4 Schools (`/api/schools`)
 
-**Files:** `backend/controllers/school.controller.js`, `backend/routes/school.routes.js`
+- `GET /api/schools/` — list all schools (aggregated from `SchoolConditionRecord`)
+- `GET /api/schools/:id` — single school by numeric `schoolId`
 
-No standalone School collection — school info is derived from `SchoolConditionRecord` via aggregation:
+Uses the `School` model for GPS coordinates; aggregates condition data for name/district/maxPriorityScore.
 
-- `GET /api/schools/` — aggregates distinct school profiles from condition records (latest-first), sorted by `maxPriorityScore`
-- `GET /api/schools/:id` — single school profile (numeric `school_id`) from condition records
+### 5.5 Condition Reports (`/api/reports`, alias `/api/condition-report`)
 
-Additionally, a `School` model (`school.model.js`) stores GPS coordinates (`location.lat`, `location.lng`) used by the GPS validation workflow.
+**File:** `controllers/report.controller.js`
 
-### 5.5 Condition Reports (Weekly Input)
+- `POST /` — create or upsert a weekly report, then **immediately runs `predictRiskForCategory()`** and persists `priorityScore`, `daysToFailure`, `willFailWithin30Days`, `willFailWithin60Days` back to the record. Returns both record + full `evidence[]` prediction.
+- `GET /` — list with filters: `schoolId`, `district`, `category`, `weekNumber`, `limit`
+- `GET /:school_id` — all records for one school
 
-**Files:** `backend/controllers/report.controller.js`, `backend/routes/report.routes.js`
+Upsert key: `{schoolId, category, weekNumber}` — re-submitting the same week overwrites.
 
-Mounted at `/api/reports` and `/api/condition-report` (same router, two aliases):
+### 5.6 Risk Scores (`/api/risk`, alias `/api/risk-scores`)
 
-- `POST /` — submit a weekly condition report
-  - Roles: `peon`, `principal`, `deo`, `admin`
-  - Accepts multipart with up to 5 image uploads
-  - Validates category enum (`plumbing`, `electrical`, `structural`)
-  - Validates conditionScore (1–5)
-  - Uses **upsert** (`findOneAndUpdate`) on `{schoolId, category, weekNumber}` unique key — re-submitting overwrites
-  - `photoUploaded` flag set if `req.file` or body flag present
-- `GET /` — list reports with optional filters: `schoolId`, `district`, `category`, `weekNumber`, `limit`
-- `GET /:school_id` — all records for one school, sorted by weekNumber desc
+**File:** `controllers/risk.controller.js`
 
-### 5.6 Risk Prediction Engine
+| Route | Description |
+|---|---|
+| `GET /all` | Latest predictions per school/category — uses **stored** CSV values (fast, no live engine call) |
+| `GET /queue` | District-level aggregated queue (primary DEO endpoint) — joins `MaintenanceDecision` + `School` + `SchoolConditionRecord`, groups by `schoolId`, flattens up to 5 evidence items, supports `district` / `block` / `category` / `urgency` filters |
+| `GET /` | Legacy aggregation from `SchoolConditionRecord` |
+| `GET /:school_id` | **Live engine call** — fetches full week history, runs engine per category, returns full evidence |
 
-**File:** `backend/services/predictionEngine.js`
+`/all` and `/queue` are registered **before** `/:school_id` to avoid route shadowing.
 
-The core of the PS-03 implementation. Two prediction modes:
+### 5.7 Tasks / Work Orders (`/api/tasks`, alias `/api/work-orders`)
 
-#### `predictRiskForCategory()` — Primary PS-03 engine
+**File:** `controllers/workorder.controller.js`
 
-Fully explainable per-category risk scoring. Every input flag generates a named evidence item.
+| Route | Description |
+|---|---|
+| `GET /` | List tasks (contractors see only their own; DEO/admin see all). Supports `locationMismatch=true` filter via aggregation |
+| `POST /assign` | Create a work order; auto-resolves latest pending `MaintenanceDecision` for that school+category if `decisionId` not supplied |
+| `POST /complete` | **PS-03 completion flow** — see §5.7.1 |
+| `PATCH /:id/status` | DEO / admin update status |
 
-**Scoring Pipeline:**
-1. **Condition base (0–50):** Average `conditionScore` over last 3 weeks, mapped to 0–50 range
-2. **Poor-reading bonus (0–20):** Count of weeks with score ≥ 4 out of last 3, scaled to 0–20
-3. **Trend bonus (0–15):** +15 if latest score > oldest score in history (worsening trend)
-4. **Building-age multiplier:** 6 tiers from ×0.80 (<10y) to ×1.25 (40+y)
-5. **Weather-zone multiplier:** Dry ×0.90, Heavy Rain ×1.15, Coastal ×1.10, Tribal ×1.00
-6. **Issue flags:** Named evidence items for waterLeak, wiringExposed, roofLeakFlag, issueFlag, crackWidthMM, toiletFunctionalRatio, powerOutageHours
-7. **Girls' school multiplier:** ×1.5 applied to plumbing only (PS-03 spec requirement)
-8. **Student count multiplier:** Proportional, capped at ×1.30
+#### 5.7.1 Completion Flow
+1. Verify caller is the assigned contractor (or DEO/admin)
+2. Haversine distance check vs `School.location` → if > 5 km, set `locationMismatch = true`
+3. Auto-create `Alert` of type `GPS_MISMATCH`
+4. Mark work order `completed`
+5. Build `RepairLog` with before/after condition scores, `completionTimeDays`, `slaBreached`, `locationMismatch`
+6. Update `MaintenanceDecision.status = 'completed'`
 
-**Deterioration Analysis:**
-- **Linear regression slope** on `weekHistory` (`deteriorationSlope()`)
-- **Projected days to failure** from slope extrapolation (`projectDaysToFailure()`)
-- Returns `within_30_days` and `within_60_days` boolean flags
+### 5.8 Alerts (`/api/alerts`)
 
-**Evidence array:** Every factor that affected the score is listed in plain English in the `evidence[]` array — no black-box scores.
+- `GET /` — unresolved alerts, filter by `district`, `type`
+- `GET /digest` — counts by `{district, category}`
+- `PATCH /:id/read` — mark resolved
 
-**Dynamic config:** Loads `PriorityConfig` from DB on first call (cached in-memory); `invalidateConfigCache()` export for admin updates. Falls back to `DEFAULT_CONFIG` if no active config exists.
+**Alert types:** `FAILURE_30_DAYS` · `FAILURE_60_DAYS` · `HIGH_PRIORITY` · `GPS_MISMATCH`
 
-#### `analyseSchool()` — Legacy composite multi-category engine
+Auto-generated by `scripts/loadCSV.js` for failure windows & high priority, and by `workorder.controller.completeTask()` for GPS mismatches.
 
-Used by old dashboard endpoints. Computes a weighted composite across categories with time-decay weighting (recent reports weighted higher via `exp(-0.3 * weekIndex)`).
+### 5.9 Analytics (`/api/analytics`)
 
-#### Other exports:
-- `scoreReportItems(items)` — maps old-style condition items to 0–100 score
-- `predictTimeToFailure(score)` — legacy days-to-failure from composite score
-- `riskLevel(score)` — maps score to `critical`/`high`/`moderate`/`low`
-- `prioritiseQueue(schoolAnalyses)` — priority queue formula: `score × 0.6 + trendBonus + studentBonus`
+- `GET /` — list district analytics (filter by `district`)
+- `POST /update` — recompute district analytics from current records
+- `GET /model-accuracy` — **PS-03 learning requirement** — aggregates `RepairLog.predictionError` by category & district, returning `meanAbsoluteError`, `meanConditionDelta`, accuracy breakdown (overestimated / accurate / underestimated)
 
-### 5.7 Risk Score API
+### 5.10 Maintenance (`/api/maintenance`)
 
-**Files:** `backend/controllers/risk.controller.js`, `backend/routes/risk.routes.js`
+- `POST /decisions` — create a `MaintenanceDecision`
+- `POST /work-orders` — create a `WorkOrder` (raw)
+- `POST /repair-logs` — create a `RepairLog` with **full prediction feedback**: fetches history → runs engine → stores `predictionSnapshot` + computes `predictionError` (`conditionDelta`, `riskScoreDelta`, `accuracy`)
 
-Mounted at `/api/risk` and `/api/risk-scores`:
+### 5.11 School Conditions (`/api/school-conditions`)
 
-- `GET /all` — latest predictions across all schools/categories using **stored values** from CSV (fast, no live engine call). Annotates with quick evidence from stored flags.
-- `GET /queue` — district-level maintenance queue via MongoDB aggregation pipeline on `MaintenanceDecision`. Groups by `schoolId`, returns top evidence, min days to failure, max priority score. **This is the primary DEO endpoint.**
-- `GET /` — legacy risk-scores aggregation from `SchoolConditionRecord`
-- `GET /:school_id` — **live engine calls** per category for one school. Fetches all historical records, groups by category, runs `predictRiskForCategory()` with full week history. Returns `evidence[]`, `estimated_days_to_failure`, `deterioration_rate`, etc.
+- `POST /` — create raw `SchoolConditionRecord`
+- `GET /` — list all records (both require `protect`)
 
-**Static routes (`/all`, `/queue`) are registered before `/:school_id`** to prevent route shadowing.
+### 5.12 Admin (`/api/admin`)
 
-### 5.8 Maintenance Queue
+Router-level `protect + authorize('admin', 'deo')`:
 
-The `/api/risk/queue` endpoint is the primary PS-03 DEO interface. It runs a multi-stage MongoDB aggregation pipeline on `MaintenanceDecision`:
-- Joins with `School` (name, block)
-- Joins with `SchoolConditionRecord` (daysToFailure)
-- Groups by `schoolId` — aggregates categories, max priority score, min days to failure
-- Flattens evidence into `topEvidence[]` array (up to 5 items)
-- Filters by `urgency` days (default 60)
-- Supports `district`, `block`, `category` query filters
+| Route | Description |
+|---|---|
+| `GET /stats` | System-wide counts including `slaBreaches` and `failuresWithin30Days` |
+| `GET /users` | All users (admin only) |
+| `DELETE /users/:id` | Delete user (admin only) |
+| `GET /load-csv` | Spawns `loadCSV.js` as child process; returns 202 |
+| `GET /priority-config` | Get active `PriorityConfig` (DEO + admin) |
+| `PUT /priority-config` | Create new active config, deactivate old one, flush engine cache (admin only) |
 
-### 5.9 Tasks / Work Orders (PS-03 Flow)
+### 5.13 File Uploads (`config/multer.js`)
 
-**Files:** `backend/controllers/workorder.controller.js`, `backend/routes/task.routes.js`
+- Disk storage → `backend/uploads/` (auto-created)
+- MIME + extension filter for jpeg/jpg/png/gif/bmp/webp
+- Size limit: 10 MB
+- Served statically at `/uploads/<filename>`
 
-Mounted at `/api/tasks`:
+### 5.14 Rate Limiting (`middleware/rateLimiter.js`)
 
-- `GET /` — list work orders (contractor sees only assigned; DEO/admin see all). Populates `assignedTo` name/phone and `assignedBy` name.
-- `POST /assign` — create and assign a work order. If `decisionId` not provided, auto-resolves to latest pending `MaintenanceDecision` for that school+category. Updates decision status to 'assigned'.
-- `POST /complete` — PS-03 completion workflow:
-  1. GPS validation via Haversine formula against `School.location` (flags mismatch if > 5km)
-  2. Records `completionProof` (photoUrl, gpsLocation)
-  3. Creates `RepairLog` with before/after condition scores, `slaBreached`, `locationMismatch`
-  4. Updates `MaintenanceDecision` status to 'completed'
-  5. Returns both `workOrder` and `repairLog`
-- `PATCH /:id/status` — update status (roles: deo, admin)
-
-### 5.10 Legacy Work Orders API
-
-**Files:** `backend/routes/workorder.routes.js`
-
-Mounted at `/api/work-orders` (alias to same workorder.controller.js handlers). Used by current `WorkOrders.jsx` frontend. Considered technical debt — should be consolidated into `/api/tasks`.
-
-### 5.11 Alerts System
-
-**Files:** `backend/controllers/alert.controller.js`, `backend/routes/alert.routes.js`
-
-- `GET /api/alerts/` — list unresolved alerts, filterable by `district` and `type`
-- `GET /api/alerts/digest` — aggregated digest: groups by district+category, returns count and message string
-- `PATCH /api/alerts/:id/read` — marks alert as resolved (`isResolved: true`)
-
-Alerts are auto-generated during CSV load by `loadCSV.js` for:
-- `FAILURE_30_DAYS` — `willFailWithin30Days = true`
-- `FAILURE_60_DAYS` — `willFailWithin60Days = true`
-- `HIGH_PRIORITY` — `priorityScore >= 80`
-
-### 5.12 District Analytics
-
-**Files:** `backend/controllers/analytics.controller.js`, `backend/routes/analytics.routes.js`
-
-- `GET /api/analytics/` — list district analytics, filterable by `district`
-- `POST /api/analytics/update` — create/update district analytics record
-- `GET /api/analytics/model-accuracy` — **PS-03 learning requirement**: aggregates `predictionError` deltas from `RepairLog` by category and district. Returns `meanAbsoluteError`, `meanConditionDelta`, accuracy breakdown (overestimated/accurate/underestimated), and total repair count.
-
-### 5.13 Maintenance Decisions, Work Orders & Repair Logs
-
-**Files:** `backend/controllers/maintenance.controller.js`, `backend/routes/maintenance.routes.js`
-
-Mounted at `/api/maintenance`:
-- `POST /decisions` — create a `MaintenanceDecision` linked to a `SchoolConditionRecord`
-- `POST /work-orders` — create a `WorkOrder` (raw, for programmatic use)
-- `POST /repair-logs` — create a `RepairLog` with full prediction feedback computation:
-  - Fetches historical condition records
-  - Runs `predictRiskForCategory()` to get pre-repair snapshot
-  - Computes `predictionError` (conditionDelta, riskScoreDelta, accuracy label)
-  - Stores `predictionSnapshot` and `predictionError` on the log
-
-### 5.14 School Conditions
-
-**Files:** `backend/controllers/schoolCondition.controller.js`, `backend/routes/schoolCondition.routes.js`
-
-- `POST /api/school-conditions/` — create a raw `SchoolConditionRecord` (requires `protect` + authorized roles)
-- `GET /api/school-conditions/` — list all records (requires `protect`)
-
-Both routes now have `protect` middleware (GET had been unprotected — see issues).
-
-### 5.15 Admin Panel & Priority Config
-
-**Files:** `backend/controllers/admin.controller.js`, `backend/routes/admin.routes.js`
-
-All routes: `protect` + `authorize('admin', 'deo')` at router level:
-
-- `GET /api/admin/stats` — counts across all 8 collections including `slaBreaches` and `failuresWithin30Days`
-- `GET /api/admin/users` — all users (admin only)
-- `DELETE /api/admin/users/:id` — delete user (admin only)
-- `GET /api/admin/load-csv` — spawns `loadCSV.js` as child process; responds 202 immediately
-- `GET /api/admin/priority-config` — get active `PriorityConfig` (DEO + admin)
-- `PUT /api/admin/priority-config` — create new active config, deactivate old, flush engine cache (admin only)
-
-**`PriorityConfig` model** — stores tunable weights (`conditionWeights`, `multipliers`, `maxPriorityScore`, `version`). Enforced single active via partial unique index on `{ isActive: true }`.
-
-### 5.16 CSV Bulk Import Pipeline
-
-**File:** `backend/scripts/loadCSV.js`
-
-Streams `TS-PS3.csv` (~50,000 rows) using `readline` (memory-efficient):
-
-**Pipeline steps:**
-1. Parse CSV → validate `school_id`, `week_number`, `category`, `condition_score`
-2. Map each row to `SchoolConditionRecord` document with full field mapping
-3. Batch insert with `ordered: false` (skips duplicates, continues on error)
-4. Generate `MaintenanceDecision` for all records where `issueFlag = true` (+ girls' school plumbing +15 boost)
-5. Generate `Alert` for records with `willFailWithin30Days`, `willFailWithin60Days`, or `priorityScore >= 80`
-6. Compute `DistrictAnalytics` via MongoDB aggregation and upsert per district
-
-**Unique constraint:** `SchoolConditionRecord` has compound unique index on `{schoolId, category, weekNumber}` — re-running pipeline skips existing rows.
-
-### 5.17 File Upload System
-
-**File:** `backend/config/multer.js`
-
-- **Storage:** disk storage under `backend/uploads/` (auto-created)
-- **Accepted types:** MIME check for jpeg/jpg/png/gif/bmp/webp
-- **Size limit:** 10 MB per file
-- Files served statically at `/uploads/<filename>`
-- Used by: condition report POST (up to 5 images), task completion POST (1 completion image)
-
-### 5.18 GPS Validation & Location Mismatch
-
-**File:** `backend/controllers/workorder.controller.js` — `completeTask()` handler
-
-When contractor submits `lat`/`lng` with completion:
-1. Looks up `School.location` for the work order's `schoolId`
-2. Computes Haversine distance between submitted coordinates and school coordinates
-3. If distance > 5km → sets `locationMismatch = true`
-4. Records `gpsLocation` on `WorkOrder.completionProof`
-5. Propagates `locationMismatch` to `RepairLog`
-
-**Missing:** Frontend DEO alert UI for GPS mismatches (backend only).
-
-### 5.19 Model Accuracy & Prediction Feedback Loop
-
-**PS-03 requirement #8:** "System learns from completed repairs — repair records update the deterioration model."
-
-Implementation in `maintenance.controller.js` (`createRepairLog`) and `workorder.controller.js` (`completeTask`):
-
-1. On repair completion, fetches all historical `SchoolConditionRecord` for that school+category
-2. Runs `predictRiskForCategory()` to capture what the engine predicted before repair
-3. Stores `predictionSnapshot` (pre-repair engine output)
-4. Computes `predictionError`:
-   - `conditionDelta = beforeScore - afterScore` (positive = improvement)
-   - `impliedAfterRisk = ((afterScore - 1) / 4) × 100`
-   - `riskScoreDelta = prediction.riskScore - impliedAfterRisk`
-   - `accuracy` label: `overestimated` (delta > 15), `accurate` (±15), `underestimated` (delta < -15)
-
-These deltas are surfaced via `GET /api/analytics/model-accuracy`.
+- **Window:** 15 minutes · **Max:** 200 requests per IP
+- Applied globally to `/api/*`
 
 ---
 
 ## 6. Database Models & Schemas
 
-### `user.model.js` → collection: `users`
+MongoDB collections (9 active + 1 legacy). All files under `backend/models/` and re-exported from `models/index.js`.
+
+### 6.1 `user.model.js` → collection `users`
+
 | Field | Type | Notes |
 |---|---|---|
 | `name` | String | required, trimmed |
-| `email` | String | required, unique, lowercase |
-| `password` | String | required, bcrypt hashed |
-| `role` | String enum | `peon` \| `principal` \| `deo` \| `contractor` \| `admin` |
+| `email` | String | required, **unique**, lowercase |
+| `password` | String | required, bcrypt-hashed |
+| `role` | enum String | `peon` \| `principal` \| `deo` \| `contractor` \| `admin` (default: `peon`) |
 | `district` | String | optional |
 | `phone` | String | optional |
-| `schoolId` | Number | numeric CSV school ID (peon/principal only) |
-| timestamps | — | createdAt, updatedAt |
+| `schoolId` | Number | numeric CSV school ID (for peon / principal) |
+| `createdAt`, `updatedAt` | Date | timestamps |
 
-### `school.model.js` → collection: `schools`
+### 6.2 `school.model.js` → collection `schools`
+
 | Field | Type | Notes |
 |---|---|---|
-| `schoolId` | Number | unique, indexed |
+| `schoolId` | Number | **unique**, indexed |
 | `name` | String | required |
 | `district` | String | required, indexed |
-| `block` | String | optional |
-| `schoolType` | String enum | `Primary` \| `Secondary` |
+| `block` | String | |
+| `schoolType` | enum | `Primary` \| `Secondary` |
 | `isGirlsSchool` | Boolean | |
 | `numStudents` | Number | |
-| `infrastructure` | Object | `buildingAge`, `materialType`, `weatherZone` |
-| `location` | Object | `lat`, `lng` — used for GPS validation |
+| `infrastructure.buildingAge` | Number | |
+| `infrastructure.materialType` | enum | `RCC` \| `Brick` \| `Mixed` \| `Temporary` |
+| `infrastructure.weatherZone` | enum | `Dry` \| `Heavy Rain` \| `Coastal` \| `Tribal` |
+| `location.lat`, `location.lng` | Number | defaults 23.8 / 69.5 (Kutch) — used for GPS validation |
 | `isActive` | Boolean | default true |
 
-### `school-condition-record.model.js` → collection: `school_condition_records`
+**Indexes:** `{schoolId}` unique · `{district, block}` compound
+
+### 6.3 `school-condition-record.model.js` → collection `school_condition_records`
+
+The main event-stream of weekly inputs.
+
 | Field | Type | Notes |
 |---|---|---|
-| `schoolId` | Number | indexed |
-| `schoolRef` | ObjectId | optional ref to School model |
-| `district`, `block`, `schoolType` | String | |
-| `isGirlsSchool` | Boolean | |
-| `numStudents`, `buildingAge` | Number | |
-| `materialType` | String enum | `RCC` \| `Brick` \| `Mixed` \| `Temporary` |
-| `weatherZone` | String enum | `Dry` \| `Heavy Rain` \| `Coastal` \| `Tribal` |
-| `category` | String enum | `plumbing` \| `electrical` \| `structural` |
+| `schoolId` | Number | required |
+| `schoolRef` | ObjectId | ref → School, indexed |
+| `district` | String | required, indexed |
+| `block`, `schoolType`, `isGirlsSchool`, `numStudents` | — | |
+| `buildingAge` | Number | |
+| `materialType` | enum | `RCC` \| `Brick` \| `Mixed` \| `Temporary` |
+| `weatherZone` | enum | `Dry` \| `Heavy Rain` \| `Coastal` \| `Tribal` |
+| `category` | enum | `plumbing` \| `electrical` \| `structural` |
 | `weekNumber` | Number | ISO week |
-| `conditionScore` | Number | 1–5, min/max validated |
+| `conditionScore` | Number | 1–5 (min/max validated) |
 | `issueFlag`, `waterLeak`, `wiringExposed`, `roofLeakFlag` | Boolean | |
 | `crackWidthMM`, `toiletFunctionalRatio`, `powerOutageHours` | Number | |
 | `photoUploaded` | Boolean | |
-| `daysToFailure`, `willFailWithin30Days`, `willFailWithin60Days` | — | CSV ground truth labels |
-| `priorityScore` | Number | CSV pre-computed |
+| `daysToFailure`, `willFailWithin30Days`, `willFailWithin60Days` | — | engine output (persisted post-submit) |
+| `priorityScore` | Number | engine output |
 | `repairDone`, `daysSinceRepair`, `contractorDelayDays`, `slaBreach` | — | |
-| Unique index | — | `{schoolId, category, weekNumber}` |
+| `createdAt`, `updatedAt` | — | timestamps |
 
-### `maintenance-decision.model.js` → collection: `maintenance_decisions`
+**Unique compound index:** `{schoolId, category, weekNumber}` — enables safe upsert semantics.
+
+### 6.4 `maintenance-decision.model.js` → collection `maintenance_decisions`
+
 | Field | Type | Notes |
 |---|---|---|
-| `recordId` | ObjectId | ref SchoolConditionRecord |
-| `schoolId` | Number | |
-| `district`, `category`, `weekNumber` | — | |
-| `decision.computedPriorityScore` | Number | indexed descending |
-| `decision.priorityLevel` | String enum | `low` \| `medium` \| `high` \| `urgent` |
-| `impact.studentsAffected`, `impact.isGirlsSchool`, `impact.criticalFacility` | — | |
-| `explainability.reasons` | [String] | explainability array |
-| `status` | String enum | `pending` \| `approved` \| `assigned` \| `completed` |
+| `recordId` | ObjectId | ref → SchoolConditionRecord (required) |
+| `schoolId` | Number | required |
+| `district` | String | required |
+| `category`, `weekNumber` | — | required |
+| `decision.computedPriorityScore` | Number | required, **indexed descending** |
+| `decision.priorityLevel` | enum | `low` \| `medium` \| `high` \| `urgent` |
+| `impact.studentsAffected` | Number | default 0 |
+| `impact.isGirlsSchool`, `impact.criticalFacility` | Boolean | |
+| `explainability.reasons` | [String] | human-readable reasoning array |
+| `status` | enum | `pending` \| `approved` \| `assigned` \| `completed` (default: `pending`) |
 
-### `work-order.model.js` → collection: `work_orders`
+### 6.5 `work-order.model.js` → collection `work_orders`
+
 | Field | Type | Notes |
 |---|---|---|
-| `decisionId` | ObjectId | optional ref to MaintenanceDecision |
-| `schoolId` | Number | |
-| `district`, `category` | String | |
-| `assignment.assignedTo`, `assignment.assignedBy` | ObjectId | ref User |
-| `priorityScore` | Number | |
-| `status` | String enum | `pending` \| `assigned` \| `in_progress` \| `completed` \| `delayed` \| `cancelled` |
-| `deadline` | Date | |
+| `decisionId` | ObjectId | ref → MaintenanceDecision (optional) |
+| `schoolId` | Number | required |
+| `district`, `category` | String | required |
+| `assignment.assignedTo` | ObjectId | ref → User |
+| `assignment.assignedBy` | ObjectId | ref → User |
+| `priorityScore` | Number | required |
+| `status` | enum | `pending` \| `assigned` \| `in_progress` \| `completed` \| `delayed` \| `cancelled` |
+| `deadline` | Date | required |
 | `startedAt`, `completedAt` | Date | lifecycle |
-| `completionProof.photoUrl`, `completionProof.gpsLocation` | — | |
-| `locationMismatch` | Boolean | GPS validation result |
+| `completionProof.photoUrl` | String | |
+| `completionProof.gpsLocation.lat/lng` | Number | |
+| `locationMismatch` | Boolean | GPS validation flag |
 
-### `repair-log.model.js` → collection: `repair_logs`
+**Index:** `{assignment.assignedTo, status}` — fast contractor dashboards.
+
+### 6.6 `repair-log.model.js` → collection `repair_logs`
+
+Core of the PS-03 **learning feedback loop**.
+
 | Field | Type | Notes |
 |---|---|---|
-| `workOrderId` | ObjectId | required |
-| `decisionId` | ObjectId | optional (ML traceability) |
-| `schoolId` | Number | indexed |
-| `category` | String | |
-| `before.conditionScore`, `before.issues` | — | |
-| `after.conditionScore` | Number | |
-| `completionTimeDays`, `contractorDelayDays` | Number | |
-| `slaBreached`, `locationMismatch` | Boolean | |
+| `workOrderId` | ObjectId | required, indexed |
+| `decisionId` | ObjectId | ref → MaintenanceDecision |
+| `schoolId` | Number | required, indexed |
+| `category` | String | required |
+| `before.conditionScore` | Number | required |
+| `before.issues` | Mixed | required |
+| `after.conditionScore` | Number | required |
+| `completionTimeDays` | Number | required |
+| `contractorDelayDays` | Number | default 0 |
+| `slaBreached` | Boolean | default false |
+| `locationMismatch` | Boolean | default false |
 | `photoUrl` | String | |
-| `predictionSnapshot` | Object | riskScore, riskLevel, estimatedDaysToFailure, within30/60Days, deteriorationRate, evidence[] |
-| `predictionError` | Object | beforeConditionScore, afterConditionScore, conditionDelta, riskScoreDelta, accuracy enum |
+| `predictionSnapshot.riskScore` | Number | pre-repair engine score |
+| `predictionSnapshot.riskLevel` | String | |
+| `predictionSnapshot.estimatedDaysToFailure` | Number | |
+| `predictionSnapshot.within30Days / within60Days` | Boolean | |
+| `predictionSnapshot.deteriorationRate` | Number | |
+| `predictionSnapshot.evidence` | [String] | |
+| `predictionError.beforeConditionScore / afterConditionScore` | Number | |
+| `predictionError.conditionDelta` | Number | > 0 = improvement |
+| `predictionError.riskScoreDelta` | Number | engine vs actual |
+| `predictionError.accuracy` | enum | `overestimated` \| `accurate` \| `underestimated` |
 
-### `alert.model.js` → collection: `alerts`
+**Index:** `{schoolId, createdAt: -1}`
+
+### 6.7 `alert.model.js` → collection `alerts`
+
 | Field | Type | Notes |
 |---|---|---|
-| `schoolId` | Number | indexed |
-| `district`, `category` | String | |
-| `type` | String enum | `FAILURE_30_DAYS` \| `FAILURE_60_DAYS` \| `HIGH_PRIORITY` |
-| `message` | String | |
-| `isResolved` | Boolean | indexed, default false |
+| `schoolId` | Number | required, indexed |
+| `district`, `category` | String | required |
+| `type` | enum | `FAILURE_30_DAYS` \| `FAILURE_60_DAYS` \| `HIGH_PRIORITY` \| `GPS_MISMATCH` |
+| `message` | String | required |
+| `isResolved` | Boolean | default false, **indexed** |
 
-### `district-analytics.model.js` → collection: `district_analytics`
+### 6.8 `district-analytics.model.js` → collection `district_analytics`
+
 | Field | Type | Notes |
 |---|---|---|
-| `district` | String | indexed |
+| `district` | String | required, indexed |
 | `totalSchools`, `avgConditionScore`, `highPriorityCount` | Number | |
 | `failureWithin30DaysCount`, `failureWithin60DaysCount` | Number | |
-| `categoryBreakdown.plumbing/electrical/structural` | Number | high priority counts |
+| `categoryBreakdown.plumbing` | Number | high-priority count |
+| `categoryBreakdown.electrical` | Number | high-priority count |
+| `categoryBreakdown.structural` | Number | high-priority count |
 | `slaBreachCount` | Number | |
 | `generatedAt` | Date | |
 
-### `priorityConfig.model.js` → collection: `priority_config`
+### 6.9 `priorityConfig.model.js` → collection `priority_config`
+
+Dynamic, hot-reloadable engine configuration.
+
 | Field | Type | Notes |
 |---|---|---|
-| `conditionWeights` | Object | good/minor/major/critical → 10/30/60/90 |
-| `multipliers` | Object | girlsSchool ×1.5, criticalFacility ×1.6, studentImpact ×1.4 |
+| `conditionWeights.good` | Number | default 10 |
+| `conditionWeights.minor` | Number | default 30 |
+| `conditionWeights.major` | Number | default 60 |
+| `conditionWeights.critical` | Number | default 90 |
+| `multipliers.girlsSchool` | Number | default 1.5 |
+| `multipliers.criticalFacility` | Number | default 1.6 |
+| `multipliers.studentImpact` | Number | default 1.4 |
 | `maxPriorityScore` | Number | default 100 |
 | `version` | String | required |
-| `isActive` | Boolean | partial unique index — only one active |
-| `updatedBy` | ObjectId | ref User |
+| `isActive` | Boolean | default true |
+| `updatedBy` | ObjectId | ref → User |
+
+**Partial unique index:** only **one** document may have `isActive: true` (enforced via `partialFilterExpression`).
+
+### 6.10 `conditionReport.model.js` (legacy) → collection `condition_reports`
+
+Pre-refactor structure kept for backward compatibility:
+
+| Field | Type |
+|---|---|
+| `schoolId` | ObjectId (ref School) |
+| `submittedBy` | ObjectId (ref User) |
+| `weekOf` | Date |
+| `items[]` | `{category, subCategory, condition, notes}` |
+| `overallNotes` | String |
+| `riskScore`, `riskLevel` | — |
+
+**Index:** `{schoolId, weekOf: -1}`
 
 ---
 
-## 7. Frontend — Features & Implementation
+## 7. Prediction Engine Deep Dive
 
-### 7.1 Application Routing & Layout
+**File:** `backend/services/predictionEngine.js` (~500 LOC)
 
-**File:** `frontend/src/App.jsx`
+### 7.1 Two Engine Modes
 
-| Route | Component | Access |
-|---|---|---|
-| `/` | `Landing` | Public |
-| `/login` | `Login` | Public |
-| `/signup` | `Signup` | Public |
-| `/dashboard` | `AppLayout` → `DashboardIndex` | Protected |
-| `/dashboard/report` | `AppLayout` → `WeeklyInputForm` | Protected |
-| `/dashboard/work-orders` | `AppLayout` → `WorkOrders` | Protected |
-| `/dashboard/work-orders/new` | `AppLayout` → `WorkOrders` | Protected |
-| `*` | Redirect to `/login` | — |
+#### `predictRiskForCategory()` — PS-03 primary
+Fully explainable, per-category risk scoring. Every factor that influences the score produces a named entry in the returned `evidence[]` array — no black-box scoring.
 
-**`DashboardIndex`** is role-aware:
-- `peon` or `principal` role → `SchoolView`
-- `deo` or `admin` role → `DEODashboard`
-- `contractor` role → `WorkOrders`
+**Scoring pipeline:**
+1. **Condition base (0–50)** — avg `conditionScore` over last 3 weeks, linearly mapped
+2. **Poor-reading bonus (0–20)** — count of weeks with score ≥ 4
+3. **Trend bonus (0–15)** — +15 if latest > oldest (worsening)
+4. **Building-age multiplier** — 5 tiers: ×0.80 (<10 y) · ×0.90 (10–19) · ×1.00 (20–29) · ×1.10 (30–39) · ×1.25 (40+)
+5. **Weather-zone multiplier** — Dry ×0.90 · Heavy Rain ×1.15 · Coastal ×1.10 · Semi-Arid ×0.95 · Tribal ×1.00
+6. **Flag boosts** — waterLeak, wiringExposed, roofLeakFlag, issueFlag, crackWidthMM, toiletFunctionalRatio, powerOutageHours (each produces an evidence item)
+7. **Girls' school plumbing multiplier** — ×1.5 for plumbing only (PS-03 mandate)
+8. **Student count multiplier** — proportional, capped at ×1.30
 
-### 7.2 Authentication Context & Flow
+**Deterioration analysis (linear regression):**
+- `deteriorationSlope(weekHistory)` — slope in score-units / week
+- `projectDaysToFailure(slope)` — extrapolates when score crosses failure threshold
+- Returns `within_30_days` and `within_60_days` flags
 
-**File:** `frontend/src/context/AuthContext.jsx`
+**Dynamic config:** Loads active `PriorityConfig` from DB on first call (module cache). `invalidateConfigCache()` is called after any `PUT /api/admin/priority-config`. Falls back to `DEFAULT_CONFIG` if no active doc.
 
-`AuthProvider` wraps the entire app and exposes `useAuth()` hook:
+#### `analyseSchool()` — legacy composite
+Multi-category weighted aggregate used by older dashboards. Applies `exp(-0.3 × weekIndex)` time-decay so recent reports dominate.
 
-| Property/Method | Description |
+### 7.2 Other Exports
+
+| Function | Purpose |
 |---|---|
-| `user` | Current user object (null if logged out) |
-| `loading` | True while session is being verified on mount |
+| `scoreReportItems(items)` | Legacy 0–100 score from old condition items |
+| `predictTimeToFailure(score)` | Legacy composite → days mapping |
+| `riskLevel(score)` | `critical` (76+) \| `high` (51–75) \| `moderate` (26–50) \| `low` (0–25) |
+| `prioritiseQueue(schoolAnalyses)` | `score × 0.6 + trendBonus + studentImpactBonus` |
+| `getActiveConfig()` | DB-cached active PriorityConfig |
+| `invalidateConfigCache()` | Flush cache (called on config update) |
+
+### 7.3 Category Weights (composite mode)
+
+| Category | Weight | Rationale |
+|---|---|---|
+| Structural | 1.00 | Collapse risk |
+| Electrical | 0.85 | Fire / shock |
+| Sanitation | 0.80 | Health / compliance |
+| Plumbing | 0.65 | Water supply |
+| Furniture | 0.35 | Low safety impact |
+
+### 7.4 Priority Queue Formula
+
+```
+priority = riskScore × 0.6 + trendBonus + studentImpactBonus
+```
+
+- `trendBonus` = +15 if deteriorating
+- `studentImpactBonus` up to +20 based on enrollment
+
+---
+
+## 8. Frontend Architecture
+
+### 8.1 Routing (`src/App.jsx`)
+
+| Route | Access | Renders |
+|---|---|---|
+| `/` | Public | `Landing` |
+| `/login` | Public | `Login` |
+| `/signup` | Public | `Signup` |
+| `/dashboard` | Protected | `AppLayout` → `DashboardIndex` (role-aware) |
+| `/dashboard/report` | Protected | `WeeklyInputForm` |
+| `/dashboard/reports` | Protected | `ConditionLogView` (principal historical audit) |
+| `/dashboard/map` | Protected | `GeospatialMap` (leaflet) |
+| `/dashboard/work-orders` | Protected | `WorkOrders` |
+| `/dashboard/work-orders/new` | Protected | `WorkOrders` (new-order slide-over opens) |
+| `*` | — | Redirect to `/login` |
+
+**`DashboardIndex`** role-based landing:
+- `peon` → `WeeklyInputForm` (straight to entry form)
+- `principal` / `school` → `SchoolView`
+- `deo` / `admin` → `DEODashboard`
+- `contractor` → `WorkOrders`
+
+### 8.2 Authentication Context (`src/context/AuthContext.jsx`)
+
+`AuthProvider` wraps the whole app and exposes `useAuth()`:
+
+| API | Description |
+|---|---|
+| `user` | Current user (null if signed out) |
+| `loading` | True during initial session restore |
 | `login(email, password)` | POST `/api/auth/login` |
 | `signup(data)` | POST `/api/auth/register` |
-| `logout()` | POST `/api/auth/logout`, clears user state |
-| `updateUser()` | Refreshes user from `/api/auth/me` |
+| `logout()` | POST `/api/auth/logout` |
+| `updateUser()` | Refresh from `/api/auth/me` |
 
-On mount: calls `GET /api/auth/me` with `credentials: "include"` to restore session.
+On mount it calls `GET /api/auth/me` with `credentials: include` to restore the session from the HttpOnly cookie.
 
-### 7.3 API Service Layer
+### 8.3 API Service (`src/services/api.js`)
 
-**File:** `frontend/src/services/api.js`
+Reads `VITE_API_URL` (default `http://localhost:5000`). All helpers send `credentials: "include"`:
 
-Centralised HTTP helpers reading `VITE_API_URL` from env (default: `http://localhost:5000`):
-
-| Function | Method | Notes |
-|---|---|---|
-| `get(path)` | GET | JSON, credentials include |
-| `post(path, body)` | POST | JSON body |
-| `put(path, body)` | PUT | JSON body |
-| `patch(path, body)` | PATCH | JSON body |
-| `del(path)` | DELETE | |
-| `postFile(path, formData)` | POST | multipart/form-data, no Content-Type header set |
-
-All functions handle 401 gracefully and catch network errors.
-
-### 7.4 Landing Page
-
-**File:** `frontend/src/pages/Landing.jsx`
-
-Built with Tailwind CSS + framer-motion animations. Full marketing site with 10 section components:
-
-| Component | Content |
+| Function | Description |
 |---|---|
-| `Navbar` | Scroll-aware floating nav with progress bar, mobile menu, Dashboard CTA |
-| `Hero2` | 3D phone mockup with mouse-parallax, typewriter headline, telemetry widgets |
-| `Features2` | Bento-grid layout — Multi-Factor Forecast, Impact Bias Queue, 2-Min Audits |
-| `GovSchemes` | Infinite scrolling capability ticker (8 engine capabilities) |
-| `AppPreview` | 3D rotating phone with ConditionMeter gauge widget |
-| `HowItWorks2` | Scroll-animated timeline with 4 steps: Report → Forecast → Rank → Resolve |
-| `Testimonials` | Interactive bento photo grid for 4 use cases |
-| `DownloadSection` | 3D phone with QR code hover reveal, live school counter |
-| `Footer` | System status bar, navigation links, terminal aesthetic |
+| `get(path)` | GET |
+| `post(path, body)` | POST JSON |
+| `put(path, body)` | PUT JSON |
+| `patch(path, body)` | PATCH JSON |
+| `del(path)` | DELETE |
+| `postFile(path, formData)` | multipart (no `Content-Type` header) |
 
-### 7.5 Login & Signup Pages
+### 8.4 Layout (`components/layout/AppLayout.jsx`)
 
-**Files:** `frontend/src/pages/Login.jsx`, `frontend/src/pages/Signup.jsx`
-
-**Login:**
-- 5 sandbox identity buttons (auto-fill email/password for each role)
-- Password: `password123` for all demo accounts
-- Error banner on invalid credentials
-- JWT cookie set server-side on success
-
-**Signup:**
-- 5-role selector grid (peon, principal, deo, contractor, admin)
-- Conditional `schoolId` field shown only for peon/principal roles
-- AnimatePresence for smooth field show/hide
-- Redirects to `/dashboard` on success
-
-### 7.6 Protected Dashboard Shell
-
-**File:** `frontend/src/components/AppLayout.jsx`
-
-- Floating fixed navbar (scroll-aware styling — compact on scroll)
-- Role-based nav items:
-  - `peon`: Dashboard + Submit Report
-  - `principal`: My School + Submit Report
-  - `deo`: Overview + Work Orders
-  - `contractor`: My Tasks + All Orders
-  - `admin`: Admin Panel + All Orders
+- Fixed white header (scroll-aware), scroll-progress bar via framer-motion spring
+- Brand lockup + "Saksham — Infrastructure Monitoring"
+- Desktop role-nav + mobile hamburger slide-down
 - User profile dropdown with name, email, sign out
-- Mobile hamburger menu with AnimatePresence
-- Role badge display (color-coded)
+- Role badge (e.g. "DEO COMMAND")
+- Footer: "Digital Infrastructure Maintenance Division · Saksham © 2026 · PS-03"
 
-**File:** `frontend/src/components/ProtectedRoute.jsx`
+**Role-based nav:**
 
-- Redirects unauthenticated users to `/login` with `state.from` for post-login redirect
-- Shows spinner during auth loading
-
-### 7.7 School View (Peon/Principal Role)
-
-**File:** `frontend/src/pages/SchoolView.jsx`
-
-Fetches data from 3 endpoints in parallel on mount:
-1. `GET /api/risk/:schoolId` — live engine predictions per category
-2. `GET /api/condition-report?schoolId=:id&limit=20` — report history
-3. `GET /api/schools/:schoolId` — school metadata
-
-**Features:**
-- **Risk Gauge** — SVG circular gauge showing 0–100 composite risk score, color-coded by level
-- **Prediction Summary panel** — time to failure, trend (↗/↘/→), worst category, report count
-- **Per-category breakdown** — horizontal bar chart per category with risk level badge
-- **Condition Records list** — each record shows category, week, condition score, issue flags (waterLeak, wiringExposed, roofLeakFlag), failure window badges
-
-**Access guard:** Only `peon`, `principal` roles with a linked `schoolId` can access this view.
-
-### 7.8 DEO Dashboard
-
-**File:** `frontend/src/pages/DEODashboard.jsx`
-
-The primary DEO interface. Calls `GET /api/risk/queue` with filter params.
-
-**Features:**
-- 4 stat cards: Schools at Risk, Critical Priority, High Priority, Avg Days to Failure
-- Filter bar: district text input, block text input, category dropdown, 30/60-day urgency toggle
-- Priority queue table with columns: School & Location, At-Risk Categories, Days to Failure, Student Impact, Indicators, Actions
-- Days-to-failure progress bar (red < 15d, orange < 30d, blue otherwise)
-- Girls' school badge
-- Evidence clue count badge
-- **Assign button** → navigates to `/dashboard/work-orders/new?schoolId=...&school=...&category=...&score=...`
-- Row click → opens **EvidenceDrawer** (slide-out panel with full evidence list)
-- Predictive Aggregation Logic explanation callout at bottom
-
-### 7.9 Weekly Condition Report Form
-
-**File:** `frontend/src/pages/WeeklyInputForm.jsx`
-
-**Features:**
-- Access guard: only `peon` and `principal` with linked schoolId
-- School metadata header (district, block, building age, students, weather zone)
-- ISO week number auto-computed, editable
-- **3 category tabs** (plumbing, electrical, structural) with icons
-- Per-tab panel:
-  - **Condition Score selector** (1–5 buttons with color labels: Excellent/Good/Fair/Poor/Critical)
-  - **Issue flags checkboxes** (category-specific: waterLeak, wiringExposed, roofLeakFlag, issueFlag)
-  - **Numeric fields** (category-specific: toiletFunctionalRatio, powerOutageHours, crackWidthMM)
-- **Per-category summary strip** — shows current score/5 for each category at a glance
-- Submits all 3 categories sequentially via `POST /api/condition-report`
-- **Success screen** shows per-category result (saved/failed)
-
-### 7.10 Work Orders Page (Contractor Role)
-
-**File:** `frontend/src/pages/WorkOrders.jsx`
-
-**Features:**
-- Role-aware: contractors see only their assigned orders; DEO/admin see all
-- Status filter tabs with counts (all/pending/assigned/in_progress/completed)
-- SLA Metric Card shown when breached orders exist
-- Order cards with: category icon, priority badge, SLA breach badge (animated), description, school/contractor/deadline/delay grid
-- **Assign Now** button (DEO/admin) → PATCH status to assigned
-- **Close Order** button → opens CompletionModal
-- **New Assignment** panel (DEO/admin) → slide-over form with school selector, category, priority, description, contractor assignment, due date
-- Auto-opens new assignment panel when redirected from DEO dashboard with prefill params
-
-### 7.11 Completion Modal (GPS + Photo Proof)
-
-**File:** `frontend/src/components/CompletionModal.jsx`
-
-Contractor work completion form. PS-03 requirement.
-
-**Features:**
-- **Pre-Repair Score** and **Post-Repair Score** selectors (1–5 buttons)
-- **GPS Validation panel**: auto-requests `navigator.geolocation` on mount; shows detecting/captured/denied states
-- **Evidence Photo panel**: placeholder image with hover-change UX
-- **Notes textarea**
-- Submits `POST /api/tasks/complete` with lat/lng, scores, notes, photoUrl
-- GPS timeout: 5s (noted in `remaining.md` as needing increase to 10s with Retry button)
-
-### 7.12 Evidence Drawer
-
-**File:** `frontend/src/components/EvidenceDrawer.jsx`
-
-Right-side slide-out panel opened from DEO dashboard row click:
-- School name in header
-- At-risk categories chip list
-- Supporting indicators list (evidence items as bullet cards)
-- Methodology explanation note
-- Methodology note explains engine is based on 4-week trends + weather modifiers
-
-### 7.13 Reusable UI Components
-
-**Directory:** `frontend/src/components/ui/`
-
-| Component | Description |
+| Role | Nav items |
 |---|---|
-| `PageHeader` | Consistent page title + optional subtitle, supports `cinematic` variant |
-| `Card` | Styled card container with configurable padding, shadow, hover |
-| `PrimaryButton` | Multi-variant button (primary/secondary/outline/danger) with loading state |
-| `Select` | Styled select dropdown with chevron icon |
-| `InputField` | Text/number input with label, error, helper text, icon support |
+| `peon` | Submit Report |
+| `principal` | Principal Dashboard · View Reports |
+| `deo` | Predictive Queue · Live Map · Command Center |
+| `contractor` | My Tasks · All Orders |
+| `admin` | Admin Panel · Live Map · All Orders |
+
+### 8.5 Pages
+
+#### `Landing.jsx`
+Marketing site built with Tailwind + framer-motion. Uses sections from `components/landing/`:
+Navbar · Hero2 · Features2 · GovSchemes (infinite ticker) · AppPreview (3D phone, ConditionMeter gauge) · HowItWorks2 · Testimonials · DownloadSection (QR reveal + live counter) · CTA · Footer.
+
+#### `auth/Login.jsx`
+- 5 sandbox role buttons (auto-fill email + `password123`)
+- Error banner
+- Cookie set server-side; redirect to `/dashboard`
+
+#### `auth/Signup.jsx`
+- 5-role selector grid
+- `schoolId` field shown only for `peon` / `principal` via `AnimatePresence`
+- Posts to `/api/auth/register`
+
+#### `dashboard/WeeklyInputForm.jsx` (peon entry point)
+- Guards: only `peon`/`principal` with linked `schoolId`
+- Header with district, block, building age, students, weather zone
+- 3 category tabs (plumbing / electrical / structural) with icons
+- Per-tab inputs: condition 1–5 buttons · category-specific issue flag checkboxes (waterLeak, wiringExposed, roofLeakFlag, issueFlag) · category-specific numeric selects (`toiletFunctionalRatio`, `powerOutageHours`, `crackWidthMM`)
+- Summary strip shows all 3 categories' scores at a glance
+- Submits all categories sequentially via `POST /api/condition-report`
+- Success screen with per-category saved/failed status
+
+#### `dashboard/SchoolView.jsx` (principal)
+Fetches in parallel:
+1. `GET /api/risk/:schoolId` — live engine
+2. `GET /api/condition-report?schoolId=…&limit=20`
+3. `GET /api/schools/:schoolId`
+
+Shows: SVG risk gauge (0–100) · prediction summary · per-category bars · condition records list with badges.
+
+#### `dashboard/DEODashboard.jsx`
+Primary DEO interface. Calls `GET /api/risk/queue`.
+- 4 stat cards: Schools at Risk · Critical · High · Avg Days to Failure
+- Filter bar (district / block / category / urgency)
+- Priority table: School & Location · At-Risk Categories · Days to Failure · Student Impact · Indicators · Actions
+- Coloured failure-window progress bar (red < 15d, orange < 30d, blue otherwise)
+- Girls' school badge, evidence-count badge
+- **Assign** button → navigates to `/dashboard/work-orders/new?schoolId=…&category=…&score=…`
+- Row click → **EvidenceDrawer** (slide-out evidence panel)
+
+#### `dashboard/GeospatialMap.jsx` (deo / admin only)
+- React-Leaflet `MapContainer` with CartoDB Positron tiles
+- Fetches `/api/schools` + `/api/risk/queue` in parallel and merges `priorityScore` onto each school
+- Custom coloured markers: red (≥80) · orange (≥60) · amber (≥40) · emerald (<40) · slate (no data)
+- Click marker → popup with school name, district, risk badge
+- Also plots the **user's current location** via `navigator.geolocation`
+- 3 metric cards at top: Identification Nodes · Critical Designation · Stable Baseline
+- Loading spinner overlay during fetch
+
+#### `dashboard/ConditionLogView.jsx` (principal)
+- Guards: only `principal` / `school` with linked `schoolId`
+- 4 metric cards (Audit Volume · Critical Path · Elevated Risk · Visual Evidence)
+- Filters: category (All / plumbing / electrical / structural) and risk level (critical / high / moderate / low)
+- Sorted list of expandable `ReportCard`s; expanded view shows Priority Index, MTTF (days), 30D / 60D risk, and category-specific numeric detail bars
+
+#### `dashboard/WorkOrders.jsx`
+- Role-aware: contractors see only assigned; DEO/admin see all
+- Status filter tabs with counts (all / pending / assigned / in_progress / completed)
+- SLA metric card when any breached exist
+- Order cards: category icon, priority badge, SLA badge (animated), school / contractor / deadline / delay grid
+- DEO: **Assign Now** (PATCH → assigned), **New Assignment** slide-over panel (school selector, category, priority, description, contractor, due date)
+- Contractor: **Close Order** → opens `CompletionModal`
+- Auto-opens new-assignment panel when redirected with prefill params
+
+### 8.6 Reusable Common Components (`components/common/`)
+
+| File | Description |
+|---|---|
+| `Badge.jsx` | Variant-driven pill (`critical` / `high` / `moderate` / `low` / `info` / etc) |
+| `Button.jsx` | Multi-variant (`primary` / `ghost` / `outline` / `danger`), `isLoading`, sizes |
+| `Card.jsx` | Styled container with configurable padding / shadow / hover |
+| `Input.jsx` | Text/number input with label + error + icon |
+| `Select.jsx` | Styled select with chevron |
+| `MetricCard.jsx` | Big-number KPI tile with variant (`info`/`critical`/`high`/`success`), icon, trend value |
+| `PageHeader.jsx` | Title + subtitle + icon + optional `actions` slot |
+| `ProtectedRoute.jsx` | Redirects unauthenticated users to `/login`, shows spinner during load |
+| `CompletionModal.jsx` | Contractor completion form: pre/post score selectors, GPS auto-capture, photo placeholder, notes, posts `/api/tasks/complete` |
+| `EvidenceDrawer.jsx` | Right-side slide-out — school name, at-risk category chips, supporting evidence bullets, methodology note |
 
 ---
 
-## 8. API Endpoints Reference
+## 9. API Endpoints Reference
 
 ### Server-level
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/health` | None | Server status + API cheat sheet |
-| GET | `/api/seed-demo` | None | Run demo seed (inserts sample data) |
-| GET | `/uploads/:filename` | None | Serve uploaded files |
+| GET | `/health` | — | Server status + cheat sheet |
+| GET | `/api/seed-demo` | — | Seed demo data |
+| GET | `/uploads/:filename` | — | Static file serving |
 
-### Authentication (`/api/auth`)
-| Method | Path | Auth | Description |
+### Authentication `/api/auth`
+| Method | Path | Description |
+|---|---|---|
+| POST | `/register` | Create user, issue JWT cookie |
+| POST | `/login` | Validate, set cookie |
+| POST | `/logout` | Clear cookie |
+| GET | `/me` | Get current user (JWT) |
+
+### Profile `/api/me` — all JWT
+| Method | Path | Description |
+|---|---|---|
+| GET | `/` | Own profile |
+| PUT | `/` | Update name / phone / district |
+| PUT | `/password` | Change password |
+
+### Schools `/api/schools` — JWT
+| Method | Path | Description |
+|---|---|---|
+| GET | `/` | List all schools |
+| GET | `/:id` | School by numeric ID |
+
+### Reports `/api/reports` (alias `/api/condition-report`) — JWT
+| Method | Path | Roles | Description |
 |---|---|---|---|
-| POST | `/api/auth/register` | None | Create new user account |
-| POST | `/api/auth/login` | None | Login, set HttpOnly cookie |
-| POST | `/api/auth/logout` | None | Clear auth cookie |
-| GET | `/api/auth/me` | JWT | Get current user |
+| POST | `/` | peon, principal, deo, admin | Submit weekly report + run engine |
+| GET | `/` | All | List with filters |
+| GET | `/:school_id` | All | Records for one school |
 
-### Profile (`/api/me`)
-| Method | Path | Auth | Description |
+### Risk `/api/risk` (alias `/api/risk-scores`) — JWT
+| Method | Path | Roles | Description |
 |---|---|---|---|
-| GET | `/api/me/` | JWT | Get own profile |
-| PUT | `/api/me/` | JWT | Update profile |
-| PUT | `/api/me/password` | JWT | Change password |
-
-### Schools (`/api/schools`)
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| GET | `/api/schools/` | JWT | List all schools (aggregated from records) |
-| GET | `/api/schools/:id` | JWT | Get school by numeric ID |
-
-### Condition Reports
-| Method | Path | Auth | Roles | Description |
-|---|---|---|---|---|
-| POST | `/api/reports/` | JWT | peon, principal, deo, admin | Submit weekly report (multipart) |
-| GET | `/api/reports/` | JWT | All | List reports with filters |
-| GET | `/api/reports/:school_id` | JWT | All | Reports for specific school |
-
-*(Also aliased at `/api/condition-report`)*
-
-### Risk Scores
-| Method | Path | Auth | Roles | Description |
-|---|---|---|---|---|
-| GET | `/api/risk/all` | JWT | deo, admin, contractor | All latest predictions (stored values) |
-| GET | `/api/risk/queue` | JWT | deo, admin | Prioritised maintenance queue aggregated by school |
-| GET | `/api/risk/` | JWT | deo, admin | Legacy risk-scores aggregation |
-| GET | `/api/risk/:school_id` | JWT | All | Live engine predictions for one school |
-
-*(Also aliased at `/api/risk-scores`)*
+| GET | `/all` | deo, admin, contractor | All predictions (stored values) |
+| GET | `/queue` | deo, admin | District-level aggregated queue |
+| GET | `/` | deo, admin | Legacy aggregation |
+| GET | `/:school_id` | All | Live engine per category |
 
 ### Maintenance Queue
-| Method | Path | Auth | Roles | Description |
-|---|---|---|---|---|
-| GET | `/api/maintenance-queue` | JWT | deo, admin, contractor | Alias for risk/queue |
-
-### Tasks / Work Orders
-| Method | Path | Auth | Roles | Description |
-|---|---|---|---|---|
-| GET | `/api/tasks/` | JWT | All | List tasks (role-filtered) |
-| POST | `/api/tasks/assign` | JWT | deo, admin | Create & assign work order |
-| POST | `/api/tasks/complete` | JWT | contractor, deo, admin | Complete task with GPS+photo |
-| PATCH | `/api/tasks/:id/status` | JWT | deo, admin | Update task status |
-
-*(Also aliased at `/api/work-orders`)*
-
-### Alerts
-| Method | Path | Auth | Description |
+| Method | Path | Roles | Description |
 |---|---|---|---|
-| GET | `/api/alerts/` | JWT | List unresolved alerts |
-| GET | `/api/alerts/digest` | JWT | Aggregated alert digest by district+category |
-| PATCH | `/api/alerts/:id/read` | JWT | Mark alert as resolved |
+| GET | `/api/maintenance-queue` | deo, bmo, admin, contractor | Alias to `getMaintenanceQueue` |
 
-### Analytics
-| Method | Path | Auth | Roles | Description |
-|---|---|---|---|---|
-| GET | `/api/analytics/` | JWT | All | District analytics |
-| POST | `/api/analytics/update` | JWT | All | Recompute district analytics |
-| GET | `/api/analytics/model-accuracy` | JWT | deo, admin | Prediction error analytics per category/district |
-
-### Maintenance (New Flow)
-| Method | Path | Auth | Description |
+### Tasks `/api/tasks` (alias `/api/work-orders`) — JWT
+| Method | Path | Roles | Description |
 |---|---|---|---|
-| POST | `/api/maintenance/decisions` | JWT | Create maintenance decision |
-| POST | `/api/maintenance/work-orders` | JWT | Create work order (raw) |
-| POST | `/api/maintenance/repair-logs` | JWT | Log completed repair with prediction feedback |
+| GET | `/` | All | List (contractor-scoped) |
+| POST | `/assign` | deo, admin | Create & assign |
+| POST | `/complete` | contractor, deo, admin | Complete with GPS + photo |
+| PATCH | `/:id/status` | deo, admin | Update status |
 
-### School Conditions
-| Method | Path | Auth | Description |
+### Alerts `/api/alerts` — JWT
+| Method | Path | Description |
+|---|---|---|
+| GET | `/` | List unresolved |
+| GET | `/digest` | Aggregate by district+category |
+| PATCH | `/:id/read` | Mark resolved |
+
+### Analytics `/api/analytics` — JWT
+| Method | Path | Roles | Description |
 |---|---|---|---|
-| GET | `/api/school-conditions/` | JWT | List condition records |
-| POST | `/api/school-conditions/` | JWT | Create condition record |
+| GET | `/` | All | District analytics |
+| POST | `/update` | All | Recompute analytics |
+| GET | `/model-accuracy` | deo, admin | Engine accuracy per category+district |
 
-### Admin
-| Method | Path | Auth | Roles | Description |
-|---|---|---|---|---|
-| GET | `/api/admin/stats` | JWT | admin | System-wide stats |
-| GET | `/api/admin/users` | JWT | admin | List all users |
-| DELETE | `/api/admin/users/:id` | JWT | admin | Delete user |
-| GET | `/api/admin/load-csv` | JWT | admin | Trigger CSV import pipeline |
-| GET | `/api/admin/priority-config` | JWT | deo, admin | Get active scoring config |
-| PUT | `/api/admin/priority-config` | JWT | admin | Update scoring config + flush engine cache |
+### Maintenance `/api/maintenance` — JWT
+| Method | Path | Description |
+|---|---|---|
+| POST | `/decisions` | Create decision |
+| POST | `/work-orders` | Create work order (raw) |
+| POST | `/repair-logs` | Create repair log + prediction feedback |
+
+### School Conditions `/api/school-conditions` — JWT
+| Method | Path | Description |
+|---|---|---|
+| GET | `/` | List records |
+| POST | `/` | Create record |
+
+### Admin `/api/admin` — JWT + authorize
+| Method | Path | Roles | Description |
+|---|---|---|---|
+| GET | `/stats` | admin | System-wide counts |
+| GET | `/users` | admin | All users |
+| DELETE | `/users/:id` | admin | Delete user |
+| GET | `/load-csv` | admin | Trigger CSV pipeline |
+| GET | `/priority-config` | deo, admin | Get active config |
+| PUT | `/priority-config` | admin | Update config + flush cache |
 
 ---
 
-## 9. Configuration & Tooling
+## 10. CSV Pipeline & Scripts
 
-### Vite (`frontend/vite.config.js`)
-- Plugin: `@vitejs/plugin-react` (includes JSX handling for `.js` files)
-- Dev server port: `5173`
-- Build output: `dist/` with source maps
-- esbuild loader: `jsx` for all `.js` and `.jsx` src files
+### 10.1 `scripts/loadCSV.js` — primary data ingestion
 
-### Tailwind CSS (`frontend/tailwind.config.js`)
-- Content paths: `index.html`, `src/**/*.{js,jsx}`
-- No custom theme extensions (uses Tailwind 3 defaults)
+Streams `TS-PS3.csv` (~50 000 rows) using Node's `readline` (memory-efficient):
 
-### PostCSS (`frontend/postcss.config.js`)
-- Plugins: `tailwindcss`, `autoprefixer`
+1. Parse each row → validate `school_id`, `week_number`, `category`, `condition_score`
+2. Map to `SchoolConditionRecord` document (all fields)
+3. Batch insert with `ordered: false` (skips duplicates, continues on error)
+4. Generate `MaintenanceDecision` for rows with `issueFlag = true` (+ girls'-school plumbing +15 boost)
+5. Generate `Alert` rows for `willFailWithin30Days` / `willFailWithin60Days` / `priorityScore ≥ 80`
+6. Compute and upsert `DistrictAnalytics` per district
 
-### Rate Limiter (`backend/middleware/rateLimiter.js`)
-- Window: 15 minutes, Max: 200 requests per IP
-- Applied to: all `/api/*` routes
+**Unique key:** `{schoolId, category, weekNumber}` — pipeline is idempotent.
 
-### Multer (`backend/config/multer.js`)
-- Storage: disk → `backend/uploads/`
-- File filter: image MIME types + extension check
-- File size limit: 10 MB
+### 10.2 Other Scripts
 
----
-
-## 10. Scripts & Utilities
-
-| Command | Description |
+| Script | Purpose |
 |---|---|
-| `npm run dev` (frontend) | Vite dev server at `localhost:5173` |
-| `npm run build` (frontend) | Production bundle → `frontend/dist/` |
-| `npm run dev` (backend) | Express with nodemon |
-| `npm run start` (backend) | Production: `node server.js` |
-| `npm run load-csv` (backend) | Stream `TS-PS3.csv` → MongoDB |
-| `node scripts/clearDB.js` | Drop all documents from all collections |
-| `node scripts/listCollections.js` | List collections with counts + samples |
-| `GET /api/seed-demo` | HTTP-triggered demo seed (5 users, 2 schools, sample records) |
+| `clearDB.js` | Drop all documents from all collections |
+| `listCollections.js` | List collections with counts + samples |
+| `verify_gps.js` | Sanity-check GPS coordinates on schools |
+
+### 10.3 NPM Scripts
+
+| Directory | Command | Purpose |
+|---|---|---|
+| frontend | `npm run dev` | Vite dev server at `:5173` |
+| frontend | `npm run build` | Production bundle → `dist/` |
+| frontend | `npm run preview` | Preview prod build |
+| backend | `npm run dev` | nodemon on `server.js` |
+| backend | `npm run start` | `node server.js` |
+| backend | `npm run load-csv` | Run `scripts/loadCSV.js` |
+
+### 10.4 Demo Accounts (from `seed.controller.js`)
+
+Password `password123` for all:
+
+| Role | Email |
+|---|---|
+| DEO | `deo@demo.com` |
+| Contractor | `contractor1@demo.com` |
+| School | `school1@demo.com` |
+| Admin | `admin@demo.com` |
 
 ---
 
-## 11. Environment Variables
+## 11. Environment & Deployment
 
-### Backend (`.env`)
+### Backend `.env`
 | Variable | Default | Description |
 |---|---|---|
-| `PORT` | 5000 | Express server port |
+| `PORT` | 5000 | Server port |
 | `NODE_ENV` | development | Environment mode |
-| `MONGODB_URI` | `mongodb://localhost:27017/predictive_maintenance` | MongoDB connection string |
-| `JWT_SECRET` | — | Secret key for JWT signing |
-| `JWT_EXPIRE` | 7d | Token expiry |
-| `FRONTEND_URL` | `http://localhost:5173` | CORS allowed origin |
+| `MONGODB_URI` | `mongodb://localhost:27017/predictive_maintenance` | Mongo connection |
+| `JWT_SECRET` | *(required)* | JWT signing secret |
+| `JWT_EXPIRE` | 7d | Token TTL |
+| `FRONTEND_URL` | `http://localhost:5173` | CORS origin |
 
-### Frontend (`.env`)
+### Frontend `.env`
 | Variable | Default | Description |
 |---|---|---|
-| `VITE_API_URL` | `http://localhost:5000` | Backend API base URL |
+| `VITE_API_URL` | `http://localhost:5000` | Backend base URL |
+
+### Deployment
+
+- **Frontend** (Vercel) — `vercel.json` sets SPA rewrites (all routes → `index.html`), separate rules for `/avatars/*` and `/assets/*`, build output `dist`
+- **Backend** — any Node host (Render, Railway, etc.); requires MongoDB Atlas URI
 
 ---
 
-## 12. Deployment Configuration
+## 12. Known Gaps & Technical Debt
 
-### Frontend — Vercel (`frontend/vercel.json`)
-- SPA rewrite: all routes → `index.html` (enables React Router client-side routing on Vercel)
-- Separate rules for `/avatars/*` and `/assets/*` static files
-- Build output: `dist`
-
-### Backend
-- Standard Node.js deployment (Railway, Render, etc.)
-- Requires MongoDB Atlas URI in env
-- `npm run start` for production
-
----
-
-## 13. Known Issues & Gaps
-
-| Issue ID | Component | Problem | Status |
+| # | Area | Issue | Status |
 |---|---|---|---|
-| **ISSUE-01** | Backend | `seed.js` imports `./models/School.js`, `ConditionReport.js`, `WorkOrder.js` — paths don't match current filenames | Open |
-| **ISSUE-02** | Backend | `verify_gps.js` imports `./backend/models/index.js` instead of `../models/index.js` | Open |
-| **ISSUE-03** | Frontend | GPS timeout in `CompletionModal.jsx` is 5s — too short for mobile; no retry button | Open |
-| **ISSUE-04** | Frontend | Principal role renders same `SchoolView` as peon — no dedicated principal dashboard with trend analysis | Open |
-| **ISSUE-05** | Frontend | No "Flagged" tab in DEO Dashboard for GPS-mismatch work orders | Open |
-| **ISSUE-06** | Frontend | SLA breach analytics (avg delay days per contractor) not surfaced in any UI | Open |
-| **ISSUE-07** | Backend | Dual work order APIs: `/api/tasks` and `/api/work-orders` — should be consolidated | Open |
-| **ISSUE-08** | Documentation | `README.md` Architecture section references old role names (`school` instead of `peon`/`principal`) and old model filenames | Open |
-| **ISSUE-09** | Frontend | `WorkOrders.jsx` `NewWorkOrderPanel` loads contractors via `/api/admin/users` — non-admin roles (DEO) may not have access | Open |
-| **ISSUE-10** | Backend | No `express-validator` on report submission or task completion endpoints | Open |
+| 1 | Backend | `seed.js` uses old model filenames (`./models/School.js`) that no longer exist | Legacy; API seeder (`seed.controller.js`) is used instead |
+| 2 | Backend | Dual work-order routes (`/api/tasks` + `/api/work-orders` both delegate to same controller) | Keep alias until all clients migrated |
+| 3 | Frontend | `CompletionModal` GPS timeout is 5 s — may be too short on mobile; no retry UI | Open |
+| 4 | Frontend | No DEO "GPS Mismatch" tab (alerts only surface via `/api/alerts`) | Open |
+| 5 | Frontend | SLA breach analytics (avg delay per contractor) not surfaced anywhere | Open |
+| 6 | Frontend | `WorkOrders` contractor list fetched from `/api/admin/users` — DEO may hit 403 | Open |
+| 7 | Backend | No `express-validator` on report / complete endpoints (manual checks only) | Open |
+| 8 | Engine | Feedback loop logs `predictionError` but does not auto-retune `PriorityConfig` weights | Roadmap |
+| 9 | Docs | `README.md` references legacy role (`school`) and legacy model filenames | Minor |
+| 10 | Backend | `scripts/verify_gps.js` import path is broken (`./backend/models/...` instead of `../models/...`) | Open |
+
+---
+
+*Document generated April 18, 2026 · Saksham (Tarkshaastra) · Predictive Maintenance Engine for School Infrastructure (PS-03)*

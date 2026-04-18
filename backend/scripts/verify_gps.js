@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
-import { WorkOrder, School, RepairLog } from './backend/models/index.js';
-import { completeTask } from './backend/controllers/workorder.controller.js';
+import { WorkOrder, School, RepairLog } from '../models/index.js';
+import { completeTask } from '../controllers/workorder.controller.js';
 
 // Mock request and response
 const mockRes = {

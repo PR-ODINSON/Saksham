@@ -7,6 +7,7 @@ import DistrictAnalytics from './district-analytics.model.js';
 import School from './school.model.js';
 import User from './user.model.js';
 import PriorityConfig from './priorityConfig.model.js';
+import AuditLog from './audit-log.model.js';
 
 export {
   SchoolConditionRecord,
@@ -17,5 +18,6 @@ export {
   DistrictAnalytics,
   School,
   User,
-  PriorityConfig
+  PriorityConfig,
+  AuditLog,
 };

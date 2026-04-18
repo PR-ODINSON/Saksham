@@ -2,15 +2,18 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
+import { createServer } from 'http';
 import cookieParser from 'cookie-parser';
+import { initSocket } from './socket/index.js';
 
 import connectDB from './config/database.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 import { protect, authorize } from './middlewares/auth.middleware.js';
 
 // Controllers
-import { seedDatabase }       from './controllers/seed.controller.js';
+import { seedDatabase, wipeData } from './controllers/seed.controller.js';
 import { getMaintenanceQueue } from './controllers/risk.controller.js';
 
 // Routes
@@ -27,13 +30,19 @@ import alertRoutes            from './routes/alert.routes.js';
 import analyticsRoutes        from './routes/analytics.routes.js';
 import maintenanceRoutes      from './routes/maintenance.routes.js';
 import schoolConditionRoutes  from './routes/schoolCondition.routes.js';
+import usersRoutes            from './routes/users.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-connectDB();
+// Ensure uploads/reports directory exists
+fs.mkdirSync(path.join(__dirname, 'uploads', 'reports'), { recursive: true });
 
-const app  = express();
-const PORT = process.env.PORT || 5000;
+const app        = express();
+const PORT       = process.env.PORT || 5000;
+const httpServer = createServer(app);
+
+// Connect DB then initialise Socket.IO
+connectDB().then(() => initSocket(httpServer));
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(cookieParser());
@@ -52,8 +61,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api', apiLimiter);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ─── Seed ─────────────────────────────────────────────────────────────────────
+// ─── Seed / Wipe ──────────────────────────────────────────────────────────────
 app.get('/api/seed-demo', seedDatabase);
+app.get('/api/wipe-data', wipeData);
 
 // ─── Health ───────────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
@@ -106,6 +116,9 @@ app.use('/api/admin', adminRoutes);
 // ─── Schools ──────────────────────────────────────────────────────────────────
 app.use('/api/schools', schoolRoutes);
 
+// ─── Users ────────────────────────────────────────────────────────────────────
+app.use('/api/users', usersRoutes);
+
 // ─── Legacy aliases (backwards compat) ───────────────────────────────────────
 app.use('/api/condition-report', reportRoutes);
 app.use('/api/risk-scores',      riskRoutes);
@@ -125,7 +138,7 @@ app.use((err, _req, res, _next) => {
   res.status(err.status || 500).json({ success: false, message: err.message || 'Internal server error' });
 });
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log(`\n✓ Saksham PS-03 Backend — port ${PORT}`);
   console.log(`✓ Health: http://localhost:${PORT}/health\n`);
 });

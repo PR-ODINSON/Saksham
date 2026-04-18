@@ -2,7 +2,7 @@ import { exec } from 'child_process';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import User from '../models/user.model.js';
-import { SchoolConditionRecord, MaintenanceDecision, WorkOrder, Alert, DistrictAnalytics, PriorityConfig } from '../models/index.js';
+import { SchoolConditionRecord, MaintenanceDecision, WorkOrder, Alert, DistrictAnalytics, PriorityConfig, AuditLog } from '../models/index.js';
 import { invalidateConfigCache } from '../services/predictionEngine.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -110,6 +110,70 @@ export const updatePriorityConfig = async (req, res) => {
     });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * GET /api/admin/audit-logs
+ * Paginated audit log with optional filters.
+ */
+export const getAuditLogs = async (req, res) => {
+  try {
+    const {
+      page = 1, limit = 50,
+      role, action, startDate, endDate,
+    } = req.query;
+
+    const match = {};
+    if (role)      match.actorRole = role;
+    if (action)    match.action    = { $regex: action, $options: 'i' };
+    if (startDate || endDate) {
+      match.createdAt = {};
+      if (startDate) match.createdAt.$gte = new Date(startDate);
+      if (endDate)   match.createdAt.$lte = new Date(endDate);
+    }
+
+    const skip  = (Number(page) - 1) * Number(limit);
+    const total = await AuditLog.countDocuments(match);
+
+    const logs = await AuditLog.aggregate([
+      { $match: match },
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: Number(limit) },
+      {
+        $lookup: {
+          from:         'users',
+          localField:   'actorId',
+          foreignField: '_id',
+          as:           'actor',
+        },
+      },
+      { $unwind: { path: '$actor', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id:             1,
+          action:          1,
+          actorRole:       1,
+          targetCollection:1,
+          targetId:        1,
+          metadata:        1,
+          ip:              1,
+          createdAt:       1,
+          actorName:       { $ifNull: ['$actor.name', 'System'] },
+        },
+      },
+    ]);
+
+    res.json({
+      success: true,
+      logs,
+      total,
+      page:  Number(page),
+      pages: Math.ceil(total / Number(limit)),
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
   }
 };
 

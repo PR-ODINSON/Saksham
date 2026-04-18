@@ -73,6 +73,7 @@ const maintenanceDecisionSchema = new mongoose.Schema({
 
 // Index on priorityScore descending for quick sorting of critical issues
 maintenanceDecisionSchema.index({ 'decision.computedPriorityScore': -1 });
+maintenanceDecisionSchema.index({ schoolId: 1, category: 1, status: 1 });
 
 const MaintenanceDecision = mongoose.model('MaintenanceDecision', maintenanceDecisionSchema);
 

@@ -4,7 +4,7 @@
  */
 import express from 'express';
 import { protect, authorize } from '../middlewares/auth.middleware.js';
-import { getWorkOrders, assignTask, completeTask, updateTaskStatus } from '../controllers/workorder.controller.js';
+import { getWorkOrders, assignTask, completeTask, updateTaskStatus, respondToTask } from '../controllers/workorder.controller.js';
 import upload from '../config/multer.js';
 
 const router = express.Router();
@@ -25,5 +25,8 @@ router.post(
 
 // PATCH /api/tasks/:id/status — update status
 router.patch('/:id/status', protect, authorize('deo', 'bmo', 'admin'), updateTaskStatus);
+
+// PATCH /api/tasks/:id/respond — contractor accepts or rejects a task
+router.patch('/:id/respond', protect, authorize('contractor', 'deo', 'admin'), respondToTask);
 
 export default router;
