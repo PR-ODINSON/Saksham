@@ -60,9 +60,9 @@ router.post('/:id/forward', protect, authorize('principal', 'deo', 'admin'), for
 // GET /api/reports/:id/pdf  — download PDF report
 router.get('/:id/pdf', protect, authorize('principal', 'deo', 'admin', 'contractor'), async (req, res) => {
   try {
-    const filePath = await generateAndSendPDF(req.params.id);
+    const pdfUrl = await generateAndSendPDF(req.params.id);
     writeAuditLog(req, 'report_downloaded', 'SchoolConditionRecord', req.params.id, {});
-    res.sendFile(filePath);
+    res.redirect(pdfUrl);
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

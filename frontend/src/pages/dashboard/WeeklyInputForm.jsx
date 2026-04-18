@@ -350,9 +350,9 @@ export default function WeeklyInputForm() {
     fd.append("schoolType",    school?.schoolType    || "");
     fd.append("isGirlsSchool", String(school?.isGirlsSchool ?? false));
     fd.append("numStudents",   String(school?.numStudents   || 0));
-    fd.append("buildingAge",   String(school?.buildingAge   || 0));
-    fd.append("materialType",  school?.materialType  || "");
-    fd.append("weatherZone",   school?.weatherZone   || "Dry");
+    fd.append("buildingAge",   String(school?.infrastructure?.buildingAge || 0));
+    fd.append("materialType",  school?.infrastructure?.materialType  || "");
+    fd.append("weatherZone",   school?.infrastructure?.weatherZone   || "Dry");
 
     const categoriesPayload = CATEGORIES.map(cat => {
       const s = catStates[cat.id];
