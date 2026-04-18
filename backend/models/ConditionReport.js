@@ -30,7 +30,7 @@ const conditionReportSchema = new mongoose.Schema(
     submittedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
-      required: true,
+      // Optional — CSV-imported reports have no user submitter
     },
     weekOf: { type: Date, required: true }, // Start of the reporting week
     items: { type: [itemSchema], required: true },

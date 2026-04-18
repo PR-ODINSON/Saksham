@@ -7,18 +7,37 @@ const schoolSchema = new mongoose.Schema(
     district: { type: String, required: true },
     block: { type: String },
     address: { type: String },
+
+    // ── PS-03 required fields ─────────────────────────────────────────────
     buildingAge: { type: Number, required: true }, // years
+    material: {
+      type: String,
+      enum: ['RCC', 'Brick', 'Temporary', 'Stone', 'Other'],
+      default: 'Other',
+    },
+    weatherZone: {
+      type: String,
+      enum: ['Dry', 'Heavy Rain', 'Coastal', 'Semi-Arid', 'Other'],
+      default: 'Dry',
+    },
+    isGirlsSchool: { type: Boolean, default: false },
+
+    // ── Additional demographic fields ─────────────────────────────────────
     studentCount: { type: Number, default: 0 },
     teacherCount: { type: Number, default: 0 },
     totalRooms: { type: Number, default: 0 },
     hasToilets: { type: Boolean, default: true },
     hasElectricity: { type: Boolean, default: true },
     hasWater: { type: Boolean, default: true },
-    // Cached risk score for quick dashboard queries
+
+    // ── CSV import reference (original integer school_id) ─────────────────
+    csvSchoolId: { type: Number, index: true, sparse: true },
+
+    // ── Cached composite risk (updated after each prediction run) ─────────
     lastRiskScore: { type: Number, default: 0 },
     lastRiskCategory: {
       type: String,
-      enum: ['low', 'moderate', 'high', 'critical'],
+      enum: ['low', 'medium', 'moderate', 'high', 'critical'],
       default: 'low',
     },
     lastAssessedAt: { type: Date },

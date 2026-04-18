@@ -7,25 +7,28 @@ import cookieParser from 'cookie-parser';
 
 import connectDB from './config/database.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
+import { protect, authorize } from './middlewares/auth.middleware.js';
 
-// Routes
-import { seedDatabase } from './controllers/seed.controller.js';
-import authRoutes     from './routes/auth.routes.js';
-import profileRoutes  from './routes/profile.routes.js';
-import adminRoutes    from './routes/admin.routes.js';
-import schoolRoutes   from './routes/school.routes.js';
-import reportRoutes   from './routes/report.routes.js';
-import riskRoutes     from './routes/risk.routes.js';
-import workOrderRoutes from './routes/workorder.routes.js';
+// Route modules
+import { seedDatabase }       from './controllers/seed.controller.js';
+import { getMaintenanceQueue } from './controllers/risk.controller.js';
+import authRoutes             from './routes/auth.routes.js';
+import profileRoutes          from './routes/profile.routes.js';
+import adminRoutes            from './routes/admin.routes.js';
+import schoolRoutes           from './routes/school.routes.js';
+import reportRoutes           from './routes/report.routes.js';
+import riskRoutes             from './routes/risk.routes.js';
+import workOrderRoutes        from './routes/workorder.routes.js';
+import taskRoutes             from './routes/task.routes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 connectDB();
 
-const app = express();
+const app  = express();
 const PORT = process.env.PORT || 5000;
 
-// ─── Middleware ──────────────────────────────────────────────────────────────
+// ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(cookieParser());
 app.use(cors({
   origin: [
@@ -41,32 +44,67 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api', apiLimiter);
 
-// Static uploads
+// Static file serving for uploaded images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ─── One-time seed endpoint (remove after demo setup) ────────────────────────
+// ─── Seed (demo setup) ────────────────────────────────────────────────────────
 app.get('/api/seed-demo', seedDatabase);
 
-// ─── Health ──────────────────────────────────────────────────────────────────
+// ─── Health ───────────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', app: 'Saksham — Predictive Maintenance Engine', version: '1.0.0' });
+  res.json({
+    status: 'ok',
+    app: 'Saksham — Predictive Maintenance Engine (PS-03)',
+    version: '2.0.0',
+    spec_endpoints: {
+      'POST /api/reports':             'Submit weekly condition report',
+      'GET  /api/reports/:school_id':  'Get reports for a school',
+      'GET  /api/risk/:school_id':     'Per-category predictions for one school',
+      'GET  /api/risk/all':            'All stored predictions',
+      'GET  /api/maintenance-queue':   'District-level priority queue (girls-school boost applied)',
+      'POST /api/tasks/assign':        'Assign work order to contractor',
+      'GET  /api/tasks':               'List all tasks / work orders',
+      'POST /api/tasks/complete':      'Mark task complete + upload photo proof',
+      'GET  /api/admin/load-csv':      'Load TS-PS3.csv into DB (admin only)',
+    },
+  });
 });
 
-// ─── API Routes ───────────────────────────────────────────────────────────────
-app.use('/api/auth',           authRoutes);
-app.use('/api/me',             profileRoutes);
-app.use('/api/admin',          adminRoutes);
-app.use('/api/schools',        schoolRoutes);
+// ─────────────────────────────────────────────────────────────────────────────
+//  PS-03 SPEC ROUTES
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Reports
+app.use('/api/reports', reportRoutes);
+
+// Risk predictions
+app.use('/api/risk', riskRoutes);
+
+// Maintenance queue — district-level, sorted by risk + girls-school boost
+app.get(
+  '/api/maintenance-queue',
+  protect,
+  authorize('deo', 'admin', 'contractor'),
+  getMaintenanceQueue,
+);
+
+// Tasks / work orders
+app.use('/api/tasks', taskRoutes);
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  LEGACY ROUTES (kept for frontend/existing-client compatibility)
+// ─────────────────────────────────────────────────────────────────────────────
+app.use('/api/auth',             authRoutes);
+app.use('/api/me',               profileRoutes);
+app.use('/api/admin',            adminRoutes);
+app.use('/api/schools',          schoolRoutes);
 app.use('/api/condition-report', reportRoutes);
-app.use('/api/risk-scores',    riskRoutes);
-app.use('/api/work-orders',    workOrderRoutes);
+app.use('/api/risk-scores',      riskRoutes);
+app.use('/api/work-orders',      workOrderRoutes);
+app.use('/api/assign-task',      workOrderRoutes);
+app.use('/api/complete-task',    workOrderRoutes);
 
-// Convenience aliases
-app.use('/api/maintenance-queue', riskRoutes);
-app.use('/api/assign-task',    workOrderRoutes);
-app.use('/api/complete-task',  workOrderRoutes);
-
-// ─── Error handling ──────────────────────────────────────────────────────────
+// ─── Error handling ───────────────────────────────────────────────────────────
 app.use((_req, res) => {
   res.status(404).json({ success: false, message: 'Route not found' });
 });
@@ -83,6 +121,8 @@ app.use((err, _req, res, _next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`✓ Saksham — Predictive Maintenance Backend running on port ${PORT}`);
-  console.log(`✓ Health: http://localhost:${PORT}/health`);
+  console.log(`\n✓ Saksham PS-03 — Predictive Maintenance Backend`);
+  console.log(`✓ Running on: http://localhost:${PORT}`);
+  console.log(`✓ Health:     http://localhost:${PORT}/health`);
+  console.log(`✓ CSV Load:   GET http://localhost:${PORT}/api/admin/load-csv\n`);
 });
