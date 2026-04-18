@@ -161,9 +161,10 @@ export default function ConditionLogView() {
   const [catFilter,  setCatFilter]  = useState("all");
   const [riskFilter, setRiskFilter] = useState("all");
 
+  const schoolId = typeof user?.schoolId === "object" ? user?.schoolId?._id : user?.schoolId;
+
   useEffect(() => {
     const loadData = async () => {
-      const schoolId = typeof user?.schoolId === "object" ? user?.schoolId?._id : user?.schoolId;
       if (!schoolId) { setLoading(false); return; }
       const reportsRes = await get(`/api/condition-report?schoolId=${schoolId}&limit=100`);
       if (reportsRes.success) setReports(reportsRes.records || []);
@@ -216,28 +217,51 @@ export default function ConditionLogView() {
     return b.weekNumber - a.weekNumber;
   });
 
+  // Determine image
+  const imgIndex = (String(schoolId).split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 10;
+  const images = [
+    'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1200&q=80',
+    'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&q=80',
+    'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?w=1200&q=80',
+    'https://images.unsplash.com/photo-1510531704581-5b2870972060?w=1200&q=80',
+    'https://images.unsplash.com/photo-1498075702571-ecb018f3752d?w=1200&q=80',
+    'https://images.unsplash.com/photo-1599058917212-d750089bc07e?w=1200&q=80',
+    'https://images.unsplash.com/photo-1584697964149-14a9386d3b4d?w=1200&q=80',
+    'https://images.unsplash.com/photo-1536337005238-94b997371b40?w=1200&q=80',
+    'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=1200&q=80',
+    'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=1200&q=80'
+  ];
+  const imageUrl = images[imgIndex];
+
   return (
     <div className="min-h-screen bg-slate-50 font-body pb-12">
-      <div className="max-w-5xl mx-auto p-6 space-y-6">
+      {/* Massive Hero Banner */}
+      <div className="relative w-full h-[320px] bg-slate-900">
+        <img src={imageUrl} alt="School Banner" className="w-full h-full object-cover opacity-60" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
         
-        {/* Page header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <h1 className="text-2xl font-semibold text-slate-900">
-              Inspection Reports
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Review weekly condition reports submitted by school staff.
-            </p>
-          </div>
-          <div className="bg-white border border-slate-200 px-4 py-2 rounded-lg shadow-sm text-center min-w-[120px]">
-             <span className="text-xs text-slate-500 block mb-0.5">Total Records</span>
-             <span className="text-xl font-semibold text-slate-800">{reports.length}</span>
+        <div className="absolute bottom-20 left-0 right-0">
+          <div className="max-w-5xl mx-auto px-6 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-md">
+                Inspection Registry
+              </h1>
+              <p className="mt-2 text-sm font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                <FileText size={14} /> Review weekly condition reports
+              </p>
+            </div>
+            <div className="bg-white/10 border border-white/20 backdrop-blur-md px-6 py-3 rounded-xl shadow-xl text-center min-w-[140px]">
+               <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest block mb-0.5">Total Records</span>
+               <span className="text-2xl font-black text-white">{reports.length}</span>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Summary stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="max-w-5xl mx-auto px-6 space-y-6">
+        
+        {/* Summary stats - Floating */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 -mt-12 relative z-10">
           <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-start justify-between">
             <div>
               <p className="text-sm font-medium text-slate-500 mb-1">Critical Issues</p>

@@ -148,39 +148,66 @@ export default function SchoolView() {
 
   const latestReport = reports.length > 0 ? reports[0] : null;
 
+  // Determine image based on schoolId
+  const imgIndex = (String(schoolId).split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 10;
+  const images = [
+    'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1200&q=80',
+    'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&q=80',
+    'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?w=1200&q=80',
+    'https://images.unsplash.com/photo-1510531704581-5b2870972060?w=1200&q=80',
+    'https://images.unsplash.com/photo-1498075702571-ecb018f3752d?w=1200&q=80',
+    'https://images.unsplash.com/photo-1599058917212-d750089bc07e?w=1200&q=80',
+    'https://images.unsplash.com/photo-1584697964149-14a9386d3b4d?w=1200&q=80',
+    'https://images.unsplash.com/photo-1536337005238-94b997371b40?w=1200&q=80',
+    'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=1200&q=80',
+    'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=1200&q=80'
+  ];
+  const imageUrl = images[imgIndex];
+
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <div className="max-w-7xl mx-auto pt-10 sm:pt-16 pb-12 px-4 sm:px-8 space-y-8">
-        <PageHeader
-          title="Node Operations Center"
-          subtitle={`Administrative Oversight · ${school?.name || "Generic Node"}`}
-          icon={Building}
-          actions={
-            <div className="flex gap-2">
-              <Button
-                onClick={() => navigate("/peon/dashboard")}
-                variant="outline"
-              >
+      {/* Massive Hero Banner */}
+      <div className="relative w-full h-[400px] bg-slate-900">
+        <img src={imageUrl} alt="School Banner" className="w-full h-full object-cover opacity-60" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+        
+        <div className="absolute bottom-24 left-0 right-0">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <div className="flex gap-2 mb-3">
+                <Badge variant="info" className="bg-blue-600/20 text-blue-100 border-blue-500/30 backdrop-blur-md">
+                  <MapPin size={12} className="mr-1.5" /> {school?.district || "Unspecified Region"}
+                </Badge>
+                <Badge variant="default" className="bg-white/10 text-white border-white/20 backdrop-blur-md">
+                  <Calendar size={12} className="mr-1.5" /> Age: {school?.buildingAge ?? "?"}Y
+                </Badge>
+                <Badge variant="default" className="bg-white/10 text-white border-white/20 backdrop-blur-md">
+                  <Users size={12} className="mr-1.5" /> Registry: {school?.numStudents ?? "?"}
+                </Badge>
+              </div>
+              <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-md">
+                {school?.name || "Generic Node"}
+              </h1>
+              <p className="mt-2 text-sm font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                <Building size={14} /> Administrative Oversight Center
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <Button onClick={() => navigate("/peon/dashboard")} variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-md shadow-xl">
                 Submit Audit
               </Button>
-              <Button
-                onClick={() => navigate(roleSubPath(user?.role, "reports"))}
-                variant="primary"
-              >
+              <Button onClick={() => navigate(roleSubPath(user?.role, "reports"))} variant="primary" className="bg-blue-600 hover:bg-blue-500 text-white border-none shadow-xl shadow-blue-900/20">
                 Resource Registry
               </Button>
             </div>
-          }
-        />
-
-        <div className="flex flex-wrap gap-2 -mt-4">
-          <Badge variant="info" size="lg"><MapPin size={12} className="mr-1.5" /> {school?.district || "Unspecified Region"}</Badge>
-          <Badge variant="default" size="lg"><Calendar size={12} className="mr-1.5" /> Structure Age: {school?.buildingAge ?? "?"}Y</Badge>
-          <Badge variant="default" size="lg"><Users size={12} className="mr-1.5" /> Registry Size: {school?.numStudents ?? "?"}</Badge>
+          </div>
         </div>
+      </div>
 
-        {/* REPORT METRICS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="max-w-7xl mx-auto pb-12 px-4 sm:px-8 space-y-8">
+        {/* REPORT METRICS - Floating Over Banner */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 -mt-16 relative z-10">
           <MetricCard
             label="Infrastructure Health"
             value={analysis ? `${100 - analysis.score}%` : "0%"}
@@ -251,39 +278,44 @@ export default function SchoolView() {
 
         {/* SURVIVAL & PROOF SECTION */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-          <Card variant="gov" className="h-full" title="Infrastructure Survival Analysis" icon={ActivityIcon}>
+          <Card variant="gov" className="h-full border-none shadow-xl shadow-slate-200/50 relative overflow-hidden bg-gradient-to-br from-[#0f172a] to-slate-800 text-white" title="" icon={ActivityIcon}>
+            <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
+              <ActivityIcon size={120} />
+            </div>
             {analysis ? (
-              <div className="space-y-8 flex flex-col h-full">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div>
-                    <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Failure Horizon</p>
-                    <div className={`text-2xl font-bold ${analysis.timeToFailureDays <= 15 ? "text-red-700" : "text-slate-900"}`}>
-                      {analysis.timeToFailureDays || "N/A"} <span className="text-xs font-medium opacity-50 uppercase">Days</span>
+              <div className="relative z-10 flex flex-col h-full">
+                <div className="mb-6">
+                  <h3 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                    <ActivityIcon size={20} className="text-blue-400" />
+                    Infrastructure Survival Analysis
+                  </h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Predictive Analytics Engine</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Failure Horizon</p>
+                    <div className={`text-3xl font-black ${analysis.timeToFailureDays <= 15 ? "text-red-400" : "text-white"}`}>
+                      {analysis.timeToFailureDays || "N/A"} <span className="text-xs font-bold opacity-60 uppercase">Days</span>
                     </div>
                   </div>
-                  <div>
-                    <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Condition Trend</p>
-                    <div className={`text-xs font-bold flex items-center gap-1.5 uppercase ${analysis.trend === "deteriorating" ? "text-red-700" : "text-emerald-700"}`}>
+                  <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10 flex flex-col justify-center">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Trend & Vector</p>
+                    <div className={`text-xs font-bold flex items-center gap-1.5 uppercase ${analysis.trend === "deteriorating" ? "text-red-400" : "text-emerald-400"}`}>
                       {analysis.trend === "deteriorating" ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
                       {analysis.trend}
                     </div>
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Critical Vector</p>
-                    <div className="text-xs font-bold text-slate-900 uppercase">{analysis.worstCategory || "None"}</div>
-                  </div>
-                  <div>
-                    <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Registry Volume</p>
-                    <div className="text-2xl font-bold text-slate-900">{analysis.reportCount || 0}</div>
+                    <div className="text-[10px] font-black text-white uppercase mt-1 opacity-80">Critical: {analysis.worstCategory || "None"}</div>
                   </div>
                 </div>
-                <div className="mt-auto flex items-start gap-3 bg-blue-50 border border-blue-100 p-4 rounded text-xs font-medium text-blue-900">
-                  <AlertTriangle size={16} className="text-blue-700 shrink-0" />
-                  <p>{analysis.explanation.replace("⚠", "")}</p>
+
+                <div className="mt-auto flex items-start gap-3 bg-blue-500/20 border border-blue-400/30 p-3 rounded-lg text-xs font-bold text-blue-100 backdrop-blur-sm shadow-inner">
+                  <AlertTriangle size={16} className="text-blue-400 shrink-0 mt-0.5" />
+                  <p className="leading-relaxed">{analysis.explanation.replace("⚠", "")}</p>
                 </div>
               </div>
             ) : (
-              <div className="py-8 text-center text-slate-400 font-medium text-sm italic">
+              <div className="py-8 text-center text-slate-400 font-medium text-sm italic relative z-10">
                 Insufficient audit data for predictive survival analysis.
               </div>
             )}
