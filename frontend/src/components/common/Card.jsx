@@ -21,7 +21,7 @@ const Card = ({
   };
 
   return (
-    <div className={`rounded-lg border transition-all ${variantStyles[variant]} ${className}`}>
+    <div className={`rounded-lg border transition-all flex flex-col ${variantStyles[variant]} ${className}`}>
       {(title || Icon) && (
         <div className={`px-6 py-4 flex items-center justify-between transition-colors ${
           variant === 'gov' 
@@ -52,7 +52,7 @@ const Card = ({
           )}
         </div>
       )}
-      <div className={noPadding ? '' : 'p-6'}>
+      <div className={`flex-1 ${noPadding ? '' : 'p-6'}`}>
         {children}
       </div>
     </div>

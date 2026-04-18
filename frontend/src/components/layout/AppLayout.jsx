@@ -230,9 +230,6 @@ export default function AppLayout({ children }) {
         <div className="bg-[#003366] text-white hidden md:block border-t border-white/10 relative">
           <div className="max-w-7xl mx-auto px-4 lg:px-8 flex items-center h-12">
             <nav className="flex items-center h-full text-[10.5px] font-black uppercase tracking-widest">
-              <Link to={dashboardHome} className={`h-full flex items-center px-6 border-r border-white/5 hover:bg-[#002244] transition-all gap-2.5 ${isActive(dashboardHome, true) ? 'gov-nav-active' : ''}`}>
-                <LayoutDashboard size={16} /> Dashboard
-              </Link>
               {navItems.map(item => (
                 <Link
                   key={item.path}
@@ -269,9 +266,6 @@ export default function AppLayout({ children }) {
               <button onClick={() => setMobileOpen(false)}><X size={28} className="text-slate-400" /></button>
             </div>
             <nav className="flex flex-col gap-2">
-              <Link onClick={() => setMobileOpen(false)} to={dashboardHome} className="px-4 py-4 rounded-lg bg-slate-50 text-[#003366] font-black uppercase tracking-widest text-xs flex items-center gap-3">
-                <LayoutDashboard size={20} /> Dashboard
-              </Link>
               {navItems.map(item => (
                 <Link 
                   key={item.path} 

@@ -128,7 +128,7 @@ export default function GeospatialMap() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <div className="max-w-7xl mx-auto pt-10 sm:pt-16 pb-6 px-4 sm:px-8 h-[calc(100vh-170px)] flex flex-col space-y-8">
+      <div className="max-w-7xl mx-auto pt-8 sm:pt-12 pb-12 px-4 sm:px-8 flex flex-col">
         {/* CSS overrides for Leaflet Popups to match Bento Box theme */}
         <style>{`
         .leaflet-popup-content-wrapper {
@@ -144,28 +144,30 @@ export default function GeospatialMap() {
       `}</style>
 
         <PageHeader
-          title="Geospatial Tactical Hub"
-          subtitle="Live Structural Risk Matrix Across Regional Infrastructure Nodes"
+          title="Infrastructure Mapping Grid"
+          subtitle="Geospatial monitoring of structural risk baseline across regions"
           icon={Globe}
+          className="mb-8"
           actions={
             <Button
-              variant="primary"
+              variant="outline"
               isLoading={loading}
               onClick={fetchMapData}
+              className="text-[10px] font-bold uppercase tracking-widest border-[#003366] text-[#003366] hover:bg-blue-50"
             >
-              Refresh Node Registry
+              Update Registry
             </Button>
           }
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
           <MetricCard label="Identification Nodes" value={total} icon={Building} variant="info" />
           <MetricCard label="Critical Designation" value={critical} icon={AlertTriangle} variant="critical" />
           <MetricCard label="Stable Baseline" value={safe} icon={ShieldCheck} variant="success" />
         </div>
 
-        {/* MAP CONTAINER */}
-        <div className="flex-1 relative z-0 border border-slate-200 rounded-xl overflow-hidden shadow-xl bg-slate-100 mb-8">
+        {/* MAP CONTAINER - Increased fixed height for dominant visibility */}
+        <div className="h-[600px] w-full relative z-0 border border-slate-200 rounded-xl overflow-hidden shadow-xl bg-slate-100 mb-8">
           {loading && schools.length === 0 ? (
             <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
               <div className="w-12 h-12 border-4 border-slate-200 border-t-[#0f172a] rounded-full animate-spin" />

@@ -544,3 +544,27 @@ async function scoreAndCreateMaintenanceDecision(record, school) {
     console.error('[scoreAndCreateMaintenanceDecision]', err.message);
   }
 }
+export const getReportsStats = async (req, res) => {
+  try {
+    const schoolId = Number(req.query.schoolId);
+    if (!schoolId) {
+      return res.status(400).json({ success: false, message: "schoolId is required" });
+    }
+
+    // Get unique week numbers that have reports
+    const reportWeeks = await SchoolConditionRecord.distinct("weekNumber", { schoolId });
+
+    // Build stats for 52 weeks
+    const stats = [];
+    for (let i = 1; i <= 52; i++) {
+      stats.push({
+        week: i,
+        submitted: reportWeeks.includes(i),
+      });
+    }
+
+    res.json({ success: true, stats });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};

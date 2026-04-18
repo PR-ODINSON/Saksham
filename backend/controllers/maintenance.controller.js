@@ -2,10 +2,46 @@ import { MaintenanceDecision, WorkOrder, RepairLog, SchoolConditionRecord } from
 import { predictRiskForCategory } from '../services/predictionEngine.js';
 
 // ─── Maintenance Decisions ────────────────────────────────────────────────────
+export const getDecisions = async (req, res) => {
+  try {
+    const { schoolId, status, category } = req.query;
+    const filter = {};
+    if (schoolId) filter.schoolId = Number(schoolId);
+    if (status)   filter.status   = status;
+    if (category) filter.category = category;
+
+    const decisions = await MaintenanceDecision.find(filter).sort({ createdAt: -1 });
+    res.json({ success: true, data: decisions });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
 export const createDecision = async (req, res) => {
   try {
     const decision = await MaintenanceDecision.create(req.body);
     res.status(201).json({ success: true, data: decision });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+};
+
+export const updateDecisionStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const decision = await MaintenanceDecision.findByIdAndUpdate(
+      id,
+      { status },
+      { new: true }
+    );
+
+    if (!decision) {
+      return res.status(404).json({ success: false, message: 'Decision not found' });
+    }
+
+    res.json({ success: true, data: decision });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   }

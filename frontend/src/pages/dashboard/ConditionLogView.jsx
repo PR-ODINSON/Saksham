@@ -14,10 +14,10 @@ import {
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 const RISK_CONFIG = {
-  critical: { color: "text-red-700",     bg: "bg-red-50",    border: "border-red-200",    shadow: "shadow-sm", label: "CRITICAL" },
-  high:     { color: "text-orange-700",  bg: "bg-orange-50",  border: "border-orange-200", shadow: "shadow-sm", label: "HIGH"     },
-  moderate: { color: "text-amber-700",   bg: "bg-amber-50",   border: "border-amber-200",  shadow: "shadow-sm", label: "MODERATE" },
-  low:      { color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200",shadow: "shadow-sm", label: "LOW"      },
+  critical: { color: "text-red-700",     bg: "bg-red-50",    border: "border-red-200",    label: "CRITICAL" },
+  high:     { color: "text-orange-700",  bg: "bg-orange-50",  border: "border-orange-200", label: "HIGH"     },
+  moderate: { color: "text-amber-700",   bg: "bg-amber-50",   border: "border-amber-200",  label: "MODERATE" },
+  low:      { color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200", label: "LOW"      },
 };
 
 // CATEGORY_EMOJI removed
@@ -246,8 +246,13 @@ export default function ConditionLogView() {
       <div className="max-w-7xl mx-auto pt-10 sm:pt-16 pb-12 px-4 sm:px-8 space-y-8">
       <PageHeader 
         title="Technical Inspection Registry"
-        subtitle="Historical Audit Log Compiled from Field Infrastructure Node Submissions"
+        subtitle="Official Node Assessment History · Kutch District Administration"
         icon={FileText}
+        actions={
+          <Button variant="outline" size="sm" onClick={() => window.print()} className="font-black text-[10px] uppercase tracking-widest">
+            Export PDF
+          </Button>
+        }
       />
 
       {/* Summary stats */}
@@ -304,7 +309,7 @@ export default function ConditionLogView() {
           ))}
         </div>
 
-        <div className="ml-auto text-[12px] font-bold text-slate-400 uppercase tracking-widest">
+        <div className="ml-auto text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
           {sorted.length} Entries Identified
         </div>
       </div>

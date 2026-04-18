@@ -104,15 +104,16 @@ export default function DEODashboard() {
 
       <div className="max-w-7xl mx-auto pt-10 sm:pt-16 px-4 sm:px-8 space-y-8 pb-12">
         <PageHeader 
-          title="Operational Tactical Hub"
-          subtitle="District Infrastructure Insight & Predictive Risk Management"
+          title="Administrative Oversight Center"
+          subtitle="District Infrastructure Health & Predictive Maintenance Management"
           icon={LayoutList}
           actions={
             <Button 
               onClick={() => navigate(roleSubPath(user?.role, "work-orders"))}
-              variant="primary"
+              variant="outline"
+              className="font-bold uppercase tracking-widest text-[10px] border-[#003366] text-[#003366] hover:bg-blue-50"
             >
-              Command Center
+              All Work Orders
             </Button>
           }
         />
@@ -161,12 +162,12 @@ export default function DEODashboard() {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200">
-                  <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Protocol</th>
-                  <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Infrastructure Node</th>
-                  <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Risk Categories</th>
-                  <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Failure Horizon</th>
-                  <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Impact</th>
+                <tr className="bg-slate-50/50 border-b border-slate-100">
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Status/Action</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">School Details</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Risk Category</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Predicted Failure</th>
+                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Service Impact</th>
                 </tr>
               </thead>
               <tbody>
@@ -178,30 +179,31 @@ export default function DEODashboard() {
                   ) : (
                     data.map((s, idx) => (
                       <tr key={idx} onClick={() => setSelectedSchool(s)} className="trow border-b border-slate-50 cursor-pointer">
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 text-center">
                           <Button 
                             variant="outline" 
                             size="sm"
+                            className="text-[10px] font-bold uppercase tracking-wider py-1.5"
                             onClick={(e) => { e.stopPropagation(); navigate(`${roleSubPath(user?.role, "work-orders/new")}?schoolId=${s.schoolId}&school=${encodeURIComponent(s.schoolName)}&category=${s.highestPriorityCategory}&score=${s.priorityScore}`); }}
                           >
-                            Resolve
+                            Assign Task
                           </Button>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center font-bold text-[12px]">
+                            <div className="w-8 h-8 rounded border border-slate-200 bg-white text-[#003366] flex items-center justify-center font-bold text-[12px] shadow-sm">
                               {s.schoolName.charAt(0)}
                             </div>
                             <div>
-                              <div className="text-xs font-bold text-slate-900">{s.schoolName}</div>
-                              <div className="text-[12px] font-semibold text-slate-500 uppercase tracking-wide">{s.block}, {s.district}</div>
+                              <div className="text-xs font-bold text-slate-900 leading-tight">{s.schoolName}</div>
+                              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">{s.block}, {s.district}</div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex gap-1.5 flex-wrap"> 
                             {s.categories.map(cat => (
-                              <Badge key={cat} variant="default" size="sm">
+                              <Badge key={cat} variant="default" size="sm" className="bg-slate-100 text-slate-600 border-none font-bold text-[9px] uppercase">
                                 {cat}
                               </Badge>
                             ))} 
@@ -209,20 +211,20 @@ export default function DEODashboard() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="space-y-1.5">
-                            <div className="text-[12px] font-bold text-slate-700 uppercase">{s.daysToFailure} Days Remaining</div>
-                            <div className="w-24 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wide">{s.daysToFailure} Days Remaining</div>
+                            <div className="w-24 h-1 bg-slate-100 rounded-full overflow-hidden">
                               <motion.div 
                                 initial={{ width: 0 }} 
                                 animate={{ width: `${Math.max(10, 100 - (s.daysToFailure / 180 * 100))}%` }} 
-                                className={`h-full ${s.daysToFailure < 30 ? 'bg-red-600' : s.daysToFailure < 60 ? 'bg-orange-500' : 'bg-blue-600'}`} 
+                                className={`h-full ${s.daysToFailure < 30 ? 'bg-red-500' : s.daysToFailure < 60 ? 'bg-orange-400' : 'bg-blue-500'}`} 
                               />
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-slate-900">{s.studentImpactScore}</span>
-                            <span className="text-[12px] font-bold text-slate-400 uppercase tracking-widest">Impact</span>
+                            <span className="text-sm font-bold text-slate-800">{s.studentImpactScore}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Students</span>
                           </div>
                         </td>
                       </tr>
@@ -234,31 +236,32 @@ export default function DEODashboard() {
                     <tr><td colSpan={5} style={{ padding: 60, textAlign: 'center' }}><ShieldAlert size={32} color="#fecaca" style={{ margin: '0 auto 12px' }} /><p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>NO LOCATION MISMATCHES DETECTED</p></td></tr>
                   ) : (
                     flaggedOrders.map((o, idx) => (
-                      <tr key={idx} className="trow border-b border-red-50 bg-red-50/30">
-                        <td className="px-6 py-4">
+                      <tr key={idx} className="trow border-b border-slate-50">
+                        <td className="px-6 py-4 text-center">
                           <Button 
                             variant="danger" 
                             size="sm"
+                            className="text-[10px] font-bold uppercase tracking-wider py-1.5"
                             onClick={() => window.open(o.completionProof?.photoUrl, '_blank')}
                           >
-                            Verify Proof
+                            Verify
                           </Button>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm font-bold text-red-900">{o.school?.name || 'Unknown School'}</div>
-                          <div className="text-[12px] font-semibold text-red-700 uppercase mt-0.5">By: {o.contractor?.name || 'Unassigned'}</div>
+                          <div className="text-xs font-bold text-[#b91c1c]">{o.school?.name || 'Unknown School'}</div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Verified By: {o.contractor?.name || 'Staff'}</div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-[12px] font-bold text-red-800 uppercase">SUBMITTED: {o.completionProof?.gpsLocation?.lat?.toFixed(4)}, {o.completionProof?.gpsLocation?.lng?.toFixed(4)}</div>
-                          <div className="text-[12px] font-bold text-red-900 uppercase mt-1 opacity-60">ACTUAL: {o.school?.location?.lat?.toFixed(4)}, {o.school?.location?.lng?.toFixed(4)}</div>
+                          <div className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">SUBMITTED: {o.completionProof?.gpsLocation?.lat?.toFixed(4)}, {o.completionProof?.gpsLocation?.lng?.toFixed(4)}</div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-1 opacity-60">REGISTRY: {o.school?.location?.lat?.toFixed(4)}, {o.school?.location?.lng?.toFixed(4)}</div>
                         </td>
                         <td className="px-6 py-4">
-                           <Badge variant="critical">Resolution Mismatch</Badge>
+                           <Badge variant="critical" className="text-[9px] font-bold uppercase py-0.5 px-2">Location Variance</Badge>
                         </td>
                         <td className="px-6 py-4">
                            <div className="flex flex-col">
-                             <span className="text-xs font-bold text-red-900">RADIAL VARIANCE</span>
-                             <span className="text-[13px] font-bold text-red-700 uppercase">OUTSIDE SECURITY RADIUS</span>
+                             <span className="text-[10px] font-bold text-red-700 uppercase tracking-widest">Breach Detected</span>
+                             <span className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">Outside Security Perimeter</span>
                            </div>
                         </td>
                       </tr>

@@ -1,6 +1,6 @@
 import express from 'express';
 import { protect, authorize } from '../middlewares/auth.middleware.js';
-import { submitReport, submitWeeklyReport, getReports, getReportsBySchool, reviewReport, forwardReport } from '../controllers/report.controller.js';
+import { submitReport, submitWeeklyReport, getReports, getReportsBySchool, reviewReport, forwardReport, getReportsStats } from '../controllers/report.controller.js';
 import { generateAndSendPDF } from '../services/reportGenerator.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
 import upload from '../config/multer.js';
@@ -29,6 +29,9 @@ router.post(
   ]),
   submitWeeklyReport,
 );
+
+// GET /api/reports/stats — report presence per week
+router.get('/stats', protect, getReportsStats);
 
 // GET /api/reports  — list reports (filtered by query ?schoolId=xxx)
 router.get('/', protect, getReports);

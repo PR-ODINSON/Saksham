@@ -13,11 +13,11 @@ const MetricCard = ({
   className = '' 
 }) => {
   const variants = {
-    default: 'bg-white border-slate-200 text-slate-900',
-    critical: 'bg-red-50 border-red-200 text-red-900',
-    high: 'bg-orange-50 border-orange-200 text-orange-900',
-    success: 'bg-emerald-50 border-emerald-200 text-emerald-900',
-    info: 'bg-blue-50 border-blue-200 text-blue-900',
+    default: 'bg-white border-slate-200 text-slate-900 border-l-4 border-l-slate-400',
+    critical: 'bg-white border-slate-200 text-slate-900 border-l-4 border-l-red-500',
+    high: 'bg-white border-slate-200 text-slate-900 border-l-4 border-l-orange-500',
+    success: 'bg-white border-slate-200 text-slate-900 border-l-4 border-l-emerald-500',
+    info: 'bg-white border-slate-200 text-slate-900 border-l-4 border-l-blue-600',
   };
 
   const iconColors = {
@@ -37,7 +37,7 @@ const MetricCard = ({
         </div>
       </div>
       <div>
-        <div className="text-3xl font-black tracking-tighter tabular-nums whitespace-nowrap">{value}</div>
+        <div className="text-3xl font-bold tracking-tight tabular-nums whitespace-nowrap text-[#003366]">{value}</div>
         {trend && (
           <div className={`text-[10px] font-black uppercase tracking-wider mt-2 flex items-center gap-1.5 ${
             trend === 'up' ? 'text-emerald-700' : trend === 'down' ? 'text-red-700' : 'text-slate-500'

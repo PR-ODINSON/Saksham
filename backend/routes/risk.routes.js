@@ -1,6 +1,6 @@
 import express from 'express';
 import { protect, authorize } from '../middlewares/auth.middleware.js';
-import { getRiskScores, getRiskBySchool, getAllRisks, getMaintenanceQueue, getHeatmap } from '../controllers/risk.controller.js';
+import { getRiskScores, getRiskBySchool, getAllRisks, getMaintenanceQueue, getHeatmap, getRiskTimeline } from '../controllers/risk.controller.js';
 
 const router = express.Router();
 
@@ -16,6 +16,9 @@ router.get('/heatmap', protect, authorize('deo', 'admin'), getHeatmap);
 
 // GET /api/risk-scores (root)
 router.get('/', protect, authorize('deo', 'admin'), getRiskScores);
+
+// GET /api/risk/:school_id/timeline
+router.get('/:school_id/timeline', protect, getRiskTimeline);
 
 // GET /api/risk/:school_id  (dynamic — must come last)
 router.get('/:school_id', protect, getRiskBySchool);

@@ -8,7 +8,11 @@ import Button from "../../components/common/Button";
 import Badge from "../../components/common/Badge";
 import MetricCard from "../../components/common/MetricCard";
 import PageHeader from "../../components/common/PageHeader";
-import { FileText, AlertTriangle, TrendingUp, TrendingDown, ArrowRight, Building, MapPin, Users, Calendar, CheckCircle2, Clock, Shield } from "lucide-react";
+import { FileText, AlertTriangle, TrendingUp, TrendingDown, ArrowRight, Building, MapPin, Users, Calendar, CheckCircle2, Clock, Shield, LayoutDashboard, History } from "lucide-react";
+import HealthTimeline from "../../components/principal/HealthTimeline";
+import ApprovalQueue from "../../components/principal/ApprovalQueue";
+import ActiveWorkOrders from "../../components/principal/ActiveWorkOrders";
+import AuditCompliance from "../../components/principal/AuditCompliance";
 
 const RISK_CONFIG = {
   critical: { color: "text-red-700", bg: "bg-red-50 border border-red-200 shadow-sm", label: "CRITICAL", fill: "#b91c1c" },
@@ -89,9 +93,10 @@ export default function SchoolView() {
   const [school, setSchool] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const schoolId = typeof user?.schoolId === "object" ? user?.schoolId?._id : user?.schoolId;
+
   useEffect(() => {
     const loadData = async () => {
-      const schoolId = typeof user?.schoolId === "object" ? user?.schoolId?._id : user?.schoolId;
       if (!schoolId) { setLoading(false); return; }
 
       const [riskRes, reportsRes, schoolRes] = await Promise.all([
@@ -151,12 +156,20 @@ export default function SchoolView() {
           subtitle={`Administrative Oversight · ${school?.name || "Generic Node"}`}
           icon={Building}
           actions={
-            <Button
-              onClick={() => navigate(roleSubPath(user?.role, "reports"))}
-              variant="primary"
-            >
-              Resource Registry
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => navigate("/peon/dashboard")}
+                variant="outline"
+              >
+                Submit Audit
+              </Button>
+              <Button
+                onClick={() => navigate(roleSubPath(user?.role, "reports"))}
+                variant="primary"
+              >
+                Resource Registry
+              </Button>
+            </div>
           }
         />
 
@@ -167,92 +180,116 @@ export default function SchoolView() {
         </div>
 
         {/* REPORT METRICS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
-            label="Validation Required"
+            label="Infrastructure Health"
+            value={analysis ? `${100 - analysis.score}%` : "0%"}
+            icon={Shield}
+            variant={analysis?.score > 60 ? "critical" : analysis?.score > 30 ? "high" : "success"}
+            trendValue="Global condition index"
+          />
+          <MetricCard
+            label="Pending Audits"
             value={totalPending}
             icon={Clock}
             variant={totalPending > 0 ? "high" : "success"}
-            trendValue={`${pendingThisMonth} reports pending this month`}
+            trendValue={`${pendingThisMonth} due this month`}
           />
           <MetricCard
-            label="Audits Completed"
+            label="Critical Risks"
+            value={analysis?.breakdown ? Object.values(analysis.breakdown).filter(v => v.level === 'critical' || v.level === 'high').length : 0}
+            icon={AlertTriangle}
+            variant="critical"
+            trendValue="High risk vectors"
+          />
+          <MetricCard
+            label="Audit History"
             value={uniqueCompletedWeeks}
-            icon={CheckCircle2}
-            variant="success"
-            trendValue={`${completedThisMonth} validated this month`}
-          />
-          <MetricCard
-            label="Latest Submission"
-            value={latestReport ? latestReport.category : "None"}
             icon={FileText}
             variant="info"
-            trendValue={latestReport ? `Week ${latestReport.weekNumber} Assessment` : "Registry empty"}
+            trendValue={`Registry Volume: ${reports.length}`}
           />
         </div>
 
-        <Card variant="gov" title="Infrastructure Survival Analysis" icon={Shield}>
-          {analysis ? (
-            <div className="space-y-8">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div>
-                  <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Failure Horizon</p>
-                  <div className={`text-2xl font-bold ${analysis.timeToFailureDays <= 15 ? "text-red-700" : "text-slate-900"}`}>
-                    {analysis.timeToFailureDays || "N/A"} <span className="text-xs font-medium opacity-50 uppercase">Days</span>
-                  </div>
-                </div>
-                <div>
-                  <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Condition Trend</p>
-                  <div className={`text-xs font-bold flex items-center gap-1.5 uppercase ${analysis.trend === "deteriorating" ? "text-red-700" : "text-emerald-700"}`}>
-                    {analysis.trend === "deteriorating" ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
-                    {analysis.trend}
-                  </div>
-                </div>
-                <div>
-                  <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Critical Vector</p>
-                  <div className="text-xs font-bold text-slate-900 uppercase">{analysis.worstCategory || "None"}</div>
-                </div>
-                <div>
-                  <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Registry Volume</p>
-                  <div className="text-2xl font-bold text-slate-900">{analysis.reportCount || 0}</div>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 p-4 rounded text-xs font-medium text-blue-900">
-                <AlertTriangle size={16} className="text-blue-700 shrink-0" />
-                <p>{analysis.explanation.replace("⚠", "")}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="py-8 text-center text-slate-400 font-medium text-sm italic">
-              Insufficient audit data for predictive survival analysis.
-            </div>
-          )}
-        </Card>
+        {/* ACTIONABLE ITEMS */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+          <ApprovalQueue schoolId={schoolId} className="h-full" />
+          <ActiveWorkOrders schoolId={schoolId} className="h-full" />
+        </div>
 
-        {/* Category breakdown */}
-        {analysis?.breakdown && Object.keys(analysis.breakdown).length > 0 && (
-          <Card variant="gov" title="Structural Risk Vectors" subtitle="Machine-learned risk assessment per domain">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {Object.entries(analysis.breakdown).map(([cat, data]) => (
-                <div key={cat} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[12px] font-bold uppercase tracking-widest text-slate-900">{cat}</span>
-                    <Badge variant={data.level} size="sm">{data.level}</Badge>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className={`h-full ${data.level === "critical" ? "bg-red-600" : data.level === "high" ? "bg-orange-500" : data.level === "moderate" ? "bg-amber-500" : "bg-emerald-600"}`}
-                        style={{ width: `${data.score}%` }}
-                      />
+        {/* ANALYTICS SECTION */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+          <div className="lg:col-span-2">
+            <HealthTimeline schoolId={schoolId} className="h-full" />
+          </div>
+          <div className="lg:col-span-1">
+            {analysis?.breakdown && Object.keys(analysis.breakdown).length > 0 && (
+              <Card variant="gov" className="h-full" title="Risk Spectrum" subtitle="Domain-specific assessment" icon={LayoutDashboard}>
+                <div className="space-y-6">
+                  {Object.entries(analysis.breakdown).map(([cat, data]) => (
+                    <div key={cat} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{cat}</span>
+                        <Badge variant={data.level} size="xs">{data.level}</Badge>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full transition-all duration-1000 ${data.level === "critical" ? "bg-red-600" : data.level === "high" ? "bg-orange-500" : data.level === "moderate" ? "bg-amber-500" : "bg-emerald-600"}`}
+                            style={{ width: `${data.score}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] font-black text-slate-900 w-6 text-right">{data.score}</span>
+                      </div>
                     </div>
-                    <span className="text-xs font-bold text-slate-900 w-8 text-right">{data.score}</span>
+                  ))}
+                </div>
+              </Card>
+            )}
+          </div>
+        </div>
+
+        {/* SURVIVAL & PROOF SECTION */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+          <Card variant="gov" className="h-full" title="Infrastructure Survival Analysis" icon={ActivityIcon}>
+            {analysis ? (
+              <div className="space-y-8 flex flex-col h-full">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <div>
+                    <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Failure Horizon</p>
+                    <div className={`text-2xl font-bold ${analysis.timeToFailureDays <= 15 ? "text-red-700" : "text-slate-900"}`}>
+                      {analysis.timeToFailureDays || "N/A"} <span className="text-xs font-medium opacity-50 uppercase">Days</span>
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Condition Trend</p>
+                    <div className={`text-xs font-bold flex items-center gap-1.5 uppercase ${analysis.trend === "deteriorating" ? "text-red-700" : "text-emerald-700"}`}>
+                      {analysis.trend === "deteriorating" ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
+                      {analysis.trend}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Critical Vector</p>
+                    <div className="text-xs font-bold text-slate-900 uppercase">{analysis.worstCategory || "None"}</div>
+                  </div>
+                  <div>
+                    <p className="text-[13px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">Registry Volume</p>
+                    <div className="text-2xl font-bold text-slate-900">{analysis.reportCount || 0}</div>
                   </div>
                 </div>
-              ))}
-            </div>
+                <div className="mt-auto flex items-start gap-3 bg-blue-50 border border-blue-100 p-4 rounded text-xs font-medium text-blue-900">
+                  <AlertTriangle size={16} className="text-blue-700 shrink-0" />
+                  <p>{analysis.explanation.replace("⚠", "")}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="py-8 text-center text-slate-400 font-medium text-sm italic">
+                Insufficient audit data for predictive survival analysis.
+              </div>
+            )}
           </Card>
-        )}
+          <AuditCompliance schoolId={schoolId} className="h-full" />
+        </div>
       </div>
     </div>
   );
