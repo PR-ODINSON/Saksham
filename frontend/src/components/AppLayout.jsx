@@ -3,9 +3,13 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const ROLE_NAV = {
-  school: [
+  peon: [
+    { path: '/dashboard', label: 'Dashboard', icon: '📊', exact: true },
+    { path: '/dashboard/report', label: 'Submit Report', icon: '📋' },
+  ],
+  principal: [
     { path: '/dashboard', label: 'My School', icon: '🏫', exact: true },
-    { path: '/dashboard/report', label: 'Weekly Report', icon: '📋' },
+    { path: '/dashboard/report', label: 'Submit Report', icon: '📋' },
   ],
   deo: [
     { path: '/dashboard', label: 'Overview', icon: '📊', exact: true },
@@ -16,13 +20,27 @@ const ROLE_NAV = {
     { path: '/dashboard/work-orders', label: 'All Orders', icon: '📋' },
   ],
   admin: [
-    { path: '/dashboard', label: 'Dashboard', icon: '📊', exact: true },
-    { path: '/dashboard/work-orders', label: 'Work Orders', icon: '🔧' },
+    { path: '/dashboard', label: 'Admin Panel', icon: '🛠️', exact: true },
+    { path: '/dashboard/work-orders', label: 'All Orders', icon: '📋' },
   ],
 };
 
-const ROLE_LABELS = { school: 'School', deo: 'DEO', contractor: 'Contractor', admin: 'Admin' };
-const ROLE_COLORS = { school: 'bg-blue-600', deo: 'bg-purple-600', contractor: 'bg-amber-600', admin: 'bg-red-600' };
+const ROLE_LABELS = { 
+  peon: 'Peon/Watchman', 
+  principal: 'Principal', 
+  deo: 'DEO', 
+  contractor: 'Contractor', 
+  admin: 'Admin',
+  school: 'School' // For backward compatibility if session persists
+};
+const ROLE_COLORS = { 
+  peon: 'bg-slate-600', 
+  principal: 'bg-indigo-600', 
+  deo: 'bg-blue-600', 
+  contractor: 'bg-orange-600', 
+  admin: 'bg-red-600',
+  school: 'bg-slate-600'
+};
 
 export default function AppLayout({ children }) {
   const { user, logout } = useAuth();
@@ -31,8 +49,8 @@ export default function AppLayout({ children }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
-  const role = user?.role || 'school';
-  const navItems = ROLE_NAV[role] || ROLE_NAV.school;
+  const role = user?.role || 'peon';
+  const navItems = ROLE_NAV[role] || ROLE_NAV.peon;
 
   const isActive = (path, exact) => exact ? location.pathname === path : location.pathname.startsWith(path);
 

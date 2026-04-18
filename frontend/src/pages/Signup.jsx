@@ -9,11 +9,11 @@ import {
 } from 'lucide-react';
 
 const ROLES = [
-  { id: 'admin', label: 'Admin', icon: <ShieldCheck size={18} />, bg: 'bg-red-50', border: 'border-red-500', text: 'text-red-600' },
+  { id: 'peon', label: 'School Peon/Watchman', icon: <User size={18} />, bg: 'bg-slate-50', border: 'border-slate-500', text: 'text-slate-600' },
+  { id: 'principal', label: 'School Principal', icon: <SchoolIcon size={18} />, bg: 'bg-indigo-50', border: 'border-indigo-500', text: 'text-indigo-600' },
   { id: 'deo', label: 'DEO', icon: <Building2 size={18} />, bg: 'bg-blue-50', border: 'border-blue-500', text: 'text-blue-600' },
-  { id: 'bmo', label: 'BMO', icon: <MapPin size={18} />, bg: 'bg-indigo-50', border: 'border-indigo-500', text: 'text-indigo-600' },
-  { id: 'school', label: 'School', icon: <SchoolIcon size={18} />, bg: 'bg-slate-50', border: 'border-slate-500', text: 'text-slate-600' },
   { id: 'contractor', label: 'Contractor', icon: <Briefcase size={18} />, bg: 'bg-orange-50', border: 'border-orange-500', text: 'text-orange-600' },
+  { id: 'admin', label: 'Admin', icon: <ShieldCheck size={18} />, bg: 'bg-red-50', border: 'border-red-500', text: 'text-red-600' },
 ];
 
 const GLOBAL_STYLES = `
@@ -37,7 +37,7 @@ const Signup = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'school',
+    role: 'peon',
     district: '',
     phone: '',
     schoolId: ''
@@ -69,7 +69,7 @@ const Signup = () => {
       role: formData.role,
       district: formData.district,
       phone: formData.phone,
-      schoolId: formData.role === 'school' ? formData.schoolId : undefined
+      schoolId: (formData.role === 'peon' || formData.role === 'principal') ? formData.schoolId : undefined
     });
     
     if (result.success) {
@@ -156,7 +156,7 @@ const Signup = () => {
               <InputGroup icon={<MapPin size={18} />} label="District Jurisdiction" name="district" value={formData.district} onChange={handleChange} placeholder="e.g. Ahmedabad" />
               
               <AnimatePresence>
-                {formData.role === 'school' && (
+                {(formData.role === 'peon' || formData.role === 'principal') && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="md:col-span-2 overflow-hidden">
                     <InputGroup icon={<Building2 size={18} />} label="Canonical School ID" name="schoolId" value={formData.schoolId} onChange={handleChange} placeholder="Enter numeric school code" />
                   </motion.div>
@@ -199,10 +199,6 @@ const InputGroup = ({ icon, label, ...props }) => (
       />
     </div>
   </div>
-);
-
-export default Signup;
-v>
 );
 
 export default Signup;

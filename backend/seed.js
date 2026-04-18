@@ -26,13 +26,13 @@ console.log('Cleared existing data');
 // ─── Users ───────────────────────────────────────────────────────────────────
 const pwd = await hashPassword('password123');
 
-const [deo, contractor1, contractor2, schoolUser1, schoolUser2, schoolUser3] = await User.insertMany([
+const [deo, contractor1, contractor2, peonUser, principalUser, schoolUser3] = await User.insertMany([
   { name: 'Priya Sharma (DEO)', email: 'deo@demo.com', password: pwd, role: 'deo', district: 'Pune' },
   { name: 'Ramesh Contractor', email: 'contractor1@demo.com', password: pwd, role: 'contractor', district: 'Pune', phone: '9876543210' },
   { name: 'Sunil Works', email: 'contractor2@demo.com', password: pwd, role: 'contractor', district: 'Pune', phone: '9876543211' },
-  { name: 'School Admin — ZP Primary', email: 'school1@demo.com', password: pwd, role: 'school' },
-  { name: 'School Admin — Vidya Mandir', email: 'school2@demo.com', password: pwd, role: 'school' },
-  { name: 'School Admin — Central School', email: 'school3@demo.com', password: pwd, role: 'school' },
+  { name: 'School Peon — ZP Primary', email: 'peon1@demo.com', password: pwd, role: 'peon' },
+  { name: 'School Principal — Vidya Mandir', email: 'principal2@demo.com', password: pwd, role: 'principal' },
+  { name: 'School Admin — Central School', email: 'school3@demo.com', password: pwd, role: 'peon' },
   { name: 'Admin', email: 'admin@demo.com', password: pwd, role: 'admin' },
 ]);
 
@@ -47,9 +47,9 @@ const schoolsData = [
 const schools = await School.insertMany(schoolsData);
 
 // Link school users
-await User.findByIdAndUpdate(schoolUser1._id, { schoolId: schools[0]._id });
-await User.findByIdAndUpdate(schoolUser2._id, { schoolId: schools[1]._id });
-await User.findByIdAndUpdate(schoolUser3._id, { schoolId: schools[2]._id });
+await User.findByIdAndUpdate(peonUser._id, { schoolId: schools[0].schoolId });
+await User.findByIdAndUpdate(principalUser._id, { schoolId: schools[1].schoolId });
+await User.findByIdAndUpdate(schoolUser3._id, { schoolId: schools[2].schoolId });
 
 // ─── Condition Reports (8 weeks of history per school) ────────────────────────
 const categories = ['plumbing', 'electrical', 'structural', 'sanitation', 'furniture'];
@@ -124,7 +124,7 @@ const allReports = [];
 for (let si = 0; si < schools.length; si++) {
   const school = schools[si];
   const scenario = schoolScenarios[si];
-  const submitter = [schoolUser1, schoolUser2, schoolUser3, schoolUser1, schoolUser2][si];
+  const submitter = [peonUser, principalUser, schoolUser3, peonUser, principalUser][si];
 
   for (let w = 0; w < 4; w++) {
     const weekItems = scenario[w];
@@ -218,7 +218,8 @@ console.log('\n✓ Seed complete!\n');
 console.log('Demo accounts:');
 console.log('  DEO:        deo@demo.com / password123');
 console.log('  Contractor: contractor1@demo.com / password123');
-console.log('  School:     school1@demo.com / password123');
+console.log('  Peon:       peon1@demo.com / password123');
+console.log('  Principal:  principal2@demo.com / password123');
 console.log('  Admin:      admin@demo.com / password123');
 console.log(`\n  ${schools.length} schools, ${allReports.length} reports, ${workOrdersData.length} work orders created`);
 

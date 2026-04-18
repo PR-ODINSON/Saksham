@@ -15,7 +15,7 @@ import './App.css';
 function DashboardIndex() {
   const { user } = useAuth();
   if (!user) return null;
-  if (user.role === 'school') return <SchoolView />;
+  if (user.role === 'peon' || user.role === 'principal' || user.role === 'school') return <SchoolView />;
   if (user.role === 'deo' || user.role === 'admin') return <DEODashboard />;
   if (user.role === 'contractor') return <WorkOrders />;
   return <SchoolView />;

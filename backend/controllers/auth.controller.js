@@ -29,10 +29,10 @@ export const registerUser = async (req, res) => {
       name,
       email,
       password: await hashPassword(password),
-      role: role || 'school',
+      role: role || 'peon',
       district,
       phone,
-      schoolId: schoolId || undefined,
+      schoolId: (role === 'peon' || role === 'principal') ? schoolId : undefined,
     });
 
     const token = signToken(user);
