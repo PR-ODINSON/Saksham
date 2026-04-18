@@ -98,27 +98,59 @@ export default function DEODashboard() {
     avgUrgency: data.length ? Math.round(data.reduce((a, s) => a + s.daysToFailure, 0) / data.length) : 0,
   };
 
+  // Determine image based on user district or fallback
+  const districtStr = user?.district || "District";
+  const imgIndex = (districtStr.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 10;
+  const images = [
+    'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1200&q=80',
+    'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&q=80',
+    'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?w=1200&q=80',
+    'https://images.unsplash.com/photo-1510531704581-5b2870972060?w=1200&q=80',
+    'https://images.unsplash.com/photo-1498075702571-ecb018f3752d?w=1200&q=80',
+    'https://images.unsplash.com/photo-1599058917212-d750089bc07e?w=1200&q=80',
+    'https://images.unsplash.com/photo-1584697964149-14a9386d3b4d?w=1200&q=80',
+    'https://images.unsplash.com/photo-1536337005238-94b997371b40?w=1200&q=80',
+    'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=1200&q=80',
+    'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=1200&q=80'
+  ];
+  const imageUrl = images[imgIndex];
+
   return (
     <div className="min-h-screen bg-[#f8fafc]">
       <style>{GLOBAL_CSS}</style>
 
-      <div className="max-w-7xl mx-auto pt-10 sm:pt-16 px-4 sm:px-8 space-y-8 pb-12">
-        <PageHeader 
-          title="Administrative Oversight Center"
-          subtitle="District Infrastructure Health & Predictive Maintenance Management"
-          icon={LayoutList}
-          actions={
-            <Button 
-              onClick={() => navigate(roleSubPath(user?.role, "work-orders"))}
-              variant="outline"
-              className="font-bold uppercase tracking-widest text-[10px] border-[#003366] text-[#003366] hover:bg-blue-50"
-            >
-              All Work Orders
-            </Button>
-          }
-        />
+      {/* Massive Hero Banner */}
+      <div className="relative w-full h-[400px] bg-slate-900">
+        <img src="https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1200&q=80" alt="District Banner" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-black/40 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+        
+        <div className="absolute bottom-24 left-0 right-0">
+          <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-md">
+                Administrative Oversight Center
+              </h1>
+              <p className="mt-2 text-sm font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+                <LayoutList size={14} /> District Infrastructure Health & Predictive Maintenance Management
+              </p>
+            </div>
+            
+            <div className="flex items-center">
+              <Button 
+                onClick={() => navigate(roleSubPath(user?.role, "work-orders"))}
+                variant="secondary"
+                className="font-black uppercase tracking-widest text-[10px] bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md shadow-xl"
+              >
+                All Work Orders
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-8 pb-12">
+        {/* REPORT METRICS - Floating Over Banner */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 -mt-16 relative z-10">
           <MetricCard label="Assessed Schools" value={<Counter to={stats.totalSchools} />} icon={Building2} variant="info" />
           <MetricCard label="Critical Risk" value={<Counter to={stats.criticalCount} />} icon={AlertTriangle} variant="critical" />
           <MetricCard label="High Priority" value={<Counter to={stats.highRiskCount} />} icon={Activity} variant="high" trend="up" trendValue="Trending" />

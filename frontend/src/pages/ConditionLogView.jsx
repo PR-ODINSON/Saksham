@@ -234,34 +234,33 @@ export default function ConditionLogView() {
   const imageUrl = images[imgIndex];
 
   return (
-    <div className="min-h-screen bg-slate-50 font-body pb-12">
-      {/* Massive Hero Banner */}
-      <div className="relative w-full h-[320px] bg-slate-900">
-        <img src={imageUrl} alt="School Banner" className="w-full h-full object-cover opacity-60" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+    <div className="min-h-screen bg-slate-50 font-body py-8 pb-12">
+      <div className="max-w-5xl mx-auto px-6 space-y-6">
         
-        <div className="absolute bottom-20 left-0 right-0">
-          <div className="max-w-5xl mx-auto px-6 flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-md">
+        {/* Image Title Card */}
+        <div className="relative w-full h-40 md:h-48 bg-slate-900 rounded-2xl overflow-hidden shadow-md">
+          <img src={imageUrl} alt="School Banner" className="w-full h-full object-cover opacity-50" />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 via-slate-900/60 to-transparent" />
+          
+          <div className="absolute inset-0 p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="flex flex-col justify-center h-full">
+              <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-md">
                 Inspection Registry
               </h1>
-              <p className="mt-2 text-sm font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+              <p className="mt-1.5 text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
                 <FileText size={14} /> Review weekly condition reports
               </p>
             </div>
-            <div className="bg-white/10 border border-white/20 backdrop-blur-md px-6 py-3 rounded-xl shadow-xl text-center min-w-[140px]">
+            
+            <div className="bg-white/10 border border-white/20 backdrop-blur-md px-6 py-3 rounded-xl shadow-xl text-center min-w-[140px] flex flex-col justify-center">
                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest block mb-0.5">Total Records</span>
                <span className="text-2xl font-black text-white">{reports.length}</span>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-5xl mx-auto px-6 space-y-6">
-        
-        {/* Summary stats - Floating */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 -mt-12 relative z-10">
+        {/* Summary stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm flex items-start justify-between">
             <div>
               <p className="text-sm font-medium text-slate-500 mb-1">Critical Issues</p>
