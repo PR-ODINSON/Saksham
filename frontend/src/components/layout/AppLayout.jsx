@@ -12,34 +12,34 @@ const ROLE_NAV = {
     // Peons land directly on the weekly input form — no extra nav
   ],
   principal: [
-    { path: '/principal/dashboard',         label: 'Principal Dashboard', icon: <LayoutDashboard size={18} strokeWidth={2.5} />, exact: true },
-    { path: '/principal/dashboard/reports', label: 'View Reports',        icon: <FileText size={18} strokeWidth={2.5} /> },
+    { path: '/principal/dashboard',         labelKey: 'nav.principal_dashboard', icon: <LayoutDashboard size={18} strokeWidth={2.5} />, exact: true },
+    { path: '/principal/dashboard/reports', labelKey: 'nav.view_reports',        icon: <FileText size={18} strokeWidth={2.5} /> },
   ],
   deo: [
-    { path: '/deo/dashboard',              label: 'Predictive Queue',    icon: <Zap size={18} strokeWidth={2.5} />, exact: true },
-    { path: '/deo/dashboard/reports',      label: 'Forwarded Reports',   icon: <FileText size={18} strokeWidth={2.5} /> },
-    { path: '/deo/dashboard/map',          label: 'Live Map',            icon: <Globe size={18} strokeWidth={2.5} /> },
-    { path: '/deo/dashboard/work-orders',  label: 'Command Center',      icon: <Crosshair size={18} strokeWidth={2.5} /> },
+    { path: '/deo/dashboard',              labelKey: 'nav.predictive_queue',    icon: <Zap size={18} strokeWidth={2.5} />, exact: true },
+    { path: '/deo/dashboard/reports',      labelKey: 'nav.forwarded_reports',   icon: <FileText size={18} strokeWidth={2.5} /> },
+    { path: '/deo/dashboard/map',          labelKey: 'nav.live_map',            icon: <Globe size={18} strokeWidth={2.5} /> },
+    { path: '/deo/dashboard/work-orders',  labelKey: 'nav.command_center',      icon: <Crosshair size={18} strokeWidth={2.5} /> },
   ],
   contractor: [
-    { path: '/contractor/dashboard',              label: 'Field Console', icon: <Hammer size={18} strokeWidth={2.5} />, exact: true },
-    { path: '/contractor/dashboard/work-orders',  label: 'All Orders',    icon: <FileText size={18} strokeWidth={2.5} /> },
+    { path: '/contractor/dashboard',              labelKey: 'nav.field_console', icon: <Hammer size={18} strokeWidth={2.5} />, exact: true },
+    { path: '/contractor/dashboard/work-orders',  labelKey: 'nav.all_orders',    icon: <FileText size={18} strokeWidth={2.5} /> },
   ],
   admin: [
-    { path: '/admin/dashboard',              label: 'Admin Panel', icon: <Shield size={18} strokeWidth={2.5} />, exact: true },
-    { path: '/admin/dashboard/map',          label: 'Live Map',    icon: <Globe size={18} strokeWidth={2.5} /> },
-    { path: '/admin/dashboard/work-orders',  label: 'All Orders',  icon: <FileText size={18} strokeWidth={2.5} /> },
-    { path: '/admin/dashboard/audit',        label: 'Audit Log',   icon: <ClipboardList size={18} strokeWidth={2.5} /> },
+    { path: '/admin/dashboard',              labelKey: 'nav.admin_panel', icon: <Shield size={18} strokeWidth={2.5} />, exact: true },
+    { path: '/admin/dashboard/map',          labelKey: 'nav.live_map',    icon: <Globe size={18} strokeWidth={2.5} /> },
+    { path: '/admin/dashboard/work-orders',  labelKey: 'nav.all_orders',  icon: <FileText size={18} strokeWidth={2.5} /> },
+    { path: '/admin/dashboard/audit',        labelKey: 'nav.audit_log',   icon: <ClipboardList size={18} strokeWidth={2.5} /> },
   ],
 };
 
 const ROLE_LABELS = { 
-  peon: 'Peon/Watchman', 
-  principal: 'Principal', 
-  deo: 'DEO COMMAND', 
-  contractor: 'Contractor', 
-  admin: 'System Admin',
-  school: 'School'
+  peon: 'role.peon', 
+  principal: 'role.principal', 
+  deo: 'role.deo', 
+  contractor: 'role.contractor', 
+  admin: 'role.admin',
+  school: 'role.school'
 };
 
 const GLOBAL_STYLES = `
@@ -70,11 +70,12 @@ const GLOBAL_STYLES = `
 
 export default function AppLayout({ children }) {
   const { user, logout } = useAuth();
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [languageOpen, setLanguageOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   const { scrollYProgress } = useScroll();
@@ -189,14 +190,47 @@ export default function AppLayout({ children }) {
               </div>
             </div>
 
-            {/* Right Side: Role Badge & Profile */}
-            <div className="flex items-center gap-4 sm:gap-6">
+            {/* Right Side: Role Badge, Language & Profile */}
+            <div className="flex items-center gap-3 sm:gap-6">
               <div className="hidden lg:flex flex-col items-end">
                 <span className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em]">Live Session</span>
                 <div className="flex items-center gap-2 mt-0.5 px-3 py-1 rounded-md bg-white border border-slate-200 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] font-black text-[#003366] uppercase tracking-widest">{ROLE_LABELS[role]}</span>
+                  <span className="text-[10px] font-black text-[#003366] uppercase tracking-widest">{t(ROLE_LABELS[role])}</span>
                 </div>
+              </div>
+
+              <div className="relative">
+                <button
+                  onClick={() => setLanguageOpen(!languageOpen)}
+                  className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-full border border-slate-200 hover:border-blue-400 transition-all bg-white"
+                >
+                  <Globe size={14} className="text-[#003366]" />
+                  <span className="text-[10px] sm:text-[11px] font-bold text-[#003366] uppercase">
+                    {language === 'en' ? 'EN' : language === 'hi' ? 'HI' : 'GU'}
+                  </span>
+                  <ChevronDown size={12} className={`text-slate-400 transition-transform ${languageOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                <AnimatePresence>
+                  {languageOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setLanguageOpen(false)} />
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="absolute right-0 mt-2 w-32 bg-white border border-slate-200 rounded-lg shadow-xl z-50 overflow-hidden"
+                      >
+                        <div className="flex flex-col">
+                          <button onClick={() => { setLanguage('en'); setLanguageOpen(false); }} className={`px-4 py-3 text-left text-xs font-bold hover:bg-slate-50 ${language === 'en' ? 'text-blue-600 bg-blue-50/50' : 'text-slate-600'}`}>English</button>
+                          <button onClick={() => { setLanguage('hi'); setLanguageOpen(false); }} className={`px-4 py-3 text-left text-xs font-bold hover:bg-slate-50 ${language === 'hi' ? 'text-blue-600 bg-blue-50/50' : 'text-slate-600'}`}>हिन्दी</button>
+                          <button onClick={() => { setLanguage('gu'); setLanguageOpen(false); }} className={`px-4 py-3 text-left text-xs font-bold hover:bg-slate-50 ${language === 'gu' ? 'text-blue-600 bg-blue-50/50' : 'text-slate-600'}`}>ગુજરાતી</button>
+                        </div>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
               </div>
 
               <div className="relative">
@@ -222,7 +256,7 @@ export default function AppLayout({ children }) {
                       >
                         <div className="px-4 py-3 bg-slate-50 border-b border-slate-100">
                           <p className="text-[#003366] text-sm font-bold truncate">{user?.name}</p>
-                          <p className="text-slate-500 text-[10px] truncate uppercase tracking-tighter mt-0.5">{role} ID: 2026-XQ-42</p>
+                          <p className="text-slate-500 text-[10px] truncate uppercase tracking-tighter mt-0.5">{t(ROLE_LABELS[role])} ID: 2026-XQ-42</p>
                         </div>
                         <div className="p-1">
                           <button
@@ -230,7 +264,7 @@ export default function AppLayout({ children }) {
                             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-red-600 font-bold hover:bg-red-50 transition-colors text-xs uppercase tracking-wide"
                           >
                             <LogOut size={14} />
-                            Log Out from Portal
+                            {t('nav.logout')}
                           </button>
                         </div>
                       </motion.div>
@@ -258,7 +292,7 @@ export default function AppLayout({ children }) {
                     isActive(item.path, item.exact) ? 'gov-nav-active' : ''
                   }`}
                 >
-                  {item.icon && <span className="opacity-80">{item.icon}</span>} {item.label}
+                  {item.icon && <span className="opacity-80">{item.icon}</span>} {t(item.labelKey)}
                 </Link>
               ))}
             </nav>
@@ -293,13 +327,13 @@ export default function AppLayout({ children }) {
                   to={item.path} 
                   className="px-4 py-4 rounded-lg hover:bg-slate-50 text-slate-700 font-black uppercase tracking-widest text-xs flex items-center gap-3"
                 >
-                  {item.icon} {item.label}
+                  {item.icon} {t(item.labelKey)}
                 </Link>
               ))}
             </nav>
             <div className="mt-auto pt-6 border-t">
               <button onClick={handleLogout} className="w-full flex items-center justify-center gap-3 py-4 text-red-600 font-bold uppercase tracking-widest text-xs bg-red-50 rounded-lg">
-                <LogOut size={18} /> Logout
+                <LogOut size={18} /> {t('nav.logout')}
               </button>
             </div>
           </motion.div>

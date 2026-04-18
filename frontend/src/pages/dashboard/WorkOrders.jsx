@@ -40,7 +40,7 @@ const CATEGORY_ICONS = {
 
 
 // ─── New Work Order Form ──────────────────────────────────────────────────────
-function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
+function NewWorkOrderPanel({ prefill, onCreated, onClose, schools, t }) {
   const [form, setForm] = useState({
     schoolId: prefill.schoolId || "",
     category: prefill.category || "structural",
@@ -79,7 +79,7 @@ function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <Card
-        title="Formulate Maintenance Directive"
+        title={t('wo.form.title')}
         className="w-full max-w-xl"
         noPadding
       >
@@ -89,49 +89,49 @@ function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
               <Select
-                label="Target Infrastructure Node"
+                label={t('wo.form.target_node')}
                 value={form.schoolId}
                 onChange={e => setForm({ ...form, schoolId: e.target.value })}
                 required
                 options={schools.map(s => ({ value: s._id, label: s.name || s.schoolId }))}
-                placeholder="Select node..."
+                placeholder={t('wo.form.select_node')}
               />
             </div>
             <Select
-              label="Assigned Category"
+              label={t('wo.form.assigned_category')}
               value={form.category}
               onChange={e => setForm({ ...form, category: e.target.value })}
               options={Object.keys(CATEGORY_ICONS).map(k => ({ value: k, label: k.charAt(0).toUpperCase() + k.slice(1) }))}
             />
             <Select
-              label="Operational Priority"
+              label={t('wo.form.operational_priority')}
               value={form.priority}
               onChange={e => setForm({ ...form, priority: e.target.value })}
               options={[
-                { value: "critical", label: "Critical" },
-                { value: "high", label: "High" },
-                { value: "medium", label: "Medium" },
-                { value: "low", label: "Low" }
+                { value: "critical", label: t('priority.critical') },
+                { value: "high", label: t('priority.high') },
+                { value: "medium", label: t('priority.medium') },
+                { value: "low", label: t('priority.low') }
               ]}
             />
             <div className="md:col-span-2">
               <Input
-                label="Objective Description"
+                label={t('wo.form.objective_desc')}
                 value={form.description}
                 onChange={e => setForm({ ...form, description: e.target.value })}
                 required
-                placeholder="Detailed scope of work..."
+                placeholder={t('wo.form.detailed_scope')}
               />
             </div>
             <Select
-              label="Designated Personnel"
+              label={t('wo.form.designated_personnel')}
               value={assignedTo}
               onChange={e => setAssignedTo(e.target.value)}
               options={contractors.map(c => ({ value: c._id, label: c.name }))}
-              placeholder="Unassigned"
+              placeholder={t('wo.form.unassigned')}
             />
             <Input
-              label="Compliance Deadline"
+              label={t('wo.form.compliance_deadline')}
               type="date"
               value={form.dueDate}
               onChange={e => setForm({ ...form, dueDate: e.target.value })}
@@ -139,8 +139,8 @@ function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
           </div>
 
           <div className="flex gap-4 pt-4">
-            <Button variant="ghost" onClick={onClose} className="flex-1">Discard</Button>
-            <Button type="submit" variant="primary" isLoading={saving} className="flex-1">Authorize Directive</Button>
+            <Button variant="ghost" onClick={onClose} className="flex-1">{t('wo.form.discard')}</Button>
+            <Button type="submit" variant="primary" isLoading={saving} className="flex-1">{t('wo.form.authorize')}</Button>
           </div>
         </form>
       </Card>
@@ -383,6 +383,7 @@ export default function WorkOrders() {
             schools={schools}
             onCreated={(wo) => setOrders([wo, ...orders])}
             onClose={() => setShowNew(false)}
+            t={t}
           />
         )}
         {completingOrder && (

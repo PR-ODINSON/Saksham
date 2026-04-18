@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { post } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { dashboardPathFor } from "../../utils/roleRoutes.js";
+import { useLanguage } from "../../context/LanguageContext";
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Building2, User, Mail, Lock, Phone, MapPin, 
@@ -10,13 +11,16 @@ import {
   School as SchoolIcon, Briefcase, Activity, AlertTriangle
 } from 'lucide-react';
 
-const ROLES = [
-  { id: 'peon', label: 'School Peon', icon: <User size={18} />, bg: 'bg-slate-50', border: 'border-slate-500', text: 'text-slate-600' },
-  { id: 'principal', label: 'School Principal', icon: <SchoolIcon size={18} />, bg: 'bg-indigo-50', border: 'border-indigo-500', text: 'text-indigo-600' },
-  { id: 'deo', label: 'DEO', icon: <Building2 size={18} />, bg: 'bg-blue-50', border: 'border-blue-500', text: 'text-blue-600' },
-  { id: 'contractor', label: 'Contractor', icon: <Briefcase size={18} />, bg: 'bg-orange-50', border: 'border-orange-500', text: 'text-orange-600' },
-  { id: 'admin', label: 'Admin', icon: <ShieldCheck size={18} />, bg: 'bg-red-50', border: 'border-red-500', text: 'text-red-600' },
-];
+const Signup = () => {
+  const { t, language, setLanguage } = useLanguage();
+  
+  const ROLES = [
+    { id: 'peon', label: t('signup.role_peon'), icon: <User size={18} />, bg: 'bg-slate-50', border: 'border-slate-500', text: 'text-slate-600' },
+    { id: 'principal', label: t('signup.role_principal'), icon: <SchoolIcon size={18} />, bg: 'bg-indigo-50', border: 'border-indigo-500', text: 'text-indigo-600' },
+    { id: 'deo', label: t('signup.role_deo'), icon: <Building2 size={18} />, bg: 'bg-blue-50', border: 'border-blue-500', text: 'text-blue-600' },
+    { id: 'contractor', label: t('signup.role_contractor'), icon: <Briefcase size={18} />, bg: 'bg-orange-50', border: 'border-orange-500', text: 'text-orange-600' },
+    { id: 'admin', label: t('signup.role_admin'), icon: <ShieldCheck size={18} />, bg: 'bg-red-50', border: 'border-red-500', text: 'text-red-600' },
+  ];
 
 const GLOBAL_STYLES = `
   .glass-card-terminal {
@@ -33,7 +37,6 @@ const GLOBAL_STYLES = `
   }
 `;
 
-const Signup = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -59,7 +62,7 @@ const Signup = () => {
     setFormError('');
 
     if (formData.password !== formData.confirmPassword) {
-      setFormError('Passwords do not match');
+      setFormError(t('signup.password_mismatch'));
       return;
     }
 
@@ -77,7 +80,7 @@ const Signup = () => {
     if (result.success) {
       navigate(dashboardPathFor(result.user?.role || formData.role));
     } else {
-      setFormError(result.message || 'Registration failed. Try again.');
+      setFormError(result.message || t('signup.reg_failed'));
     }
     setIsSubmitting(false);
   };
@@ -102,15 +105,15 @@ const Signup = () => {
         <div className="relative z-10 my-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border-2 border-blue-500/30 mb-6 backdrop-blur-sm">
              <Activity size={14} className="text-blue-400" />
-             <span className="text-[12px] font-black text-blue-400 tracking-[0.2em] uppercase">Predictive Engine v3</span>
+             <span className="text-[12px] font-black text-blue-400 tracking-[0.2em] uppercase">{t('signup.predictive_engine')}</span>
           </div>
           <h1 className="text-5xl lg:text-6xl font-black text-white leading-[1.1] mb-6" style={{ fontFamily: 'var(--font-display)' }}>
-            Build The <br />
-            <span className="text-blue-500">Infrastructure</span> <br />
-            Of Tomorrow.
+            {t('signup.build_the')} <br />
+            <span className="text-blue-500">{t('signup.infrastructure')}</span> <br />
+            {t('signup.of_tomorrow')}
           </h1>
           <p className="text-slate-400 text-lg max-w-md font-medium leading-relaxed">
-            Join the predictive maintenance network securing over 30,000+ schools. Stop failures before they happen.
+            {t('signup.desc')}
           </p>
 
           {/* Floating Widget Mockup */}
@@ -124,8 +127,8 @@ const Signup = () => {
                  <AlertTriangle size={16} className="text-red-400" />
                </div>
                <div>
-                 <p className="text-[12px] font-black text-red-400 uppercase tracking-widest">High Risk Detected</p>
-                 <p className="text-sm font-bold text-white">Structural Block B</p>
+                 <p className="text-[12px] font-black text-red-400 uppercase tracking-widest">{t('signup.high_risk')}</p>
+                 <p className="text-sm font-bold text-white">{t('signup.structural_block')}</p>
                </div>
              </div>
              <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
@@ -144,7 +147,7 @@ const Signup = () => {
           <span>© 2026 SAKSHAM</span>
           <span className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            System Operational
+            {t('signup.system_operational')}
           </span>
         </div>
       </div>
@@ -157,16 +160,34 @@ const Signup = () => {
           className="w-full max-w-xl mx-auto"
         >
           <div className="mb-10">
-            {/* Mobile Logo */}
-            <div className="flex lg:hidden items-center gap-3 mb-8">
-              <div className="w-10 h-10 bg-[#0f172a] rounded-lg flex items-center justify-center shadow-[4px_4px_0_#2563eb]">
-                <Sparkles size={20} className="text-white" />
+            {/* Top row with Logo and Language switcher for mobile & desktop */}
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex lg:hidden items-center gap-3">
+                <div className="w-10 h-10 bg-[#0f172a] rounded-lg flex items-center justify-center shadow-[4px_4px_0_#2563eb]">
+                  <Sparkles size={20} className="text-white" />
+                </div>
+                <span className="text-2xl font-black text-[#0f172a] tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>Saksham</span>
               </div>
-              <span className="text-2xl font-black text-[#0f172a] tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>Saksham</span>
+
+              {/* Language Switcher */}
+              <div className="flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-lg ml-auto bg-white shadow-sm">
+                <button 
+                  onClick={() => setLanguage('en')}
+                  className={`text-[10px] font-black px-2 py-1 rounded transition-colors ${language === 'en' ? 'bg-[#0f172a] text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+                >EN</button>
+                <button 
+                  onClick={() => setLanguage('hi')}
+                  className={`text-[10px] font-black px-2 py-1 rounded transition-colors ${language === 'hi' ? 'bg-[#0f172a] text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+                >HI</button>
+                <button 
+                  onClick={() => setLanguage('gu')}
+                  className={`text-[10px] font-black px-2 py-1 rounded transition-colors ${language === 'gu' ? 'bg-[#0f172a] text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+                >GU</button>
+              </div>
             </div>
 
-            <h2 className="text-4xl sm:text-5xl font-black text-[#0f172a] tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)' }}>Initialize.</h2>
-            <p className="text-slate-500 font-bold text-sm uppercase tracking-[0.15em]">Set up your clearance profile</p>
+            <h2 className="text-4xl sm:text-5xl font-black text-[#0f172a] tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)' }}>{t('signup.init_title')}</h2>
+            <p className="text-slate-500 font-bold text-sm uppercase tracking-[0.15em]">{t('signup.init_subtitle')}</p>
           </div>
 
           {formError && (
@@ -183,7 +204,7 @@ const Signup = () => {
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Role Grid */}
             <div className="space-y-3">
-              <label className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Select Access Level (RBAC)</label>
+              <label className="text-[12px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">{t('signup.select_access')}</label>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                 {ROLES.map((role) => (
                   <button 
@@ -204,23 +225,23 @@ const Signup = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
-              <InputGroup icon={<User size={18} />} label="Full Name" name="name" value={formData.name} onChange={handleChange} placeholder="Enter Full Name" />
-              <InputGroup icon={<Mail size={18} />} label="Email Address" name="email" value={formData.email} onChange={handleChange} placeholder="name@org.gov" />
-              <InputGroup icon={<Phone size={18} />} label="Contact Number" name="phone" value={formData.phone} onChange={handleChange} placeholder="+91 XXXX XXXX" />
-              <InputGroup icon={<MapPin size={18} />} label="District Jurisdiction" name="district" value={formData.district} onChange={handleChange} placeholder="e.g. Ahmedabad" />
+              <InputGroup icon={<User size={18} />} label={t('signup.full_name')} name="name" value={formData.name} onChange={handleChange} placeholder="Enter Full Name" />
+              <InputGroup icon={<Mail size={18} />} label={t('signup.email')} name="email" value={formData.email} onChange={handleChange} placeholder="name@org.gov" />
+              <InputGroup icon={<Phone size={18} />} label={t('signup.contact_number')} name="phone" value={formData.phone} onChange={handleChange} placeholder="+91 XXXX XXXX" />
+              <InputGroup icon={<MapPin size={18} />} label={t('signup.district')} name="district" value={formData.district} onChange={handleChange} placeholder="e.g. Ahmedabad" />
               
               <AnimatePresence>
                 {(formData.role === 'peon' || formData.role === 'principal') && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="md:col-span-2 overflow-hidden">
                     <div className="pt-2">
-                      <InputGroup icon={<Building2 size={18} />} label="Canonical School ID" name="schoolId" value={formData.schoolId} onChange={handleChange} placeholder="Enter numeric school code" />
+                      <InputGroup icon={<Building2 size={18} />} label={t('signup.school_id')} name="schoolId" value={formData.schoolId} onChange={handleChange} placeholder="Enter numeric school code" />
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              <InputGroup icon={<Lock size={18} />} label="Secure Password" name="password" type="password" value={formData.password} onChange={handleChange} placeholder="••••••••" />
-              <InputGroup icon={<ShieldCheck size={18} />} label="Confirm Secret" name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••" />
+              <InputGroup icon={<Lock size={18} />} label={t('signup.password')} name="password" type="password" value={formData.password} onChange={handleChange} placeholder="••••••••" />
+              <InputGroup icon={<ShieldCheck size={18} />} label={t('signup.confirm_password')} name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••" />
             </div>
 
             <button
@@ -228,13 +249,13 @@ const Signup = () => {
               disabled={isSubmitting}
               className="w-full bg-[#0f172a] hover:bg-blue-600 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center gap-3 shadow-[6px_6px_0_#2563eb] active:translate-x-1 active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed mt-12 text-sm uppercase tracking-widest border-2 border-[#0f172a]"
             >
-              {isSubmitting ? <Loader2 className="animate-spin" /> : <><Sparkles size={18} /> Authorize Clearance</>}
+              {isSubmitting ? <Loader2 className="animate-spin" /> : <><Sparkles size={18} /> {t('signup.authorize')}</>}
             </button>
           </form>
 
           <p className="mt-10 text-center text-xs font-black uppercase tracking-widest text-slate-400">
-            Already have clearance? {" "}
-            <Link to="/login" className="text-blue-600 hover:text-[#0f172a] transition-colors border-b-2 border-blue-600 hover:border-[#0f172a] pb-0.5">Return to Hub</Link>
+            {t('signup.already_have')}
+            <Link to="/login" className="text-blue-600 hover:text-[#0f172a] transition-colors border-b-2 border-blue-600 hover:border-[#0f172a] pb-0.5">{t('signup.return_hub')}</Link>
           </p>
         </motion.div>
       </div>

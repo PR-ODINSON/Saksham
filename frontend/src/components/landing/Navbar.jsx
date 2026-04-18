@@ -4,6 +4,7 @@ import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { dashboardPathFor } from '../../utils/roleRoutes.js';
+import { useLanguage } from '../../context/LanguageContext';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -12,6 +13,7 @@ const Navbar = () => {
 
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const isLoggedIn = !!user;
 
   const { scrollYProgress } = useScroll();
@@ -34,9 +36,9 @@ const Navbar = () => {
   };
 
   const navLinks = [
-    { name: 'Features',    href: '#features' },
-    { name: 'How It Works', href: '#how-it-works' },
-    { name: 'App Preview', href: '#preview' },
+    { name: t('nav.features'),    href: '#features' },
+    { name: t('nav.how_it_works'), href: '#how-it-works' },
+    { name: t('nav.app_preview'), href: '#preview' },
   ];
 
   const containerVariants = {
@@ -89,9 +91,23 @@ const Navbar = () => {
             <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.04em' }}>Saksham</span>
           </a>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', borderLeft: '1px solid #e2e8f0' }} className="hidden-mobile">
-            <motion.div animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 1.5, repeat: Infinity }} style={{ width: 6, height: 6, borderRadius: '50%', background: '#2563eb', boxShadow: '0 0 8px #2563eb' }} />
-            <span style={{ fontSize: 10, fontWeight: 900, color: '#64748b', letterSpacing: '0.12em', fontFamily: 'monospace' }}>ENGINE READY // v2.0.4</span>
+         
+
+          <div className="hidden-mobile" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderLeft: '1px solid #e2e8f0' }}>
+            <button 
+              onClick={() => setLanguage('en')}
+              style={{ fontSize: 10, fontWeight: 900, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 4, color: language === 'en' ? '#2563eb' : '#64748b', textTransform: 'uppercase' }}
+            >EN</button>
+            <span style={{ color: '#cbd5e1', fontSize: 10 }}>|</span>
+            <button 
+              onClick={() => setLanguage('hi')}
+              style={{ fontSize: 10, fontWeight: 900, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 4, color: language === 'hi' ? '#2563eb' : '#64748b', textTransform: 'uppercase' }}
+            >HI</button>
+            <span style={{ color: '#cbd5e1', fontSize: 10 }}>|</span>
+            <button 
+              onClick={() => setLanguage('gu')}
+              style={{ fontSize: 10, fontWeight: 900, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 4, color: language === 'gu' ? '#2563eb' : '#64748b', textTransform: 'uppercase' }}
+            >GU</button>
           </div>
         </motion.div>
 
@@ -132,7 +148,7 @@ const Navbar = () => {
                 transition: 'box-shadow 0.2s', display: 'flex', alignItems: 'center', gap: 8, textTransform: 'uppercase', letterSpacing: '0.05em'
               }}
             >
-              Dashboard <motion.span whileHover={{ x: 3 }} transition={{ type: 'spring' }}><ChevronRight size={14} /></motion.span>
+              {t('nav.dashboard')} <motion.span whileHover={{ x: 3 }} transition={{ type: 'spring' }}><ChevronRight size={14} /></motion.span>
             </motion.button>
           </div>
         </nav>
@@ -155,11 +171,16 @@ const Navbar = () => {
                 </a>
               ))}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 12, padding: '12px 0', borderTop: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0', marginBottom: '8px' }}>
+                  <button onClick={() => { setLanguage('en'); setMobileMenuOpen(false); }} style={{ fontSize: 14, fontWeight: 900, background: 'none', border: 'none', color: language === 'en' ? '#2563eb' : '#64748b' }}>EN</button>
+                  <button onClick={() => { setLanguage('hi'); setMobileMenuOpen(false); }} style={{ fontSize: 14, fontWeight: 900, background: 'none', border: 'none', color: language === 'hi' ? '#2563eb' : '#64748b' }}>HI</button>
+                  <button onClick={() => { setLanguage('gu'); setMobileMenuOpen(false); }} style={{ fontSize: 14, fontWeight: 900, background: 'none', border: 'none', color: language === 'gu' ? '#2563eb' : '#64748b' }}>GU</button>
+                </div>
                 <button 
                   onClick={handleDashboardRedirect} // Added Click Handler to Mobile Menu
                   style={{ width: '100%', padding: '16px', borderRadius: 16, border: '2px solid #0f172a', background: '#0f172a', fontFamily: 'var(--font-body)', fontWeight: 900, fontSize: 16, color: '#fff', cursor: 'pointer', boxShadow: '6px 6px 0 #2563eb', textTransform: 'uppercase' }}
                 >
-                  Launch Dashboard
+                  {t('nav.dashboard')}
                 </button>
               </div>
             </div>

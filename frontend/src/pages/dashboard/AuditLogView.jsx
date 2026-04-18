@@ -7,6 +7,7 @@ import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import { Shield, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 function formatDate(d) {
   if (!d) return '—';
@@ -23,6 +24,7 @@ function JsonViewer({ data }) {
 
 export default function AuditLogView() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const socket   = useSocket();
 
   const [logs, setLogs]             = useState([]);
@@ -78,7 +80,7 @@ export default function AuditLogView() {
   if (user?.role !== 'admin') {
     return (
       <div className="p-12 text-center text-slate-500 font-bold">
-        <p className="text-xl text-slate-900">Access Denied</p>
+        <p className="text-xl text-slate-900">{t('alv.access_denied')}</p>
       </div>
     );
   }
@@ -88,22 +90,22 @@ export default function AuditLogView() {
   return (
     <div className="pt-10 px-6 pb-12 space-y-8 max-w-7xl mx-auto">
       <PageHeader
-        title="System Audit Log"
-        subtitle="Immutable record of all platform actions"
+        title={t('alv.title')}
+        subtitle={t('alv.subtitle')}
         icon={Shield}
       />
 
       <Card className="px-6 py-3 border-slate-200 shadow-sm">
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Actor Role</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('alv.actor_role')}</label>
             <div className="relative">
               <select
                 value={filters.role}
                 onChange={e => setFilters(f => ({ ...f, role: e.target.value }))}
                 className="w-full appearance-none bg-white border border-slate-200 text-slate-700 text-sm font-semibold px-3 py-1.5 pr-10 rounded-lg outline-none focus:border-blue-500 transition-all shadow-sm"
               >
-                <option value="">All Roles</option>
+                <option value="">{t('alv.all_roles')}</option>
                 {['PEON','PRINCIPAL','DEO','CONTRACTOR','ADMIN'].map(r => (
                   <option key={r} value={r.toLowerCase()}>{r}</option>
                 ))}
@@ -115,18 +117,18 @@ export default function AuditLogView() {
           </div>
 
           <div className="flex flex-col gap-1 flex-[2] min-w-[200px]">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Action Signature</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('alv.action_sig')}</label>
             <input
               type="text"
               value={filters.action}
               onChange={e => setFilters(f => ({ ...f, action: e.target.value }))}
-              placeholder="Filter by event name..."
+              placeholder={t('alv.filter_action')}
               className="w-full bg-white border border-slate-200 text-slate-700 text-sm font-semibold px-3 py-1.5 rounded-lg outline-none focus:border-blue-500 transition-all shadow-sm placeholder:text-slate-300 placeholder:font-normal"
             />
           </div>
 
           <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Log Window Start</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('alv.window_start')}</label>
             <input
               type="date"
               value={filters.startDate}
@@ -136,7 +138,7 @@ export default function AuditLogView() {
           </div>
 
           <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Log Window End</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('alv.window_end')}</label>
             <input
               type="date"
               value={filters.endDate}
@@ -146,7 +148,7 @@ export default function AuditLogView() {
           </div>
 
           <Button variant="primary" className="text-[11px] h-[36px] font-black uppercase tracking-widest px-8 shadow-md hover:translate-y-[-1px] transition-all active:translate-y-[0px]" onClick={handleApply}>
-            Apply Filters
+            {t('alv.apply_filters')}
           </Button>
         </div>
       </Card>
@@ -156,19 +158,19 @@ export default function AuditLogView() {
           <table className="w-full text-left border-collapse min-w-[900px]">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200">
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Timestamp</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Actor</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Role</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Action Signature</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">Resource Target</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] text-right">Details</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('alv.th_timestamp')}</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('alv.th_actor')}</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('alv.th_role')}</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('alv.th_action')}</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('alv.th_target')}</th>
+                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] text-right">{t('alv.th_details')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr><td colSpan={6} className="px-6 py-20 text-center text-slate-300 font-bold uppercase tracking-widest text-xs animate-pulse">Synchronizing Logs...</td></tr>
+                <tr><td colSpan={6} className="px-6 py-20 text-center text-slate-300 font-bold uppercase tracking-widest text-xs animate-pulse">{t('alv.syncing')}</td></tr>
               ) : logs.length === 0 ? (
-                <tr><td colSpan={6} className="px-6 py-20 text-center text-slate-400 text-sm italic">No matching audit events found in the immutable registry.</td></tr>
+                <tr><td colSpan={6} className="px-6 py-20 text-center text-slate-400 text-sm italic">{t('alv.no_events')}</td></tr>
               ) : (
                 logs.flatMap(log => {
                   const isNew      = newIds.has(log._id);
@@ -187,7 +189,7 @@ export default function AuditLogView() {
                           <div className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 uppercase">
                             {(log.actorName || 'U')[0]}
                           </div>
-                          <p className="text-[12px] font-bold text-slate-700">{log.actorName || 'Unknown Actor'}</p>
+                          <p className="text-[12px] font-bold text-slate-700">{log.actorName || t('alv.unknown_actor')}</p>
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -196,7 +198,7 @@ export default function AuditLogView() {
                           size="sm"
                           className="font-bold uppercase tracking-widest text-[8px]"
                         >
-                          {log.actorRole || 'Unknown'}
+                          {log.actorRole || t('alv.unknown_role')}
                         </Badge>
                       </td>
                       <td className="px-6 py-4">
@@ -205,7 +207,7 @@ export default function AuditLogView() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-tight truncate max-w-[150px]">{log.targetCollection || 'General System'}</p>
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-tight truncate max-w-[150px]">{log.targetCollection || t('alv.general_system')}</p>
                       </td>
                       <td className="px-6 py-4 text-right">
                         <button
@@ -214,7 +216,7 @@ export default function AuditLogView() {
                             isExpanded ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:text-slate-900 hover:bg-slate-100'
                           }`}
                         >
-                          Payload <ChevronDown size={12} className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                          {t('alv.payload')} <ChevronDown size={12} className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
                         </button>
                       </td>
                     </tr>
@@ -225,7 +227,7 @@ export default function AuditLogView() {
                         <td colSpan={6} className="px-6 py-4">
                           <div className="relative group/json">
                             <div className="absolute right-3 top-3 opacity-0 group-hover/json:opacity-100 transition-opacity">
-                              <Badge variant="low" size="sm" className="bg-slate-800 text-slate-400 border-slate-700">EXTRACTED METADATA</Badge>
+                              <Badge variant="low" size="sm" className="bg-slate-800 text-slate-400 border-slate-700">{t('alv.extracted_metadata')}</Badge>
                             </div>
                             <JsonViewer data={log.metadata} />
                           </div>
@@ -242,7 +244,7 @@ export default function AuditLogView() {
         {pages > 1 && (
           <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/30 flex items-center justify-between">
             <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-              Registry Page {page} <span className="text-slate-300">/</span> {pages} <span className="ml-2 text-slate-500">({total} Events)</span>
+              {t('alv.registry_page')} {page} <span className="text-slate-300">/</span> {pages} <span className="ml-2 text-slate-500">({total} {t('alv.events')})</span>
             </span>
             <div className="flex gap-2">
               <button 

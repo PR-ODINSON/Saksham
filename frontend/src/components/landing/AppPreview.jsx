@@ -1,11 +1,14 @@
 import React, { useRef, useEffect } from 'react';
 import { motion, useSpring, useTransform, useMotionValue } from 'framer-motion';
 import { Navigation, ShieldCheck, Radio, Gauge, Clock, AlertTriangle, LayoutList, Activity } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 /* ─────────────────────────────────────────────────────────
    CONDITION METER (High Contrast Blue)
    ───────────────────────────────────────────────────────── */
-const ConditionMeter = ({ level = 82 }) => (
+const ConditionMeter = ({ level = 82 }) => {
+  const { t } = useLanguage();
+  return (
   <div style={{ position: 'relative', width: 220, height: 220, borderRadius: '50%', border: '4px solid #0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', background: '#fff' }}>
     <div className="animate-spin-slow" style={{ position: 'absolute', inset: -8, borderRadius: '50%', border: '2px dashed #cbd5e1', opacity: 0.5 }} />
     <div style={{ position: 'absolute', inset: 0, background: '#f8fafc' }} />
@@ -25,12 +28,14 @@ const ConditionMeter = ({ level = 82 }) => (
 
     <div style={{ position: 'relative', zIndex: 10, textAlign: 'center' }}>
       <p style={{ fontFamily: 'var(--font-display)', fontSize: 48, fontWeight: 900, color: '#0f172a', margin: 0 }}>{level}%</p>
-      <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 800, color: '#1e40af', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Asset Health</p>
+      <p style={{ fontFamily: 'var(--font-body)', fontSize: 11, fontWeight: 800, color: '#1e40af', letterSpacing: '0.1em', textTransform: 'uppercase' }}>{t('preview.asset_health')}</p>
     </div>
   </div>
-);
+  );
+};
 
 const AppPreview = () => {
+  const { t } = useLanguage();
   const containerRef = useRef(null);
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
@@ -62,11 +67,11 @@ const AppPreview = () => {
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', position: 'relative', zIndex: 10 }}>
         <div style={{ textAlign: 'center', maxWidth: 680, margin: '0 auto 100px' }}>
           <motion.div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '8px 18px', borderRadius: 99, background: '#f8fafc', border: '2px solid #0f172a', color: '#0f172a', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 24, boxShadow: '4px 4px 0 #2563eb' }}>
-            <Gauge size={14} color="#2563eb" /> Live Prediction Engine
+            <Gauge size={14} color="#2563eb" /> {t('preview.live_prediction')}
           </motion.div>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2.8rem, 5vw, 4.5rem)', fontWeight: 800, color: '#0f172a', lineHeight: 1.05, letterSpacing: '-0.03em' }}>
-            Total control.<br/>
-            <span style={{ color: '#2563eb' }}>Bespoke telemetry.</span>
+            {t('preview.total_control')}<br/>
+            <span style={{ color: '#2563eb' }}>{t('preview.bespoke_telemetry')}</span>
           </h2>
         </div>
 
@@ -80,11 +85,11 @@ const AppPreview = () => {
                   {/* Top Stats Area */}
                   <div style={{ height: 180, background: '#0f172a', padding: '52px 28px 24px', color: '#fff' }}>
                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: '#cbd5e1', letterSpacing: '0.1em' }}>RISK FACTOR</span>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: '#cbd5e1', letterSpacing: '0.1em' }}>{t('preview.risk_factor')}</span>
                         <Radio size={16} color="#3b82f6" />
                      </div>
                      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 40, fontWeight: 800, margin: 0 }}>84<span style={{ fontSize: 18, color: '#3b82f6' }}>%</span></h3>
-                     <p style={{ fontSize: 12, fontWeight: 700, color: '#cbd5e1', marginTop: 4 }}>Infrastructure Zone A-12</p>
+                     <p style={{ fontSize: 12, fontWeight: 700, color: '#cbd5e1', marginTop: 4 }}>{t('preview.infra_zone')}</p>
                   </div>
 
                   <div style={{ flex: 1, padding: 32, background: '#f8fafc', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -92,17 +97,17 @@ const AppPreview = () => {
                      
                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, width: '100%', marginTop: 32 }}>
                         <div style={{ background: '#fff', border: '2px solid #0f172a', padding: 16, borderRadius: 16, boxShadow: '4px 4px 0 rgba(15,23,42,0.08)' }}>
-                            <span style={{ fontSize: 10, fontWeight: 800, color: '#64748b', display: 'block' }}>REMAINING</span>
+                            <span style={{ fontSize: 10, fontWeight: 800, color: '#64748b', display: 'block' }}>{t('preview.remaining')}</span>
                             <p style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 800, margin: 0, color: '#0f172a' }}>14d</p>
                         </div>
                         <div style={{ background: '#0f172a', border: '2px solid #0f172a', padding: 16, borderRadius: 16, boxShadow: '4px 4px 0 #2563eb', color: '#fff' }}>
-                            <span style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', display: 'block' }}>STATUS</span>
-                            <p style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, margin: 0 }}>ACTIVE</p>
+                            <span style={{ fontSize: 10, fontWeight: 800, color: '#94a3b8', display: 'block' }}>{t('preview.status')}</span>
+                            <p style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, margin: 0 }}>{t('preview.active')}</p>
                         </div>
                      </div>
 
                      <motion.button style={{ marginTop: 32, width: '100%', height: 60, borderRadius: 16, background: '#fff', border: '3px solid #0f172a', color: '#0f172a', fontWeight: 900, fontSize: 15, boxShadow: '0 8px 0 #0f172a', cursor: 'pointer' }}>
-                        DISPATCH TEAM
+                        {t('preview.dispatch_team')}
                      </motion.button>
                   </div>
                </div>
@@ -118,8 +123,8 @@ const AppPreview = () => {
                   <div style={{ width: 44, height: 44, borderRadius: 12, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
                      <Navigation size={20} color="#3b82f6" />
                   </div>
-                  <p style={{ fontSize: 11, fontWeight: 800, color: '#475569' }}>PRIORITY ZONE</p>
-                  <p style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, margin: '4px 0', color: '#0f172a' }}>Model School #04</p>
+                  <p style={{ fontSize: 11, fontWeight: 800, color: '#475569' }}>{t('preview.priority_zone')}</p>
+                  <p style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 800, margin: '4px 0', color: '#0f172a' }}>{t('preview.model_school')}</p>
                </div>
             </motion.div>
 
@@ -132,10 +137,10 @@ const AppPreview = () => {
                      <div style={{ width: 36, height: 36, borderRadius: '50%', border: '2px solid #2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <ShieldCheck size={18} color="#2563eb" />
                      </div>
-                     <span style={{ fontSize: 10, fontWeight: 900, color: '#2563eb' }}>VERIFIED</span>
+                     <span style={{ fontSize: 10, fontWeight: 900, color: '#2563eb' }}>{t('preview.verified')}</span>
                   </div>
-                  <p style={{ fontSize: 11, fontWeight: 800, color: '#475569' }}>ANNUAL AUDIT</p>
-                  <p style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 800, margin: '4px 0', color: '#0f172a' }}>Safety Pass</p>
+                  <p style={{ fontSize: 11, fontWeight: 800, color: '#475569' }}>{t('preview.annual_audit')}</p>
+                  <p style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 800, margin: '4px 0', color: '#0f172a' }}>{t('preview.safety_pass')}</p>
                   <div style={{ height: 6, background: '#e2e8f0', borderRadius: 3, marginTop: 12 }}>
                      <motion.div animate={{ width: '82%' }} style={{ width: '40%', height: '100%', background: '#2563eb' }} />
                   </div>

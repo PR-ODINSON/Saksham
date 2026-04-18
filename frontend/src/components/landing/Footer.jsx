@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Building2, Activity, Clock, Terminal, ShieldCheck, Cpu, Globe, Database, ArrowUpRight, Zap, Mail, Send } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 /* ─────────────────────────────────────────────────────────
    MICRO-COMPONENTS (Refined Terminal Style)
@@ -33,6 +34,7 @@ const DigitalClock = () => {
    MAIN SYSTEM FOOTER
    ───────────────────────────────────────────────────────── */
 const Footer = () => {
+  const { t } = useLanguage();
   const [uptime, setUptime] = useState(99.982);
   const [email, setEmail] = useState('');
 
@@ -45,21 +47,21 @@ const Footer = () => {
 
   const navGroups = [
     { 
-      title: 'Useful Links', 
+      title: t('foot.useful_links'), 
       links: [
-        { name: 'About Us', href: '#about' },
-        { name: 'Features', href: '#features' },
-        { name: 'App Preview', href: '#preview' },
-        { name: 'Pricing', href: '#pricing' }
+        { name: t('foot.about'), href: '#about' },
+        { name: t('foot.features'), href: '#features' },
+        { name: t('foot.app_preview'), href: '#preview' },
+        { name: t('foot.pricing'), href: '#pricing' }
       ] 
     },
     { 
-      title: 'Legal & Support', 
+      title: t('foot.legal_support'), 
       links: [
-        { name: 'Privacy Policy', href: '/privacy' },
-        { name: 'Terms of Service', href: '/terms' },
-        { name: 'System Status', href: '/status' },
-        { name: 'Contact Support', href: '/support' }
+        { name: t('foot.privacy'), href: '/privacy' },
+        { name: t('foot.terms'), href: '/terms' },
+        { name: t('foot.system_status'), href: '/status' },
+        { name: t('foot.contact'), href: '/support' }
       ] 
     },
   ];
@@ -71,10 +73,10 @@ const Footer = () => {
         
         {/* TOP STATUS BAR (Live Monitoring) */}
         <div style={{ display: 'flex', borderBottom: '2px solid #0f172a', background: '#fff', overflowX: 'auto', whiteSpace: 'nowrap' }}>
-           <SystemMetric label="Operational_Mode" value="PREDICTIVE_LIVE" />
-           <SystemMetric label="Uptime_Protocol" value={`${uptime}%`} />
-           <SystemMetric label="Node_Status" value="GUJARAT_WEST_01" />
-           <SystemMetric label="API_Core" value="v2.4.0_STABLE" color="#22c55e" />
+           <SystemMetric label={t('foot.op_mode')} value={t('foot.predictive_live')} />
+           <SystemMetric label={t('foot.uptime')} value={`${uptime}%`} />
+           <SystemMetric label={t('foot.node_status')} value={t('foot.gujarat_west')} />
+           <SystemMetric label={t('foot.api_core')} value={t('foot.v2_stable')} color="#22c55e" />
            <div style={{ flex: 1 }} />
            <DigitalClock />
         </div>
@@ -91,7 +93,7 @@ const Footer = () => {
                 <span style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 900, color: '#0f172a', letterSpacing: '-0.04em' }}>Saksham</span>
              </a>
              <p style={{ fontSize: '1rem', color: '#64748b', fontWeight: 600, lineHeight: 1.6, maxWidth: 300 }}>
-                The definitive predictive maintenance engine for institutional infrastructure. Data-driven safety for every classroom.
+                {t('foot.desc')}
              </p>
           </div>
 
@@ -118,10 +120,10 @@ const Footer = () => {
           {/* Subscribe Block (Right side) */}
           <div style={{ padding: '80px 0 80px 40px' }}>
              <h4 style={{ fontFamily: 'var(--font-display)', fontSize: 13, fontWeight: 900, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 24 }}>
-                Stay Updated
+                {t('foot.stay_updated')}
              </h4>
              <p style={{ fontSize: 14, color: '#64748b', fontWeight: 700, marginBottom: 24, lineHeight: 1.5 }}>
-                Get the latest infrastructure insights and system updates.
+                {t('foot.stay_updated_desc')}
              </p>
              <div style={{ position: 'relative' }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '16px', borderRadius: 16, background: '#f8fafc', border: '2px solid #0f172a', boxShadow: '6px 6px 0 #0f172a' }}>
@@ -129,7 +131,7 @@ const Footer = () => {
                       <Mail size={16} color="#64748b" />
                       <input 
                          type="text" 
-                         placeholder="Enter email address"
+                         placeholder={t('foot.enter_email')}
                          value={email}
                          onChange={(e) => setEmail(e.target.value)}
                          style={{ background: 'transparent', border: 'none', color: '#0f172a', fontSize: 13, fontWeight: 700, outline: 'none', width: '100%' }}
@@ -140,7 +142,7 @@ const Footer = () => {
                       whileTap={{ scale: 0.98 }}
                       style={{ padding: '14px', borderRadius: 10, background: '#0f172a', border: 'none', color: '#fff', fontWeight: 900, fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                    >
-                      SUBSCRIBE NOW <Send size={14} />
+                      {t('foot.subscribe')} <Send size={14} />
                    </motion.button>
                 </div>
              </div>
@@ -150,10 +152,10 @@ const Footer = () => {
         {/* BOTTOM SECTION */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '40px', borderTop: '2px solid #0f172a', position: 'relative', zIndex: 10 }}>
            <p style={{ fontSize: 13, fontWeight: 800, color: '#64748b', margin: 0 }}>
-              Made with ❤️ in India.
+              {t('foot.made_in')}
            </p>
            <p style={{ fontSize: 13, fontWeight: 800, color: '#64748b', margin: 0 }}>
-              Copyright &copy; {new Date().getFullYear()}, All rights reserved.
+              {t('foot.copyright')} {new Date().getFullYear()}, All rights reserved.
            </p>
         </div>
 

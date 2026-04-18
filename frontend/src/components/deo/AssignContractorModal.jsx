@@ -21,6 +21,7 @@ function defaultDeadline(urgencyLabel) {
 }
 
 export default function AssignContractorModal({ bundle, onClose, onAssigned }) {
+  const { t } = useLanguage();
   const [contractors, setContractors] = useState([]);
   const [contractorId, setContractorId] = useState("");
   const [deadline, setDeadline] = useState(defaultDeadline(bundle?.urgencyLabel || "medium"));
