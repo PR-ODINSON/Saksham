@@ -251,10 +251,37 @@ export async function generateAndSendPDF(reportId) {
     }
     doc.y += 4;
 
-    // ── Section 2 — ML Predictions ───────────────────────────────────────────
+    // ── Section 1b — LR (machine-learning) urgency summary ───────────────────
+    ensureSpace(doc, 70);
+    heading(doc, 'Section 1b — LR Model Urgency (TS-PS3.csv trained)',
+      { color: '#7c3aed' });
+    body(doc,
+      'Each category was passed through the linear-regression model fitted on ' +
+      'TS-PS3.csv to derive an urgency factor used for DEO prioritisation.',
+      { size: 9, color: '#475569' });
+    doc.y += 4;
+    for (const cat of CATEGORIES) {
+      const r = weekRecords.find(wr => wr.category === cat);
+      if (!r) continue;
+      const urgency = r.lrUrgencyFactor ?? r.priorityScore ?? 0;
+      const label   = (r.lrUrgencyLabel || (urgency >= 75 ? 'critical' : urgency >= 55 ? 'high' : urgency >= 30 ? 'medium' : 'low')).toUpperCase();
+      const dtf     = r.lrDaysToFailure ?? r.daysToFailure;
+      const p30     = r.lrFail30Probability;
+      const p60     = r.lrFail60Probability;
+      body(doc,
+        `${cat.toUpperCase().padEnd(11)}  Urgency ${Math.round(urgency)}/100 (${label})` +
+        `  ·  Days-to-failure ${dtf != null ? dtf : 'N/A'}` +
+        (p30 != null ? `  ·  P(fail<30d) ${(p30 * 100).toFixed(0)}%` : '') +
+        (p60 != null ? `  ·  P(fail<60d) ${(p60 * 100).toFixed(0)}%` : ''),
+        { indent: 4, size: 9 }
+      );
+    }
+    doc.y += 4;
+
+    // ── Section 2 — ML Predictions (heuristic engine, evidence-cited) ────────
     ensureSpace(doc, 60);
     const hasAlert = Object.values(predictions).some(p => p?.within_60_days);
-    heading(doc, `Section 2 — ML Prediction${hasAlert ? ' ⚠ Alert' : ''}`,
+    heading(doc, `Section 2 — Heuristic ML Prediction${hasAlert ? ' ⚠ Alert' : ''}`,
       { color: hasAlert ? '#dc2626' : '#0f172a' });
 
     if (!hasAlert) {

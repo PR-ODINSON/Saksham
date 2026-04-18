@@ -133,6 +133,15 @@ const schoolConditionRecordSchema = new mongoose.Schema({
     type: Number
   },
 
+  // ── Machine-learning (LR) outputs — written on every peon submission ─────
+  lrPriorityScore:    { type: Number },
+  lrDaysToFailure:    { type: Number },
+  lrFail30Probability:{ type: Number },
+  lrFail60Probability:{ type: Number },
+  lrUrgencyFactor:    { type: Number },
+  lrUrgencyLabel:     { type: String, enum: ['low', 'medium', 'high', 'critical'] },
+  lrModelVersion:     { type: String },
+
   // Repair
   repairDone: {
     type: Boolean

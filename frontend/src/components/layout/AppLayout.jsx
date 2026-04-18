@@ -15,9 +15,10 @@ const ROLE_NAV = {
     { path: '/principal/dashboard/reports', label: 'View Reports',        icon: <FileText size={18} strokeWidth={2.5} /> },
   ],
   deo: [
-    { path: '/deo/dashboard',              label: 'Predictive Queue', icon: <Zap size={18} strokeWidth={2.5} />, exact: true },
-    { path: '/deo/dashboard/map',          label: 'Live Map',         icon: <Globe size={18} strokeWidth={2.5} /> },
-    { path: '/deo/dashboard/work-orders',  label: 'Command Center',   icon: <Crosshair size={18} strokeWidth={2.5} /> },
+    { path: '/deo/dashboard',              label: 'Predictive Queue',    icon: <Zap size={18} strokeWidth={2.5} />, exact: true },
+    { path: '/deo/dashboard/reports',      label: 'Forwarded Reports',   icon: <FileText size={18} strokeWidth={2.5} /> },
+    { path: '/deo/dashboard/map',          label: 'Live Map',            icon: <Globe size={18} strokeWidth={2.5} /> },
+    { path: '/deo/dashboard/work-orders',  label: 'Command Center',      icon: <Crosshair size={18} strokeWidth={2.5} /> },
   ],
   contractor: [
     { path: '/contractor/dashboard',              label: 'My Tasks',  icon: <Hammer size={18} strokeWidth={2.5} />, exact: true },

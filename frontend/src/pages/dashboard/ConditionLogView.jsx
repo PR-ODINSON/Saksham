@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { get } from "../../services/api";
+import { get, post, API_BASE } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
@@ -8,172 +8,164 @@ import PageHeader from "../../components/common/PageHeader";
 import MetricCard from "../../components/common/MetricCard";
 import {
   AlertTriangle, FileText, Camera, Clock, Filter,
-  TrendingDown, ShieldAlert, CheckCircle2, ChevronDown, ChevronUp,
-  Droplet, Zap, Home, Wrench, Building
+  Send, CheckCircle2, ChevronDown, ChevronUp,
+  Download, Wrench, Zap, Building, Cpu, ShieldAlert, Activity,
 } from "lucide-react";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
-const RISK_CONFIG = {
-  critical: { color: "text-red-700",     bg: "bg-red-50",    border: "border-red-200",    label: "CRITICAL" },
-  high:     { color: "text-orange-700",  bg: "bg-orange-50",  border: "border-orange-200", label: "HIGH"     },
-  moderate: { color: "text-amber-700",   bg: "bg-amber-50",   border: "border-amber-200",  label: "MODERATE" },
-  low:      { color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200", label: "LOW"      },
+const URGENCY_CONFIG = {
+  critical: { color: "text-red-700",     bg: "bg-red-50",     border: "border-red-300",     dot: "bg-red-600",     label: "CRITICAL" },
+  high:     { color: "text-orange-700",  bg: "bg-orange-50",  border: "border-orange-300",  dot: "bg-orange-500",  label: "HIGH"     },
+  medium:   { color: "text-amber-700",   bg: "bg-amber-50",   border: "border-amber-300",   dot: "bg-amber-500",   label: "MEDIUM"   },
+  low:      { color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200", dot: "bg-emerald-500", label: "LOW"      },
 };
 
-// CATEGORY_EMOJI removed
-
-const CONDITION_LABELS = {
-  1: { label: "Excellent", color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-400" },
-  2: { label: "Good",      color: "text-teal-700",    bg: "bg-teal-50",    border: "border-teal-400"    },
-  3: { label: "Fair",      color: "text-amber-700",   bg: "bg-amber-50",   border: "border-amber-400"   },
-  4: { label: "Poor",      color: "text-orange-700",  bg: "bg-orange-50",  border: "border-orange-500"  },
-  5: { label: "Critical",  color: "text-red-700",     bg: "bg-red-100",    border: "border-red-600"     },
+const CATEGORY_META = {
+  plumbing:   { icon: Wrench,   color: "text-blue-700",   bg: "bg-blue-50"  },
+  electrical: { icon: Zap,      color: "text-amber-700",  bg: "bg-amber-50" },
+  structural: { icon: Building, color: "text-slate-700",  bg: "bg-slate-50" },
 };
 
-function scoreToRiskLevel(ps) {
-  if (ps >= 80) return "critical";
-  if (ps >= 60) return "high";
-  if (ps >= 40) return "moderate";
+const CONDITION_LABEL = {
+  1: "Excellent", 2: "Good", 3: "Fair", 4: "Poor", 5: "Critical",
+};
+
+function urgencyToLevel(u) {
+  if (u >= 75) return "critical";
+  if (u >= 55) return "high";
+  if (u >= 30) return "medium";
   return "low";
 }
 
-// ─── ReportCard ───────────────────────────────────────────────────────────────
-function ReportCard({ r }) {
-  const [expanded, setExpanded] = useState(false);
-
-  const riskLevel   = scoreToRiskLevel(r.priorityScore || 0);
-  const rc          = RISK_CONFIG[riskLevel];
-  const condCfg     = CONDITION_LABELS[r.conditionScore] || CONDITION_LABELS[3];
-  const submittedAt = r.createdAt ? new Date(r.createdAt) : null;
-
-  const flags = [
-    r.issueFlag    && { label: "Issue Flagged",    color: "red",    icon: <AlertTriangle size={10} strokeWidth={3} /> },
-    r.waterLeak    && { label: "Water Leak",        color: "blue",   icon: <Droplet size={10} strokeWidth={3} /> },
-    r.wiringExposed&& { label: "Exposed Wiring",   color: "yellow", icon: <Zap size={10} strokeWidth={3} /> },
-    r.roofLeakFlag && { label: "Roof Leak",         color: "orange", icon: <Home size={10} strokeWidth={3} /> },
-  ].filter(Boolean);
-
-  const flagColors = {
-    red:    "bg-red-50 border-red-300 text-red-700",
-    blue:   "bg-blue-50 border-blue-300 text-blue-700",
-    yellow: "bg-yellow-50 border-yellow-300 text-yellow-700",
-    orange: "bg-orange-50 border-orange-300 text-orange-700",
-  };
+// ─── Per-category sub-row inside a bundle ────────────────────────────────────
+function CategoryRow({ rec }) {
+  const meta = CATEGORY_META[rec.category] || CATEGORY_META.plumbing;
+  const Icon = meta.icon;
+  const urgency = rec.lrUrgencyFactor ?? rec.priorityScore ?? 0;
+  const level   = rec.lrUrgencyLabel || urgencyToLevel(urgency);
+  const u       = URGENCY_CONFIG[level];
+  const dtf     = rec.lrDaysToFailure ?? rec.daysToFailure;
 
   return (
-    <div className={`rounded-lg border overflow-hidden transition-all group ${rc.border} shadow-sm bg-white`}>
-      {/* Main row */}
-      <div className="p-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-            <div className={`w-12 h-12 rounded bg-slate-50 border-2 border-slate-100 flex items-center justify-center font-bold text-slate-600 shadow-inner group-hover:border-blue-100 transition-colors`}>
-              <span className="text-xs uppercase tracking-tighter">W{r.weekNumber}</span>
-            </div>
-            <div>
-              <div className="flex items-center gap-3">
-                <span className="text-slate-900 text-lg font-bold uppercase tracking-tight">
-                  {r.category}
-                </span>
-                {r.photoUploaded && (
-                  <Badge variant="info" size="sm" className="bg-blue-50/50">
-                    <Camera size={10} className="mr-1" /> Imagery Secured
-                  </Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-2.5 mt-1">
-                <Badge variant={riskLevel} size="sm">
-                  {condCfg.label} ({r.conditionScore}/5)
-                </Badge>
-                {submittedAt && (
-                  <span className="text-[12px] text-slate-400 font-bold uppercase tracking-widest">
-                    {submittedAt.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            {flags.map((f, i) => (
-              <Badge key={i} variant="default" size="sm" className="opacity-80">
-                {f.label}
-              </Badge>
-            ))}
-
-            <div className="w-px h-6 bg-slate-100 mx-2 hidden md:block" />
-
-            <Badge variant={riskLevel} size="lg">
-              {riskLevel} · {Math.round(r.priorityScore || 0)}
-            </Badge>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setExpanded(!expanded)}
-              className="w-8 h-8 p-0"
-            >
-              {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-            </Button>
-          </div>
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-3 border-b border-slate-100 last:border-0">
+      <div className="flex items-center gap-3">
+        <div className={`w-10 h-10 rounded ${meta.bg} flex items-center justify-center ${meta.color}`}>
+          <Icon size={18} />
+        </div>
+        <div>
+          <p className="text-sm font-black uppercase tracking-tight text-slate-800">
+            {rec.category}
+          </p>
+          <p className="text-[11px] text-slate-500 font-medium">
+            {CONDITION_LABEL[rec.conditionScore] || "?"} ({rec.conditionScore}/5)
+            {rec.photoUploaded ? " · Photo on file" : ""}
+          </p>
         </div>
       </div>
 
-      {/* Expanded prediction details */}
-      {expanded && (
-        <div className={`px-5 pb-5 pt-4 border-t ${rc.border} bg-slate-50 space-y-4`}>
-          <p className="text-[13px] font-bold uppercase tracking-wider text-slate-400">
-            ML Prognostics
-          </p>
+      <div className="flex flex-wrap items-center gap-3 text-right">
+        <div>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">LR Urgency</p>
+          <div className="flex items-center gap-2 justify-end">
+            <span className={`w-1.5 h-1.5 rounded-full ${u.dot}`} />
+            <span className={`text-sm font-black ${u.color}`}>{Math.round(urgency)}/100</span>
+          </div>
+        </div>
+        <div>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Days to Failure</p>
+          <span className="text-sm font-black text-slate-800">{dtf != null ? `${dtf}d` : "—"}</span>
+        </div>
+        <Badge variant={level === "critical" ? "critical" : level === "high" ? "high" : level === "medium" ? "warning" : "success"} size="sm">
+          {u.label}
+        </Badge>
+      </div>
+    </div>
+  );
+}
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-white rounded border border-slate-100 p-3 text-center">
-              <p className="text-[13px] font-bold uppercase tracking-wider text-slate-400 mb-1">Priority Index</p>
-              <p className={`text-xl font-bold ${rc.color}`}>{Math.round(r.priorityScore || 0)}<span className="text-[12px] opacity-50">/100</span></p>
+// ─── A weekly bundle (1 row per week, all 3 categories inside) ───────────────
+function WeeklyBundleCard({ bundle, isPrincipal, onForward, onView }) {
+  const [expanded, setExpanded] = useState(false);
+  const u = URGENCY_CONFIG[bundle.urgencyLabel] || URGENCY_CONFIG.low;
+  const submittedAt = bundle.categories[0]?.createdAt ? new Date(bundle.categories[0].createdAt) : null;
+
+  return (
+    <div className={`rounded-lg border-2 ${u.border} bg-white overflow-hidden shadow-sm`}>
+      {/* Header row */}
+      <div className={`px-5 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${u.bg}`}>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-md bg-white border border-slate-200 flex flex-col items-center justify-center shadow-inner">
+            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">Week</span>
+            <span className="text-base font-black text-slate-800 leading-none mt-0.5">{bundle.weekNumber}</span>
+          </div>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm font-black uppercase tracking-widest text-slate-800">
+                {bundle.schoolName ? `${bundle.schoolName} · ` : ''}Weekly Bundle (W{bundle.weekNumber})
+              </span>
+              <Badge variant={bundle.urgencyLabel === "critical" ? "critical" : bundle.urgencyLabel === "high" ? "high" : "default"} size="sm">
+                {u.label}
+              </Badge>
+              {bundle.willFailWithin30Days && (
+                <Badge variant="critical" size="sm">
+                  <AlertTriangle size={10} className="mr-1" />
+                  30-DAY FAIL
+                </Badge>
+              )}
             </div>
-            <div className="bg-white rounded border border-slate-100 p-3 text-center">
-              <p className="text-[13px] font-bold uppercase tracking-wider text-slate-400 mb-1">MTTF</p>
-              <p className={`text-xl font-bold ${r.willFailWithin30Days ? "text-red-600" : r.willFailWithin60Days ? "text-orange-600" : "text-emerald-600"}`}>
-                {r.daysToFailure != null ? r.daysToFailure : "N/A"}
-                <span className="text-[12px] opacity-50">d</span>
-              </p>
-            </div>
-            <div className="bg-white rounded border border-slate-100 p-3 text-center">
-              <p className="text-[13px] font-bold uppercase tracking-wider text-slate-400 mb-1">30D Risk</p>
-              <p className={`text-xs font-bold uppercase ${r.willFailWithin30Days ? "text-red-700" : "text-emerald-700"}`}>
-                {r.willFailWithin30Days ? "High" : "Minimal"}
-              </p>
-            </div>
-            <div className="bg-white rounded border border-slate-100 p-3 text-center">
-              <p className="text-[13px] font-bold uppercase tracking-wider text-slate-400 mb-1">60D Risk</p>
-              <p className={`text-xs font-bold uppercase ${r.willFailWithin60Days ? "text-orange-700" : "text-emerald-700"}`}>
-                {r.willFailWithin60Days ? "High" : "Minimal"}
-              </p>
-            </div>
+            <p className="text-[12px] text-slate-500 font-medium">
+              {bundle.categories.length} categor{bundle.categories.length !== 1 ? "ies" : "y"} · Worst: {bundle.worstCategory}
+              {submittedAt && ` · Submitted ${submittedAt.toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="text-right pr-3 border-r border-slate-200">
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">LR Urgency Score</p>
+            <p className={`text-2xl font-black ${u.color} leading-none`}>{bundle.maxUrgency}<span className="text-xs opacity-60">/100</span></p>
           </div>
 
-          {/* Numeric details */}
-          {(r.category === "plumbing" && r.toiletFunctionalRatio != null) && (
-            <div className="flex items-center gap-3 bg-white rounded border border-slate-100 px-4 py-3">
-              <span className="text-[12px] font-bold uppercase tracking-wider text-slate-400 w-40">Functionality Baseline</span>
-              <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden border border-slate-100">
-                <div
-                  className="h-full bg-blue-600"
-                  style={{ width: `${Math.round(r.toiletFunctionalRatio * 100)}%` }}
-                />
-              </div>
-              <span className="text-xs font-bold text-blue-900 w-10 text-right">{Math.round(r.toiletFunctionalRatio * 100)}%</span>
-            </div>
+          <Button variant="outline" size="sm" onClick={() => onView(bundle)}>
+            <Download size={14} className="mr-1.5" /> View PDF
+          </Button>
+
+          {isPrincipal && (
+            bundle.forwarded ? (
+              <Badge variant="success" size="md">
+                <CheckCircle2 size={12} className="mr-1.5" />
+                SENT TO DEO
+              </Badge>
+            ) : (
+              <Button variant="primary" size="sm" onClick={() => onForward(bundle)}>
+                <Send size={14} className="mr-1.5" /> Send to DEO
+              </Button>
+            )
           )}
-          {(r.category === "electrical" && r.powerOutageHours > 0) && (
-            <div className="flex items-center gap-3 bg-white rounded border border-slate-100 px-4 py-3">
-              <span className="text-[12px] font-bold uppercase tracking-wider text-slate-400 w-40">Grid Downtime</span>
-              <span className="text-sm font-bold text-slate-700">{r.powerOutageHours} hrs / week</span>
-            </div>
-          )}
-          {(r.category === "structural" && r.crackWidthMM > 0) && (
-            <div className="flex items-center gap-3 bg-white rounded border border-slate-100 px-4 py-3">
-              <span className="text-[12px] font-bold uppercase tracking-wider text-slate-400 w-40">Crack Aperture</span>
-              <span className="text-sm font-bold text-slate-700">{r.crackWidthMM} mm</span>
+
+          <Button variant="ghost" size="sm" onClick={() => setExpanded(!expanded)} className="w-9 h-9 p-0">
+            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </Button>
+        </div>
+      </div>
+
+      {/* Expanded per-category breakdown */}
+      {expanded && (
+        <div className="px-5 py-4 bg-white">
+          <div className="flex items-center gap-2 mb-2">
+            <Cpu size={14} className="text-violet-700" />
+            <span className="text-[11px] font-black text-violet-700 uppercase tracking-widest">
+              LR model output (TS-PS3.csv trained)
+            </span>
+          </div>
+          {bundle.categories.map(rec => (
+            <CategoryRow key={rec._id} rec={rec} />
+          ))}
+
+          {bundle.forwarded && bundle.forwardedAt && (
+            <div className="mt-3 flex items-center gap-2 text-[11px] text-emerald-700 font-bold uppercase tracking-wide">
+              <CheckCircle2 size={12} />
+              Forwarded to DEO on {new Date(bundle.forwardedAt).toLocaleString()}
             </div>
           )}
         </div>
@@ -182,24 +174,67 @@ function ReportCard({ r }) {
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Main view ────────────────────────────────────────────────────────────────
 export default function ConditionLogView() {
   const { user } = useAuth();
-  const [reports,    setReports]    = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [catFilter,  setCatFilter]  = useState("all");
-  const [riskFilter, setRiskFilter] = useState("all");
+  const [bundles, setBundles]     = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [forwarding, setForwarding] = useState(null);
+  const [toast, setToast]         = useState(null);
+  const [urgencyFilter, setUrgencyFilter] = useState("all");
+  const [statusFilter, setStatusFilter]   = useState("all"); // all | pending | sent
 
-  useEffect(() => {
-    const loadData = async () => {
-      const schoolId = typeof user?.schoolId === "object" ? user?.schoolId?._id : user?.schoolId;
-      if (!schoolId) { setLoading(false); return; }
-      const reportsRes = await get(`/api/condition-report?schoolId=${schoolId}&limit=100`);
-      if (reportsRes.success) setReports(reportsRes.records || []);
+  const isPrincipal = user?.role === "principal" || user?.role === "school";
+  const isDEO       = user?.role === "deo" || user?.role === "admin";
+
+  const schoolId = typeof user?.schoolId === "object"
+    ? user?.schoolId?._id
+    : user?.schoolId;
+
+  const loadBundles = async () => {
+    setLoading(true);
+    try {
+      let url = null;
+      if (isDEO) {
+        // DEO sees every forwarded bundle, ranked by LR urgency
+        const params = new URLSearchParams({ forwardedOnly: 'true' });
+        if (user?.district) params.set('district', user.district);
+        url = `/api/reports/weekly/bundles?${params.toString()}`;
+      } else if (schoolId) {
+        url = `/api/reports/weekly/bundles?schoolId=${schoolId}`;
+      }
+      if (!url) { setLoading(false); return; }
+      const res = await get(url);
+      if (res.success) setBundles(res.bundles || []);
+    } finally {
       setLoading(false);
-    };
-    loadData();
-  }, [user]);
+    }
+  };
+
+  useEffect(() => { loadBundles(); /* eslint-disable-next-line */ }, [user]);
+
+  const handleForward = async (bundle) => {
+    setForwarding(bundle.weekNumber);
+    const res = await post(
+      `/api/reports/weekly/${bundle.schoolId}/${bundle.weekNumber}/forward`,
+      {}
+    );
+    setForwarding(null);
+    if (res.success) {
+      setToast({ ok: true, msg: `Bundle for Week ${bundle.weekNumber} forwarded to DEO (${res.decisions?.length || 0} categories).` });
+      loadBundles();
+      setTimeout(() => setToast(null), 4000);
+    } else {
+      setToast({ ok: false, msg: res.message || "Forward failed" });
+      setTimeout(() => setToast(null), 4000);
+    }
+  };
+
+  const handleView = (bundle) => {
+    // Open the existing PDF generator using any record id from this week
+    const id = bundle.anchorRecordId;
+    window.open(`${API_BASE}/api/reports/${id}/pdf`, "_blank");
+  };
 
   if (loading) {
     return (
@@ -210,132 +245,151 @@ export default function ConditionLogView() {
     );
   }
 
-  const isPrincipal = user?.role === "principal" || user?.role === "school";
-  if (!user?.schoolId || !isPrincipal) {
+  if (!isPrincipal && !isDEO) {
     return (
       <div className="p-12 text-center text-slate-500 font-bold bg-white border border-slate-200 rounded-lg max-w-xl mx-auto mt-12 shadow-sm">
         <p className="text-xl text-slate-900 font-bold">Access Restricted</p>
-        <p className="text-sm mt-2">School-level administrative authorization is required for this view.</p>
+        <p className="text-sm mt-2">Principal or DEO authorization is required for this view.</p>
       </div>
     );
   }
 
-  // ── Derived stats ────────────────────────────────────────────────────────────
-  const criticalCount   = reports.filter(r => r.willFailWithin30Days).length;
-  const warningCount    = reports.filter(r => !r.willFailWithin30Days && r.willFailWithin60Days).length;
-  const photoCount      = reports.filter(r => r.photoUploaded).length;
-  const latestWeek      = reports.length ? Math.max(...reports.map(r => r.weekNumber)) : 0;
+  if (isPrincipal && !schoolId) {
+    return (
+      <div className="p-12 text-center text-slate-500 font-bold bg-white border border-slate-200 rounded-lg max-w-xl mx-auto mt-12 shadow-sm">
+        <p className="text-xl text-slate-900 font-bold">Account Unlinked</p>
+        <p className="text-sm mt-2">Your principal account is not associated with a school.</p>
+      </div>
+    );
+  }
 
-  // ── Filtered list ────────────────────────────────────────────────────────────
-  const filtered = reports.filter(r => {
-    const catOk  = catFilter  === "all" || r.category === catFilter;
-    const rl     = scoreToRiskLevel(r.priorityScore || 0);
-    const riskOk = riskFilter === "all" || rl === riskFilter;
-    return catOk && riskOk;
+  // ── Filters ──────────────────────────────────────────────────────────────
+  const filtered = bundles.filter(b => {
+    const uOk = urgencyFilter === "all" || b.urgencyLabel === urgencyFilter;
+    const sOk = statusFilter === "all"
+      || (statusFilter === "pending" && !b.forwarded)
+      || (statusFilter === "sent"    && b.forwarded);
+    return uOk && sOk;
   });
 
-  // Sort: most critical (highest priority score) first, then by latest week
+  // Sort by urgency descending (most urgent on top), tiebreak latest week first
   const sorted = [...filtered].sort((a, b) => {
-    const ps = (b.priorityScore || 0) - (a.priorityScore || 0);
-    if (ps !== 0) return ps;
+    if (b.maxUrgency !== a.maxUrgency) return b.maxUrgency - a.maxUrgency;
     return b.weekNumber - a.weekNumber;
   });
+
+  // ── Stats ────────────────────────────────────────────────────────────────
+  const criticalCount = bundles.filter(b => b.urgencyLabel === "critical").length;
+  const fail30Count   = bundles.filter(b => b.willFailWithin30Days).length;
+  const sentCount     = bundles.filter(b => b.forwarded).length;
+  const pendingCount  = bundles.length - sentCount;
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
       <div className="max-w-7xl mx-auto pt-10 sm:pt-16 pb-12 px-4 sm:px-8 space-y-8">
-      <PageHeader 
-        title="Technical Inspection Registry"
-        subtitle="Official Node Assessment History · Kutch District Administration"
-        icon={FileText}
-        actions={
-          <Button variant="outline" size="sm" onClick={() => window.print()} className="font-black text-[10px] uppercase tracking-widest">
-            Export PDF
-          </Button>
-        }
-      />
-
-      {/* Summary stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-        <MetricCard label="Audit Volume" value={reports.length} icon={FileText} variant="info" trendValue={`Cycle: W${latestWeek}`} />
-        <MetricCard 
-          label="Critical Path" 
-          value={criticalCount} 
-          icon={AlertTriangle} 
-          variant={criticalCount > 0 ? "critical" : "success"}
-          trendValue={criticalCount > 0 ? "Urgent attention required" : "Registry optimal"}
+        <PageHeader
+          title={isDEO ? "Forwarded Weekly Reports" : "Weekly Condition Reports"}
+          subtitle={
+            isDEO
+              ? "Bundles forwarded by school principals — ranked by LR urgency, most urgent on top"
+              : "Bundled per-week assessments — each card runs the trained LR model and bundles all 3 categories"
+          }
+          icon={FileText}
         />
-        <MetricCard 
-          label="Elevated Risk" 
-          value={warningCount} 
-          icon={Clock} 
-          variant={warningCount > 0 ? "high" : "success"}
-          trendValue={warningCount > 0 ? "Monitor conditions closely" : "Stable baseline"}
-        />
-        <MetricCard label="Visual Evidence" value={photoCount} icon={Camera} variant="info" trendValue="Captured media total" />
-      </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-4 items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
-        <div className="text-[12px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
-          <Filter size={14} /> Refine View:
-        </div>
-
-        <div className="flex gap-1.5">
-          {["all", "plumbing", "electrical", "structural"].map(c => (
-            <Button
-              key={c}
-              variant={catFilter === c ? "primary" : "ghost"}
-              size="sm"
-              onClick={() => setCatFilter(c)}
-            >
-              {c === "all" ? "All Domains" : c}
-            </Button>
-          ))}
-        </div>
-
-        <div className="w-px h-6 bg-slate-100" />
-
-        <div className="flex gap-1.5">
-          {["all", "critical", "high", "moderate", "low"].map(r => (
-            <Button
-              key={r}
-              variant={riskFilter === r ? "primary" : "ghost"}
-              size="sm"
-              onClick={() => setRiskFilter(r)}
-            >
-              {r === "all" ? "Priority Levels" : RISK_CONFIG[r].label}
-            </Button>
-          ))}
-        </div>
-
-        <div className="ml-auto text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
-          {sorted.length} Entries Identified
-        </div>
-      </div>
-
-      {/* Report list */}
-      <Card variant="gov" title="Historical Audit Logs" subtitle="Chronological record of official node assessments" noPadding>
-        <div className="p-6">
-          {sorted.length === 0 ? (
-          <div className="text-center py-12 bg-slate-50 rounded border border-dashed border-slate-200">
-            <FileText size={32} className="text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-400 font-medium">
-              {reports.length === 0
-                ? "Historical registry is currently empty."
-                : "Search yielded no matches for current criteria."}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {sorted.map(r => (
-              <ReportCard key={r._id} r={r} />
-            ))}
+        {toast && (
+          <div className={`p-4 rounded-md border font-bold text-xs uppercase tracking-wide flex items-center gap-3 ${
+            toast.ok ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                     : "bg-red-50 border-red-200 text-red-700"
+          }`}>
+            {toast.ok ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />} {toast.msg}
           </div>
         )}
+
+        {/* Summary stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <MetricCard label="Total Weekly Bundles" value={bundles.length} icon={FileText} variant="info" />
+          <MetricCard label="Critical Urgency"     value={criticalCount} icon={ShieldAlert} variant={criticalCount > 0 ? "critical" : "success"} />
+          <MetricCard label="Predicted Fail < 30d" value={fail30Count} icon={Activity} variant={fail30Count > 0 ? "high" : "success"} />
+          <MetricCard label="Sent to DEO"          value={sentCount}    icon={Send} variant="info" trendValue={`${pendingCount} pending`} />
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-wrap gap-4 items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+          <div className="text-[12px] font-bold uppercase text-slate-500 tracking-widest flex items-center gap-2">
+            <Filter size={14} /> Refine View:
+          </div>
+
+          <div className="flex gap-1.5">
+            {["all", "critical", "high", "medium", "low"].map(r => (
+              <Button
+                key={r}
+                variant={urgencyFilter === r ? "primary" : "ghost"}
+                size="sm"
+                onClick={() => setUrgencyFilter(r)}
+              >
+                {r === "all" ? "Any urgency" : URGENCY_CONFIG[r]?.label || r}
+              </Button>
+            ))}
+          </div>
+
+          <div className="w-px h-6 bg-slate-100" />
+
+          <div className="flex gap-1.5">
+            {[
+              { id: "all",     label: "All bundles" },
+              { id: "pending", label: "Awaiting DEO" },
+              { id: "sent",    label: "Sent to DEO" },
+            ].map(s => (
+              <Button
+                key={s.id}
+                variant={statusFilter === s.id ? "primary" : "ghost"}
+                size="sm"
+                onClick={() => setStatusFilter(s.id)}
+              >
+                {s.label}
+              </Button>
+            ))}
+          </div>
+
+          <div className="ml-auto text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
+            {sorted.length} Bundles · Sorted by LR Urgency
+          </div>
+        </div>
+
+        {/* Bundle list */}
+        <Card variant="gov" title="Weekly Reports (LR-prioritised)" subtitle="One card per week — most urgent on top" noPadding>
+          <div className="p-6">
+            {sorted.length === 0 ? (
+              <div className="text-center py-12 bg-slate-50 rounded border border-dashed border-slate-200">
+                <FileText size={32} className="text-slate-300 mx-auto mb-3" />
+                <p className="text-slate-400 font-medium">
+                  {bundles.length === 0
+                    ? "No weekly reports submitted yet."
+                    : "No bundles match the current filters."}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {sorted.map(b => (
+                  <WeeklyBundleCard
+                    key={b.weekNumber}
+                    bundle={b}
+                    isPrincipal={isPrincipal}
+                    onForward={handleForward}
+                    onView={handleView}
+                  />
+                ))}
+              </div>
+            )}
+            {forwarding && (
+              <p className="text-center text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-4">
+                Forwarding Week {forwarding} bundle to DEO…
+              </p>
+            )}
+          </div>
+        </Card>
       </div>
-    </Card>
-    </div>
     </div>
   );
 }

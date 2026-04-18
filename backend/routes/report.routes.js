@@ -1,6 +1,6 @@
 import express from 'express';
 import { protect, authorize } from '../middlewares/auth.middleware.js';
-import { submitReport, submitWeeklyReport, getReports, getReportsBySchool, reviewReport, forwardReport, getReportsStats } from '../controllers/report.controller.js';
+import { submitReport, submitWeeklyReport, getReports, getReportsBySchool, reviewReport, forwardReport, getReportsStats, getWeeklyBundles, forwardWeeklyReport } from '../controllers/report.controller.js';
 import { generateAndSendPDF } from '../services/reportGenerator.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
 import upload from '../config/multer.js';
@@ -32,6 +32,22 @@ router.post(
 
 // GET /api/reports/stats — report presence per week
 router.get('/stats', protect, getReportsStats);
+
+// GET /api/reports/weekly/bundles?schoolId= — principal view: all weeks bundled
+router.get(
+  '/weekly/bundles',
+  protect,
+  authorize('peon', 'principal', 'deo', 'admin'),
+  getWeeklyBundles,
+);
+
+// POST /api/reports/weekly/:schoolId/:weekNumber/forward — bundled forward
+router.post(
+  '/weekly/:schoolId/:weekNumber/forward',
+  protect,
+  authorize('principal', 'admin'),
+  forwardWeeklyReport,
+);
 
 // GET /api/reports  — list reports (filtered by query ?schoolId=xxx)
 router.get('/', protect, getReports);

@@ -10,6 +10,7 @@ import Button from "../../components/common/Button";
 import Badge from "../../components/common/Badge";
 import MetricCard from "../../components/common/MetricCard";
 import PageHeader from "../../components/common/PageHeader";
+import ForwardedReportsPanel from "../../components/deo/ForwardedReportsPanel";
 import {
   Activity, LayoutList, Wrench, AlertTriangle, Building2, 
   Cpu, ChevronRight, RefreshCw, Zap, ShieldAlert, Radio, 
@@ -124,6 +125,9 @@ export default function DEODashboard() {
           <MetricCard label="High Priority" value={<Counter to={stats.highRiskCount} />} icon={Activity} variant="high" trend="up" trendValue="Trending" />
           <MetricCard label="Avg Survival" value={<Counter to={stats.avgUrgency} suffix=" Days" />} icon={Wrench} variant="success" />
         </div>
+
+        {/* FORWARDED-BY-PRINCIPAL bundles — sorted by LR urgency */}
+        <ForwardedReportsPanel district={user?.district || district} />
 
         <Card noPadding variant="gov" title="Risk Management Queue" subtitle="Real-time predictive analysis of infrastructure nodes" className="overflow-visible">
           <div className="border-b border-slate-100 px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">

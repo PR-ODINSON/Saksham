@@ -13,6 +13,7 @@ import HealthTimeline from "../../components/principal/HealthTimeline";
 import ApprovalQueue from "../../components/principal/ApprovalQueue";
 import ActiveWorkOrders from "../../components/principal/ActiveWorkOrders";
 import AuditCompliance from "../../components/principal/AuditCompliance";
+import WeeklyBundleQuickSend from "../../components/principal/WeeklyBundleQuickSend";
 
 const RISK_CONFIG = {
   critical: { color: "text-red-700", bg: "bg-red-50 border border-red-200 shadow-sm", label: "CRITICAL", fill: "#b91c1c" },
@@ -237,6 +238,9 @@ export default function SchoolView() {
             trendValue={`Registry Volume: ${reports.length}`}
           />
         </div>
+
+        {/* WEEKLY BUNDLE — LR scoring + Send to DEO */}
+        <WeeklyBundleQuickSend schoolId={schoolId} />
 
         {/* ACTIONABLE ITEMS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">

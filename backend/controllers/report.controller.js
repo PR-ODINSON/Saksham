@@ -5,6 +5,7 @@
  */
 import { SchoolConditionRecord, MaintenanceDecision, School } from '../models/index.js';
 import { predictRiskForCategory } from '../services/predictionEngine.js';
+import { predictWithLR } from '../services/lrModel.js';
 import { getIO } from '../socket/index.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
 
@@ -139,16 +140,44 @@ export const submitReport = async (req, res) => {
       },
     });
 
-    // Persist prediction results back to the record
+    // ── Machine-learning (LR) prediction — runs alongside heuristic engine ──
+    const lr = predictWithLR({
+      conditionScore:        Number(conditionScore),
+      buildingAge:           Number(buildingAge) || 20,
+      numStudents:           Number(numStudents) || 0,
+      isGirlsSchool:         parseBool(isGirlsSchool),
+      waterLeak:             parseBool(waterLeak),
+      wiringExposed:         parseBool(wiringExposed),
+      roofLeakFlag:          parseBool(roofLeakFlag),
+      issueFlag:             parseBool(issueFlag),
+      crackWidthMM:          Number(crackWidthMM)        || 0,
+      toiletFunctionalRatio: toiletRatioVal ?? 1,
+      powerOutageHours:      Number(powerOutageHours)    || 0,
+      weatherZone:           weatherZone || 'Dry',
+      category,
+    });
+
+    // Persist BOTH heuristic + LR results back to the record. The LR urgency
+    // factor (when available) is what the DEO queue sorts on.
+    const persistPayload = {
+      priorityScore:        lr?.urgencyFactor ?? prediction.riskScore,
+      daysToFailure:        lr?.daysToFailure ?? prediction.estimated_days_to_failure,
+      willFailWithin30Days: lr?.willFailWithin30Days ?? prediction.within_30_days,
+      willFailWithin60Days: lr?.willFailWithin60Days ?? prediction.within_60_days,
+    };
+    if (lr) {
+      Object.assign(persistPayload, {
+        lrPriorityScore:     lr.priorityScore,
+        lrDaysToFailure:     lr.daysToFailure,
+        lrFail30Probability: lr.fail30Probability,
+        lrFail60Probability: lr.fail60Probability,
+        lrUrgencyFactor:     lr.urgencyFactor,
+        lrUrgencyLabel:      lr.urgencyLabel,
+        lrModelVersion:      lr.modelVersion,
+      });
+    }
     const updatedRecord = await SchoolConditionRecord.findByIdAndUpdate(
-      record._id,
-      {
-        priorityScore:       prediction.riskScore,
-        daysToFailure:       prediction.estimated_days_to_failure,
-        willFailWithin30Days: prediction.within_30_days,
-        willFailWithin60Days: prediction.within_60_days,
-      },
-      { new: true },
+      record._id, persistPayload, { new: true },
     );
 
     // ── Socket.IO emit + audit log ────────────────────────────────────────
@@ -178,6 +207,7 @@ export const submitReport = async (req, res) => {
         evidence:                  prediction.evidence,
         reason:                    prediction.reason,
       },
+      lr: lr || null,
     });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
@@ -339,15 +369,43 @@ export const submitWeeklyReport = async (req, res) => {
         },
       });
 
+      // ── Machine-learning (LR) prediction for this category ─────────────────
+      const lr = predictWithLR({
+        conditionScore:        Number(c.conditionScore),
+        buildingAge:           Number(buildingAge) || 20,
+        numStudents:           Number(numStudents) || 0,
+        isGirlsSchool:         parseBool(isGirlsSchool),
+        waterLeak:             parseBool(c.waterLeak),
+        wiringExposed:         parseBool(c.wiringExposed),
+        roofLeakFlag:          parseBool(c.roofLeakFlag),
+        issueFlag:             parseBool(c.issueFlag),
+        crackWidthMM:          Number(c.crackWidthMM)        || 0,
+        toiletFunctionalRatio: toiletRatioVal ?? 1,
+        powerOutageHours:      Number(c.powerOutageHours)    || 0,
+        weatherZone:           weatherZone || 'Dry',
+        category:              cat,
+      });
+
+      const persistPayload = {
+        priorityScore:        lr?.urgencyFactor ?? prediction.riskScore,
+        daysToFailure:        lr?.daysToFailure ?? prediction.estimated_days_to_failure,
+        willFailWithin30Days: lr?.willFailWithin30Days ?? prediction.within_30_days,
+        willFailWithin60Days: lr?.willFailWithin60Days ?? prediction.within_60_days,
+      };
+      if (lr) {
+        Object.assign(persistPayload, {
+          lrPriorityScore:     lr.priorityScore,
+          lrDaysToFailure:     lr.daysToFailure,
+          lrFail30Probability: lr.fail30Probability,
+          lrFail60Probability: lr.fail60Probability,
+          lrUrgencyFactor:     lr.urgencyFactor,
+          lrUrgencyLabel:      lr.urgencyLabel,
+          lrModelVersion:      lr.modelVersion,
+        });
+      }
+
       const updatedRecord = await SchoolConditionRecord.findByIdAndUpdate(
-        record._id,
-        {
-          priorityScore:        prediction.riskScore,
-          daysToFailure:        prediction.estimated_days_to_failure,
-          willFailWithin30Days: prediction.within_30_days,
-          willFailWithin60Days: prediction.within_60_days,
-        },
-        { new: true },
+        record._id, persistPayload, { new: true },
       );
 
       categoryResults.push({
@@ -365,6 +423,7 @@ export const submitWeeklyReport = async (req, res) => {
           evidence:                  prediction.evidence,
           reason:                    prediction.reason,
         },
+        lr: lr || null,
       });
     }
 
@@ -465,6 +524,160 @@ export const reviewReport = async (req, res) => {
     writeAuditLog(req, 'report_reviewed', 'SchoolConditionRecord', doc._id, { note });
 
     res.json({ success: true, record: doc });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * GET /api/reports/weekly/bundles?schoolId=…&forwardedOnly=true&district=…
+ * Returns weekly bundles grouped by (schoolId, weekNumber). Used by:
+ *  • principal — pass schoolId, see all weeks for the school
+ *  • DEO       — pass forwardedOnly=true (and optional district) to see every
+ *                forwarded bundle across the district, ranked by LR urgency
+ */
+export const getWeeklyBundles = async (req, res) => {
+  try {
+    const { schoolId, district, forwardedOnly } = req.query;
+    const onlyForwarded = forwardedOnly === 'true' || forwardedOnly === '1';
+
+    const filter = {};
+    if (schoolId) filter.schoolId = Number(schoolId);
+    if (district) filter.district = district;
+    if (onlyForwarded) filter.forwardedAt = { $ne: null };
+
+    if (!schoolId && !onlyForwarded && !district) {
+      return res.status(400).json({
+        success: false,
+        message: 'Provide schoolId, district, or forwardedOnly=true',
+      });
+    }
+
+    const records = await SchoolConditionRecord.find(filter)
+      .sort({ weekNumber: -1, category: 1 })
+      .lean();
+
+    // Resolve school names in one query
+    const ids = [...new Set(records.map(r => r.schoolId))];
+    const schoolDocs = await School.find({ schoolId: { $in: ids } }).lean();
+    const nameById = new Map(schoolDocs.map(s => [s.schoolId, s.name]));
+
+    const byKey = new Map();
+    for (const r of records) {
+      const k = `${r.schoolId}::${r.weekNumber}`;
+      if (!byKey.has(k)) byKey.set(k, []);
+      byKey.get(k).push(r);
+    }
+
+    const bundles = [];
+    for (const cats of byKey.values()) {
+      const first = cats[0];
+      const maxUrgency = Math.max(...cats.map(c => c.lrUrgencyFactor ?? c.priorityScore ?? 0));
+      const worst = cats.reduce((a, b) =>
+        ((b.lrUrgencyFactor ?? b.priorityScore ?? 0) > (a.lrUrgencyFactor ?? a.priorityScore ?? 0) ? b : a)
+      );
+      const forwarded = cats.every(c => !!c.forwardedAt);
+      const forwardedAt = forwarded
+        ? cats.map(c => c.forwardedAt).sort((a, b) => new Date(b) - new Date(a))[0]
+        : null;
+      const lrFlag = cats.some(c => c.willFailWithin30Days);
+      bundles.push({
+        schoolId:   first.schoolId,
+        schoolName: nameById.get(first.schoolId) || `School ${first.schoolId}`,
+        district:   first.district,
+        weekNumber: first.weekNumber,
+        recordIds: cats.map(c => c._id),
+        anchorRecordId: cats[0]._id,
+        categories: cats,
+        maxUrgency: Math.round(maxUrgency),
+        worstCategory: worst.category,
+        urgencyLabel: worst.lrUrgencyLabel ||
+          (maxUrgency >= 75 ? 'critical' : maxUrgency >= 55 ? 'high' : maxUrgency >= 30 ? 'medium' : 'low'),
+        willFailWithin30Days: lrFlag,
+        forwarded,
+        forwardedAt,
+      });
+    }
+
+    // For DEO views (forwardedOnly), sort by urgency descending so the most
+    // urgent bundle is on top. For principal (schoolId only), sort by week.
+    if (onlyForwarded) {
+      bundles.sort((a, b) => {
+        if (b.maxUrgency !== a.maxUrgency) return b.maxUrgency - a.maxUrgency;
+        return new Date(b.forwardedAt || 0) - new Date(a.forwardedAt || 0);
+      });
+    } else {
+      bundles.sort((a, b) => b.weekNumber - a.weekNumber);
+    }
+
+    res.json({ success: true, bundles, total: bundles.length });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * POST /api/reports/weekly/:schoolId/:weekNumber/forward
+ * Bundled forward: marks every category record for that week as forwarded,
+ * creates / updates MaintenanceDecisions and emits a single socket event
+ * to the DEO room. Used by the principal "Send to DEO" button.
+ */
+export const forwardWeeklyReport = async (req, res) => {
+  try {
+    const schoolId   = Number(req.params.schoolId);
+    const weekNumber = Number(req.params.weekNumber);
+    if (!schoolId || !weekNumber) {
+      return res.status(400).json({
+        success: false,
+        message: 'schoolId and weekNumber path params are required',
+      });
+    }
+
+    const records = await SchoolConditionRecord.find({ schoolId, weekNumber });
+    if (!records.length) {
+      return res.status(404).json({ success: false, message: 'No records for this week' });
+    }
+
+    const school = await School.findOne({ schoolId }).lean();
+    const district = school?.district || records[0].district;
+    const userId = req.user?._id || req.user?.id;
+    const now = new Date();
+
+    const decisions = [];
+    for (const doc of records) {
+      doc.forwardedAt = now;
+      doc.forwardedBy = userId;
+      await doc.save();
+      const decision = await scoreAndCreateMaintenanceDecision(doc, school);
+      if (decision) decisions.push(decision);
+    }
+
+    // Sort returned decisions by urgency (LR-driven), descending
+    decisions.sort((a, b) =>
+      (b.decision?.computedPriorityScore || 0) - (a.decision?.computedPriorityScore || 0)
+    );
+
+    const io = getIO();
+    if (io) {
+      const payload = {
+        schoolId, district, weekNumber,
+        worstCategory:  decisions[0]?.category || records[0].category,
+        maxUrgency:     decisions[0]?.decision?.computedPriorityScore || 0,
+        recordIds:      records.map(r => r._id),
+      };
+      io.to(`deo:${district}`).emit('report:forwarded:bundle', payload);
+      io.to('admin').emit('report:forwarded:bundle', payload);
+    }
+    writeAuditLog(req, 'weekly_report_forwarded', 'SchoolConditionRecord', null, {
+      schoolId, weekNumber, district, count: records.length,
+    });
+
+    res.json({
+      success: true,
+      message: `Forwarded ${records.length} categor${records.length !== 1 ? 'ies' : 'y'} to DEO`,
+      schoolId, weekNumber, district,
+      decisions,
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

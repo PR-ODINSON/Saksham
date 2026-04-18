@@ -156,7 +156,10 @@ export const getAllRisks = async (req, res) => {
 // District-level priority queue aggregated by school.
 export const getMaintenanceQueue = async (req, res) => {
   try {
-    const { district, block, category, urgency = 60 } = req.query;
+    // Default urgency horizon is intentionally large (1 year) so that reports
+    // forwarded by principals always appear in the DEO queue — even when LR's
+    // estimated days-to-failure is higher than the legacy 60-day cap.
+    const { district, block, category, urgency = 365 } = req.query;
 
     const filter = { status: 'pending' };
     if (district) filter.district = district;
