@@ -171,7 +171,7 @@ const HeroSection = () => {
   }, []);
 
   return (
-    <section style={{ position: 'relative', minHeight: '100vh', background: '#fff', overflow: 'hidden', display: 'flex', alignItems: 'center', paddingTop: 80 }}>
+    <section className="grid-lines" style={{ position: 'relative', minHeight: '100vh', backgroundColor: '#fff', overflow: 'hidden', display: 'flex', alignItems: 'center', paddingTop: 80 }}>
       <style>{GLOBAL_CSS}</style>
       
       

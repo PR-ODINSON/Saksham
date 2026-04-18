@@ -60,7 +60,7 @@ const extendedCapabilities = [...capabilities, ...capabilities];
 
 function GovSchemes() {
   return (
-    <section className="bg-[#040705] py-24 border-y border-blue-500/10 overflow-hidden relative">
+    <section className="bg-[#040705] grid-lines-dark py-24 border-y border-blue-500/10 overflow-hidden relative">
       {/* Background Decor - Subtle Blue Glows */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/10 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none" />

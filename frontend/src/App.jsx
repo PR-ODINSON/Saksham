@@ -10,6 +10,7 @@ import WeeklyInputForm from './pages/WeeklyInputForm.jsx';
 import WorkOrders from './pages/WorkOrders.jsx';
 import Signup from './pages/Signup.jsx';
 import ConditionLogView from './pages/ConditionLogView.jsx';
+import GeospatialMap from './pages/GeospatialMap.jsx';
 import './App.css';
 
 // Role-based default dashboard redirect
@@ -41,6 +42,7 @@ function App() {
                     <Route index element={<DashboardIndex />} />
                     <Route path="report" element={<WeeklyInputForm />} />
                     <Route path="reports" element={<ConditionLogView />} />
+                    <Route path="map" element={<GeospatialMap />} />
                     <Route path="work-orders" element={<WorkOrders />} />
                     <Route path="work-orders/new" element={<WorkOrders />} />
                   </Routes>

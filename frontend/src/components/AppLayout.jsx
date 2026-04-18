@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Building2, LogOut, Menu, X, ChevronDown, Activity, LayoutDashboard, FileText, School, Zap, Crosshair, Hammer, Shield } from 'lucide-react';
+import { Building2, LogOut, Menu, X, ChevronDown, Activity, LayoutDashboard, FileText, School, Zap, Crosshair, Hammer, Shield, Globe } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 
 const ROLE_NAV = {
@@ -14,6 +14,7 @@ const ROLE_NAV = {
   ],
   deo: [
     { path: '/dashboard', label: 'Predictive Queue', icon: <Zap size={18} strokeWidth={2.5} />, exact: true },
+    { path: '/dashboard/map', label: 'Live Map', icon: <Globe size={18} strokeWidth={2.5} /> },
     { path: '/dashboard/work-orders', label: 'Command Center', icon: <Crosshair size={18} strokeWidth={2.5} /> },
   ],
   contractor: [
@@ -22,6 +23,7 @@ const ROLE_NAV = {
   ],
   admin: [
     { path: '/dashboard', label: 'Admin Panel', icon: <Shield size={18} strokeWidth={2.5} />, exact: true },
+    { path: '/dashboard/map', label: 'Live Map', icon: <Globe size={18} strokeWidth={2.5} /> },
     { path: '/dashboard/work-orders', label: 'All Orders', icon: <FileText size={18} strokeWidth={2.5} /> },
   ],
 };

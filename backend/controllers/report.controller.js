@@ -1,12 +1,16 @@
 /**
  * Report controller — PS-03
- * POST /api/reports  → creates a SchoolConditionRecord
+ * POST /api/reports  → creates a SchoolConditionRecord + runs ML prediction
  * GET  /api/reports/:school_id → returns records for one school
  */
 import { SchoolConditionRecord } from '../models/index.js';
+import { predictRiskForCategory } from '../services/predictionEngine.js';
 
 const VALID_CATEGORIES = ['plumbing', 'electrical', 'structural'];
 const VALID_CONDITIONS = [1, 2, 3, 4, 5]; // conditionScore 1–5
+
+/** Safe boolean parse — handles both JSON (boolean) and FormData (string) */
+const parseBool = (val) => val === true || val === 'true' || val === '1' || val === 1;
 
 // POST /api/reports
 export const submitReport = async (req, res) => {
@@ -34,31 +38,93 @@ export const submitReport = async (req, res) => {
     }
 
     // Image URL from multer upload (optional)
-    const photoUploaded = !!(req.file || req.body.photoUploaded);
+    const photoUploaded = !!(req.files?.length || req.file || parseBool(req.body.photoUploaded));
 
     const record = await SchoolConditionRecord.findOneAndUpdate(
       { schoolId: Number(schoolId), category, weekNumber: Number(weekNumber) },
       {
         schoolId: Number(schoolId), district, block, schoolType,
-        isGirlsSchool: Boolean(isGirlsSchool),
+        isGirlsSchool: parseBool(isGirlsSchool),
         numStudents: Number(numStudents) || 0,
         buildingAge:  Number(buildingAge)  || 0,
         materialType, weatherZone, category,
         weekNumber: Number(weekNumber),
         conditionScore: Number(conditionScore),
-        issueFlag: Boolean(issueFlag),
-        waterLeak: Boolean(waterLeak),
-        wiringExposed: Boolean(wiringExposed),
+        issueFlag: parseBool(issueFlag),
+        waterLeak: parseBool(waterLeak),
+        wiringExposed: parseBool(wiringExposed),
         crackWidthMM: Number(crackWidthMM) || 0,
         toiletFunctionalRatio: Number(toiletFunctionalRatio) || 0,
         powerOutageHours: Number(powerOutageHours) || 0,
-        roofLeakFlag: Boolean(roofLeakFlag),
+        roofLeakFlag: parseBool(roofLeakFlag),
         photoUploaded,
       },
       { upsert: true, new: true, runValidators: true },
     );
 
-    res.status(201).json({ success: true, record });
+    // ── Run ML prediction engine after save ────────────────────────────────
+    // Fetch full week history for this school + category (needed for slope / trend)
+    const weekHistoryDocs = await SchoolConditionRecord.find({
+      schoolId: Number(schoolId),
+      category,
+    }).sort({ weekNumber: 1 }).lean();
+
+    const weekHistory = weekHistoryDocs.map(r => ({
+      conditionScore: r.conditionScore,
+      weekNumber: r.weekNumber,
+    }));
+
+    // toiletFunctionalRatio needs null (not 0) when absent so the engine skips
+    // the sanitation-threshold check (ratio < 0.7)
+    const toiletRatioVal =
+      toiletFunctionalRatio !== undefined && toiletFunctionalRatio !== ''
+        ? Number(toiletFunctionalRatio)
+        : null;
+
+    const prediction = await predictRiskForCategory({
+      weekHistory,
+      buildingAge:   Number(buildingAge)  || 20,
+      weatherZone:   weatherZone           || 'Dry',
+      category,
+      isGirlsSchool: parseBool(isGirlsSchool),
+      numStudents:   Number(numStudents)   || 0,
+      flags: {
+        waterLeak:             parseBool(waterLeak),
+        wiringExposed:         parseBool(wiringExposed),
+        roofLeakFlag:          parseBool(roofLeakFlag),
+        issueFlag:             parseBool(issueFlag),
+        crackWidthMM:          Number(crackWidthMM)   || 0,
+        toiletFunctionalRatio: toiletRatioVal,
+        powerOutageHours:      Number(powerOutageHours) || 0,
+      },
+    });
+
+    // Persist prediction results back to the record
+    const updatedRecord = await SchoolConditionRecord.findByIdAndUpdate(
+      record._id,
+      {
+        priorityScore:       prediction.riskScore,
+        daysToFailure:       prediction.estimated_days_to_failure,
+        willFailWithin30Days: prediction.within_30_days,
+        willFailWithin60Days: prediction.within_60_days,
+      },
+      { new: true },
+    );
+
+    res.status(201).json({
+      success: true,
+      record: updatedRecord,
+      prediction: {
+        riskScore:                 prediction.riskScore,
+        riskLevel:                 prediction.riskLevel,
+        estimated_days_to_failure: prediction.estimated_days_to_failure,
+        within_30_days:            prediction.within_30_days,
+        within_60_days:            prediction.within_60_days,
+        deterioration_rate:        prediction.deterioration_rate,
+        evidence:                  prediction.evidence,
+        reason:                    prediction.reason,
+      },
+    });
   } catch (err) {
     res.status(400).json({ success: false, message: err.message });
   }

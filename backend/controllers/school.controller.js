@@ -31,6 +31,31 @@ export const getAllSchools = async (req, res) => {
           latestWeek:   { $max: '$weekNumber' },
         },
       },
+      {
+        $lookup: {
+          from: 'schools',
+          localField: 'schoolId',
+          foreignField: 'schoolId',
+          as: 'schoolData'
+        }
+      },
+      {
+        $unwind: {
+          path: '$schoolData',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $addFields: {
+          name: { $ifNull: ['$schoolData.name', { $concat: ['School ', { $toString: '$schoolId' }] }] },
+          location: { $ifNull: ['$schoolData.location', { lat: 23.8, lng: 69.5 }] }
+        }
+      },
+      {
+        $project: {
+          schoolData: 0
+        }
+      },
       { $sort: { maxPriorityScore: -1 } },
     ]);
 
