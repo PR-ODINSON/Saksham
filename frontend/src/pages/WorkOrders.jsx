@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { get, post, patch } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import CompletionModal from "../components/CompletionModal";
 
 const STATUS_CONFIG = {
   pending: { label: "Pending", color: "text-slate-400", bg: "bg-slate-700/40 border-slate-600" },
@@ -21,6 +22,23 @@ const PRIORITY_CONFIG = {
 const CATEGORY_ICONS = {
   structural: "🏗️", electrical: "⚡", plumbing: "🔧", sanitation: "🚿", furniture: "🪑",
 };
+
+function SLAMetricCard({ count }) {
+  return (
+    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-5 flex items-center justify-between">
+      <div>
+        <p className="text-red-400 text-xs font-bold uppercase tracking-wider mb-1">SLA Compliance Alert</p>
+        <p className="text-2xl font-black text-white">{count} Work Orders</p>
+        <p className="text-red-300/60 text-xs mt-1">Breached SLA deadline this month</p>
+      </div>
+      <div className="h-12 w-12 rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-900/40 animate-pulse">
+        <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+    </div>
+  );
+}
 
 // ─── New Work Order Form ──────────────────────────────────────────────────────
 function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
@@ -76,7 +94,7 @@ function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
               <select value={form.schoolId} onChange={e => setForm({ ...form, schoolId: e.target.value })} required
                 className="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">Select school…</option>
-                {schools.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                {schools.map(s => <option key={s._id} value={s._id}>{s.name || s.schoolId}</option>)}
               </select>
             </div>
             <div>
@@ -129,46 +147,6 @@ function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
   );
 }
 
-// ─── Complete Task Panel ──────────────────────────────────────────────────────
-function CompletePanel({ workOrder, onDone, onClose }) {
-  const [notes, setNotes] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    const res = await post("/api/tasks/complete", { workOrderId: workOrder._id, completionNotes: notes });
-    setSaving(false);
-    if (res.success) { onDone(res.workOrder); onClose(); }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
-          <h2 className="text-lg font-semibold text-white">Mark as Completed</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>
-        </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          <p className="text-slate-400 text-sm">{workOrder.description}</p>
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">Completion Notes</label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={3} required
-              placeholder="Describe the work completed…"
-              className="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          </div>
-          <div className="flex gap-3">
-            <button type="button" onClick={onClose} className="flex-1 py-2 rounded-lg border border-slate-600 text-slate-300 text-sm hover:bg-slate-700">Cancel</button>
-            <button type="submit" disabled={saving} className="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium disabled:opacity-50">
-              {saving ? "Saving…" : "Confirm Complete"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function WorkOrders() {
   const { user } = useAuth();
@@ -212,36 +190,40 @@ export default function WorkOrders() {
   };
 
   const filtered = orders.filter(o => statusFilter === "all" || o.status === statusFilter);
+  const breachedCount = orders.filter(o => o.slaBreach).length;
 
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Work Orders</h1>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Maintenance Work Orders</h1>
           <p className="text-slate-400 text-sm mt-0.5">
-            {user?.role === "contractor" ? "Your assigned tasks" : "Manage maintenance assignments"}
+            {user?.role === "contractor" ? "Your assigned tasks" : "Track and manage repair assignments"}
           </p>
         </div>
         {canAssign && (
-          <button onClick={() => setShowNew(true)} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium flex items-center gap-2">
+          <button onClick={() => setShowNew(true)} className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium flex items-center gap-2 shadow-lg shadow-blue-900/20 active:translate-y-0.5">
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            New Work Order
+            New Assignment
           </button>
         )}
       </div>
 
+      {/* SLA Metric Card */}
+      {breachedCount > 0 && <SLAMetricCard count={breachedCount} />}
+
       {/* Status filter tabs */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap bg-slate-800/20 p-1.5 rounded-xl border border-slate-700/50">
         {["all", "pending", "assigned", "in_progress", "completed"].map(s => (
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter === s ? "bg-blue-600 text-white" : "bg-slate-800 border border-slate-700 text-slate-400 hover:text-white"}`}
+            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${statusFilter === s ? "bg-blue-600 text-white shadow-md" : "text-slate-400 hover:text-white hover:bg-slate-700/50"}`}
           >
-            {s === "all" ? "All" : STATUS_CONFIG[s]?.label}
-            <span className="ml-1.5 text-xs opacity-70">
+            {s === "all" ? "All Orders" : STATUS_CONFIG[s]?.label}
+            <span className={`ml-2 text-[10px] px-1.5 rounded-md ${statusFilter === s ? "bg-blue-400/30" : "bg-slate-700"}`}>
               {s === "all" ? orders.length : orders.filter(o => o.status === s).length}
             </span>
           </button>
@@ -250,9 +232,11 @@ export default function WorkOrders() {
 
       {/* Orders list */}
       {loading ? (
-        <div className="text-center py-16 text-slate-400">Loading…</div>
+        <div className="text-center py-24 text-slate-500 animate-pulse font-medium">Synchronizing work order registry...</div>
       ) : filtered.length === 0 ? (
-        <div className="text-center py-16 text-slate-500">No work orders found</div>
+        <div className="text-center py-24 bg-slate-800/20 rounded-2xl border-2 border-dashed border-slate-700">
+          <p className="text-slate-500 italic">No matching work orders found in the registry.</p>
+        </div>
       ) : (
         <div className="grid gap-4">
           {filtered.map(order => {
@@ -260,45 +244,74 @@ export default function WorkOrders() {
             const pc = PRIORITY_CONFIG[order.priority];
             const isAssignedToMe = user?.role === "contractor" && order.assignedTo?._id === user.id;
             const canComplete = isAssignedToMe || canAssign;
+            
             return (
-              <div key={order._id} className={`border rounded-xl p-5 ${sc.bg}`}>
-                <div className="flex items-start justify-between gap-4">
+              <div key={order._id} className={`border rounded-xl p-5 transition-all hover:border-slate-500 shadow-sm ${sc.bg} ${order.slaBreach ? 'border-red-500/50 shadow-red-900/10' : ''}`}>
+                <div className="flex items-start justify-between gap-6">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <span className="text-lg">{CATEGORY_ICONS[order.category] || "🔧"}</span>
-                      <span className="font-semibold text-white capitalize">{order.category}</span>
-                      {order.subCategory && <span className="text-slate-400 text-sm">→ {order.subCategory}</span>}
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${pc}`}>{order.priority}</span>
+                    <div className="flex items-center gap-3 flex-wrap mb-2">
+                      <span className="text-xl">{CATEGORY_ICONS[order.category] || "🔧"}</span>
+                      <span className="font-black text-white capitalize text-lg tracking-tight">{order.category}</span>
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${pc}`}>{order.priority}</span>
+                      
+                      {order.slaBreach && (
+                        <span className="px-2.5 py-0.5 rounded-full bg-red-600 text-white text-[10px] font-black animate-pulse uppercase">
+                          ⚠️ SLA BREACH
+                        </span>
+                      )}
                     </div>
-                    <p className="text-slate-300 text-sm mb-2">{order.description}</p>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400">
-                      <span>🏫 {order.schoolId?.name || "—"} · {order.schoolId?.district}</span>
-                      {order.assignedTo && <span>👷 {order.assignedTo.name}</span>}
-                      {order.dueDate && <span>📅 Due: {new Date(order.dueDate).toLocaleDateString()}</span>}
-                      {order.riskScore > 0 && <span>Risk: {order.riskScore}/100</span>}
+                    
+                    <p className="text-slate-300 text-sm mb-4 leading-relaxed font-medium">{order.description}</p>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-black/20 p-3 rounded-lg border border-slate-700/50">
+                      <div>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Location</p>
+                        <p className="text-xs text-white truncate font-semibold">🏫 {order.schoolId?.name || "Unknown School"}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Contractor</p>
+                        <p className="text-xs text-white font-semibold">👷 {order.assignedTo?.name || "Unassigned"}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Target Date</p>
+                        <p className={`text-xs font-semibold ${order.slaBreach ? 'text-red-400' : 'text-white'}`}>
+                          📅 {order.dueDate ? new Date(order.dueDate).toLocaleDateString() : 'No Deadline'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase mb-1">Contractor Delay</p>
+                        <p className={`text-xs font-black ${order.contractorDelayDays > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                          ⏱ {order.contractorDelayDays || 0} Days
+                        </p>
+                      </div>
                     </div>
+
                     {order.status === "completed" && order.completionNotes && (
-                      <div className="mt-2 text-xs text-emerald-300 bg-emerald-500/10 rounded px-2 py-1">
-                        ✓ {order.completionNotes}
+                      <div className="mt-4 text-xs text-emerald-300 bg-emerald-500/10 rounded-lg p-3 border border-emerald-500/20">
+                        <span className="font-bold text-emerald-400 uppercase text-[10px] block mb-1">Resolution Summary</span>
+                        {order.completionNotes}
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col items-end gap-2 shrink-0">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${sc.bg} ${sc.color}`}>{sc.label}</span>
+
+                  <div className="flex flex-col items-end gap-3 shrink-0">
+                    <span className={`px-3 py-1 rounded-lg text-xs font-black border uppercase tracking-widest bg-slate-900 ${sc.color}`}>{sc.label}</span>
+                    
                     {order.status !== "completed" && order.status !== "cancelled" && canComplete && (
                       <button
                         onClick={() => setCompletingOrder(order)}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/40 border border-emerald-600/50 text-emerald-300 text-xs font-medium"
+                        className="w-full px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition-all shadow-md shadow-emerald-900/20 active:translate-y-0.5"
                       >
-                        Complete
+                        CLOSE ORDER
                       </button>
                     )}
+                    
                     {canAssign && order.status === "pending" && (
                       <button
                         onClick={() => patch(`/api/tasks/${order._id}/status`, { status: "assigned" }).then(r => r.success && updateOrderInList(r.workOrder))}
-                        className="px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/40 border border-blue-600/50 text-blue-300 text-xs font-medium"
+                        className="w-full px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-black transition-all shadow-md shadow-blue-900/20 active:translate-y-0.5"
                       >
-                        Assign
+                        ASSIGN NOW
                       </button>
                     )}
                   </div>
@@ -318,7 +331,7 @@ export default function WorkOrders() {
         />
       )}
       {completingOrder && (
-        <CompletePanel
+        <CompletionModal
           workOrder={completingOrder}
           onDone={updateOrderInList}
           onClose={() => setCompletingOrder(null)}

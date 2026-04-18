@@ -2,7 +2,21 @@
  * Work Order controller — PS-03
  * Uses the new WorkOrder schema: decisionId, schoolId (Number), deadline, status.
  */
-import { WorkOrder, MaintenanceDecision, RepairLog, SchoolConditionRecord } from '../models/index.js';
+import { WorkOrder, MaintenanceDecision, RepairLog, SchoolConditionRecord, School } from '../models/index.js';
+
+/**
+ * Haversine formula to calculate distance between two points in km.
+ */
+function getDistanceKM(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
 
 // GET /api/tasks  |  GET /api/work-orders
 export const getWorkOrders = async (req, res) => {
@@ -82,7 +96,7 @@ export const assignTask = async (req, res) => {
 // PS-03 learning rule: create a RepairLog recording before/after state
 export const completeTask = async (req, res) => {
   try {
-    const { workOrderId, afterConditionScore, notes } = req.body;
+    const { workOrderId, afterConditionScore, beforeConditionScore, notes, lat, lng, photoUrl } = req.body;
 
     const workOrder = await WorkOrder.findById(workOrderId);
     if (!workOrder) {
@@ -96,30 +110,50 @@ export const completeTask = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Not authorised' });
     }
 
+    // 1. GPS Validation
+    let locationMismatch = false;
+    if (lat && lng) {
+      const school = await School.findOne({ schoolId: workOrder.schoolId });
+      if (school && school.location && school.location.lat) {
+        const distance = getDistanceKM(lat, lng, school.location.lat, school.location.lng);
+        if (distance > 5) {
+          locationMismatch = true;
+        }
+      }
+      workOrder.completionProof = {
+        photoUrl,
+        gpsLocation: { lat, lng }
+      };
+    }
+
+    const now = new Date();
     workOrder.status = 'completed';
+    workOrder.completedAt = now;
+    workOrder.locationMismatch = locationMismatch;
     await workOrder.save();
 
-    // Fetch before-state from latest SchoolConditionRecord
+    // 2. Data for Repair Log
     const beforeRecord = await SchoolConditionRecord.findOne({
       schoolId: workOrder.schoolId,
       category: workOrder.category,
     }).sort({ weekNumber: -1 });
 
-    // Create repair log (PS-03 history)
     const completionTimeDays = Math.round(
-      (Date.now() - workOrder.createdAt.getTime()) / 86400000,
+      (now.getTime() - workOrder.createdAt.getTime()) / 86400000,
     );
+
+    const slaBreached = now > workOrder.deadline;
 
     const repairLog = await RepairLog.create({
       workOrderId:    workOrder._id,
       schoolId:       workOrder.schoolId,
       category:       workOrder.category,
       before: {
-        conditionScore: beforeRecord?.conditionScore ?? 5,
+        conditionScore: Number(beforeConditionScore) || beforeRecord?.conditionScore || 5,
         issues: {
-          waterLeak:    beforeRecord?.waterLeak,
-          wiringExposed: beforeRecord?.wiringExposed,
-          roofLeakFlag: beforeRecord?.roofLeakFlag,
+          waterLeak:     beforeRecord?.waterLeak,
+          wiringExposed:  beforeRecord?.wiringExposed,
+          roofLeakFlag:   beforeRecord?.roofLeakFlag,
           notes,
         },
       },
@@ -127,11 +161,13 @@ export const completeTask = async (req, res) => {
         conditionScore: Number(afterConditionScore) || 2,
       },
       completionTimeDays,
-      contractorDelayDays: 0,
-      slaBreached: false,
+      contractorDelayDays: slaBreached ? Math.max(0, completionTimeDays - 30) : 0, // Simplified delay logic
+      slaBreached,
+      locationMismatch,
+      photoUrl
     });
 
-    // Update decision status to 'completed'
+    // 3. Update decision status
     if (workOrder.decisionId) {
       await MaintenanceDecision.findByIdAndUpdate(
         workOrder.decisionId,

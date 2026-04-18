@@ -27,3 +27,43 @@ export const markAsRead = async (req, res) => {
     res.status(400).json({ success: false, error: error.message });
   }
 };
+
+export const getAlertDigest = async (req, res) => {
+  try {
+    const { district } = req.query;
+    const filter = { isResolved: false };
+    if (district) filter.district = district;
+
+    const digest = await Alert.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: { district: '$district', category: '$category' },
+          count: { $sum: 1 },
+        }
+      },
+      {
+        $project: {
+          _id: 0,
+          district: '$_id.district',
+          category: '$_id.category',
+          count: 1,
+          message: {
+            $concat: [
+              { $toString: '$count' },
+              ' schools in ',
+              '$_id.district',
+              ' have ',
+              '$_id.category',
+              ' failures predicted within 30 days.'
+            ]
+          }
+        }
+      }
+    ]);
+
+    res.json({ success: true, digest });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};

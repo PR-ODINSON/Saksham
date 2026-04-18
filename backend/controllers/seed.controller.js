@@ -3,7 +3,7 @@
  * GET /api/seed-demo
  */
 import User from '../models/user.model.js';
-import { SchoolConditionRecord, MaintenanceDecision, WorkOrder, Alert, DistrictAnalytics } from '../models/index.js';
+import { SchoolConditionRecord, MaintenanceDecision, WorkOrder, Alert, DistrictAnalytics, School } from '../models/index.js';
 import { hashPassword } from '../Methods/bcryptPassword.js';
 
 export const seedDatabase = async (_req, res) => {
@@ -27,6 +27,12 @@ export const seedDatabase = async (_req, res) => {
       { name: 'Admin',                email: 'admin@demo.com',        password: pwd, role: 'admin' },
     ]);
     const [deo, contractor] = users;
+
+    // ── Schools metadata ─────────────────────────────────────────────────────
+    const schools = await School.insertMany([
+      { schoolId: 2126, name: 'Kutch Primary School', district: 'Kutch', location: { lat: 23.8, lng: 69.5 } },
+      { schoolId: 2459, name: 'Surat secondary School', district: 'Surat', location: { lat: 21.17, lng: 72.83 } },
+    ]);
 
     // ── School Condition Records (sample rows matching CSV structure) ─────────
     const records = await SchoolConditionRecord.insertMany([

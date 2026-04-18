@@ -56,6 +56,10 @@ const schoolSchema = new mongoose.Schema({
       }
     }
   },
+  location: {
+    lat: { type: Number, default: 23.8 }, // Default for Kutch area if needed
+    lng: { type: Number, default: 69.5 }
+  },
   isActive: {
     type: Boolean,
     default: true
