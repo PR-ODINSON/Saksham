@@ -6,12 +6,11 @@ import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 
 const ROLE_NAV = {
   peon: [
-    { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} strokeWidth={2.5} />, exact: true },
-    { path: '/dashboard/report', label: 'Submit Report', icon: <FileText size={18} strokeWidth={2.5} /> },
+    { path: '/dashboard', label: 'Submit Report', icon: <FileText size={18} strokeWidth={2.5} />, exact: true },
   ],
   principal: [
-    { path: '/dashboard', label: 'My School', icon: <School size={18} strokeWidth={2.5} />, exact: true },
-    { path: '/dashboard/report', label: 'Submit Report', icon: <FileText size={18} strokeWidth={2.5} /> },
+    { path: '/dashboard', label: 'Principal Dashboard', icon: <LayoutDashboard size={18} strokeWidth={2.5} />, exact: true },
+    { path: '/dashboard/reports', label: 'View Reports', icon: <FileText size={18} strokeWidth={2.5} /> },
   ],
   deo: [
     { path: '/dashboard', label: 'Predictive Queue', icon: <Zap size={18} strokeWidth={2.5} />, exact: true },

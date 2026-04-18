@@ -9,13 +9,15 @@ import DEODashboard from './pages/DEODashboard.jsx';
 import WeeklyInputForm from './pages/WeeklyInputForm.jsx';
 import WorkOrders from './pages/WorkOrders.jsx';
 import Signup from './pages/Signup.jsx';
+import ConditionLogView from './pages/ConditionLogView.jsx';
 import './App.css';
 
 // Role-based default dashboard redirect
 function DashboardIndex() {
   const { user } = useAuth();
   if (!user) return null;
-  if (user.role === 'peon' || user.role === 'principal' || user.role === 'school') return <SchoolView />;
+  if (user.role === 'peon') return <WeeklyInputForm />;
+  if (user.role === 'principal' || user.role === 'school') return <SchoolView />;
   if (user.role === 'deo' || user.role === 'admin') return <DEODashboard />;
   if (user.role === 'contractor') return <WorkOrders />;
   return <SchoolView />;
@@ -38,6 +40,7 @@ function App() {
                   <Routes>
                     <Route index element={<DashboardIndex />} />
                     <Route path="report" element={<WeeklyInputForm />} />
+                    <Route path="reports" element={<ConditionLogView />} />
                     <Route path="work-orders" element={<WorkOrders />} />
                     <Route path="work-orders/new" element={<WorkOrders />} />
                   </Routes>

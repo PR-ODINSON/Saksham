@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 
 const ROLES = [
-  { id: 'peon', label: 'School Peon/Watchman', icon: <User size={18} />, bg: 'bg-slate-50', border: 'border-slate-500', text: 'text-slate-600' },
+  { id: 'peon', label: 'School Peon', icon: <User size={18} />, bg: 'bg-slate-50', border: 'border-slate-500', text: 'text-slate-600' },
   { id: 'principal', label: 'School Principal', icon: <SchoolIcon size={18} />, bg: 'bg-indigo-50', border: 'border-indigo-500', text: 'text-indigo-600' },
   { id: 'deo', label: 'DEO', icon: <Building2 size={18} />, bg: 'bg-blue-50', border: 'border-blue-500', text: 'text-blue-600' },
   { id: 'contractor', label: 'Contractor', icon: <Briefcase size={18} />, bg: 'bg-orange-50', border: 'border-orange-500', text: 'text-orange-600' },
