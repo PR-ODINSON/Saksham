@@ -1,9 +1,12 @@
-import SchoolConditionRecord from './SchoolConditionRecord.js';
-import MaintenanceDecision from './MaintenanceDecision.js';
-import WorkOrder from './WorkOrder.js';
-import RepairLog from './RepairLog.js';
-import Alert from './Alert.js';
-import DistrictAnalytics from './DistrictAnalytics.js';
+import SchoolConditionRecord from './school-condition-record.model.js';
+import MaintenanceDecision from './maintenance-decision.model.js';
+import WorkOrder from './work-order.model.js';
+import RepairLog from './repair-log.model.js';
+import Alert from './alert.model.js';
+import DistrictAnalytics from './district-analytics.model.js';
+import School from './school.model.js';
+import User from './user.model.js';
+import PriorityConfig from './priorityConfig.model.js';
 
 export {
   SchoolConditionRecord,
@@ -11,5 +14,8 @@ export {
   WorkOrder,
   RepairLog,
   Alert,
-  DistrictAnalytics
+  DistrictAnalytics,
+  School,
+  User,
+  PriorityConfig
 };
