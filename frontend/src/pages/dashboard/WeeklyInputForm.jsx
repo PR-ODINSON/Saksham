@@ -171,15 +171,31 @@ function VisualSelectGrid({ options, value, onChange }) {
 }
 
 // ─── PhotoUpload ──────────────────────────────────────────────────────────────
-function PhotoUpload({ file, onChange }) {
+function PhotoUpload({ file, onChange, required = false, showError = false }) {
   const inputRef = useRef(null);
+  const missing  = required && !file;
+
   return (
     <div className="space-y-3">
-      <label className="text-xs font-bold text-slate-700 block uppercase tracking-wide">
+      <label className="text-xs font-bold text-slate-700 flex items-center gap-2 uppercase tracking-wide">
         Evidence Photography
+        {required && (
+          <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${
+            missing && showError
+              ? "bg-red-100 border-red-400 text-red-700 animate-pulse"
+              : missing
+              ? "bg-amber-50 border-amber-300 text-amber-700"
+              : "bg-emerald-50 border-emerald-300 text-emerald-700"
+          }`}>
+            {missing ? "REQUIRED" : "✓ ATTACHED"}
+          </span>
+        )}
       </label>
+
       {file ? (
-        <div className="flex items-center gap-4 p-3 rounded-lg bg-slate-50 border border-slate-200 shadow-sm">
+        <div className={`flex items-center gap-4 p-3 rounded-lg border shadow-sm ${
+          required ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-200"
+        }`}>
           <img
             src={URL.createObjectURL(file)}
             alt="preview"
@@ -187,7 +203,7 @@ function PhotoUpload({ file, onChange }) {
           />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-slate-900 truncate">{file.name}</p>
-            <p className="text-xs text-slate-500 font-medium">Image captured successfully</p>
+            <p className="text-xs text-emerald-700 font-semibold">Photo attached — ready to submit</p>
           </div>
           <button
             type="button"
@@ -201,17 +217,34 @@ function PhotoUpload({ file, onChange }) {
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="w-full py-8 rounded-lg border border-dashed border-slate-300 bg-white hover:border-blue-500 hover:bg-blue-50/30 transition-all flex flex-col items-center gap-3 text-slate-500 group"
+          className={`w-full py-8 rounded-lg border-2 border-dashed transition-all flex flex-col items-center gap-3 group ${
+            missing && showError
+              ? "border-red-400 bg-red-50 hover:bg-red-50/80"
+              : missing && required
+              ? "border-amber-300 bg-amber-50/40 hover:border-blue-500 hover:bg-blue-50/30"
+              : "border-slate-300 bg-white hover:border-blue-500 hover:bg-blue-50/30"
+          }`}
         >
-          <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
+          <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+            missing && showError
+              ? "bg-red-100 text-red-500"
+              : missing && required
+              ? "bg-amber-50 text-amber-500 group-hover:bg-blue-100 group-hover:text-blue-600"
+              : "bg-slate-50 text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-600"
+          }`}>
             <Camera size={24} />
           </div>
           <div className="text-center">
-            <span className="text-sm font-bold text-slate-700 block">Select Inspection Photo</span>
-            <span className="text-xs text-slate-500">JPG, PNG allowed (Max 5MB)</span>
+            <span className={`text-sm font-bold block ${
+              missing && showError ? "text-red-700" : "text-slate-700"
+            }`}>
+              {missing && showError ? "Photo Required — Tap to Add" : "Select Inspection Photo"}
+            </span>
+            <span className="text-xs text-slate-500">JPG, PNG · Max 5 MB · Must be taken on-site</span>
           </div>
         </button>
       )}
+
       <input
         ref={inputRef}
         type="file"
@@ -233,11 +266,13 @@ export default function WeeklyInputForm() {
   const [catStates,  setCatStates]  = useState(defaultCategoryState());
   const [catPhotos,  setCatPhotos]  = useState({ plumbing: null, electrical: null, structural: null });
   const [activeTab,  setActiveTab]  = useState("plumbing");
-  const [submitting, setSubmitting] = useState(false);
-  const [results,    setResults]    = useState(null);
-  const [error,      setError]      = useState("");
+  const [submitting,    setSubmitting]    = useState(false);
+  const [results,       setResults]       = useState(null);
+  const [error,         setError]         = useState("");
+  const [showPhotoError, setShowPhotoError] = useState(false);
 
   const isSchoolStaff = user?.role === "peon" || user?.role === "principal";
+  const isPeon        = user?.role === "peon";
   const schoolId = typeof user?.schoolId === "object" ? user?.schoolId?._id : user?.schoolId;
 
   useEffect(() => {
@@ -273,8 +308,23 @@ export default function WeeklyInputForm() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
     setError("");
+
+    // Peons must attach a photo for every category before submitting
+    if (isPeon) {
+      const missingPhotos = CATEGORIES.filter(cat => !catPhotos[cat.id]).map(c => c.label);
+      if (missingPhotos.length > 0) {
+        setShowPhotoError(true);
+        setError(`Photo required for: ${missingPhotos.join(", ")}. Please attach a photo for each category.`);
+        // Scroll to the first missing-photo tab
+        const firstMissing = CATEGORIES.find(cat => !catPhotos[cat.id]);
+        if (firstMissing) setActiveTab(firstMissing.id);
+        return;
+      }
+    }
+
+    setShowPhotoError(false);
+    setSubmitting(true);
 
     const schoolMeta = {
       district:      school?.district      || "",
@@ -499,7 +549,9 @@ export default function WeeklyInputForm() {
           {/* ── Photo Upload ── */}
           <PhotoUpload
             file={catPhotos[activeTab]}
-            onChange={(f) => setPhoto(activeTab, f)}
+            onChange={(f) => { setPhoto(activeTab, f); if (f) setShowPhotoError(false); }}
+            required={isPeon}
+            showError={showPhotoError && !catPhotos[activeTab]}
           />
 
           <div className="space-y-4">
@@ -602,7 +654,12 @@ export default function WeeklyInputForm() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className={`text-xs font-bold truncate ${activeTab === cat.id ? "text-blue-900" : "text-slate-600"}`}>{cat.label}</p>
-                  {photo && <p className="text-[10px] text-blue-600 font-semibold flex items-center gap-1"><Camera size={10} /> Image Attached</p>}
+                  {photo
+                    ? <p className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1"><Camera size={10} /> Photo Attached</p>
+                    : isPeon
+                    ? <p className={`text-[10px] font-semibold flex items-center gap-1 ${showPhotoError ? "text-red-600 animate-pulse" : "text-amber-600"}`}><Camera size={10} /> Required</p>
+                    : null
+                  }
                 </div>
               </div>
             );

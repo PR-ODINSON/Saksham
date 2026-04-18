@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { get, post } from "../../services/api";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { get, post, patch } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import CompletionModal from "../../components/common/CompletionModal";
@@ -8,52 +8,129 @@ import Button from "../../components/common/Button";
 import Badge from "../../components/common/Badge";
 import MetricCard from "../../components/common/MetricCard";
 import PageHeader from "../../components/common/PageHeader";
-import { Building, Zap, Wrench, Droplets, Grid, Hammer, Clock, Shield } from 'lucide-react';
+import Select from "../../components/common/Select";
+import Input from "../../components/common/Input";
+import useSocket from "../../hooks/useSocket";
+import { Building, Zap, Wrench, Droplets, Grid, Hammer, Clock, Shield, CheckCircle, XCircle } from 'lucide-react';
 
 const STATUS_CONFIG = {
-  pending: { label: "Pending", color: "text-slate-600" },
-  assigned: { label: "Assigned", color: "text-blue-700" },
+  pending:     { label: "Pending",     color: "text-slate-600" },
+  assigned:    { label: "Assigned",    color: "text-blue-700" },
+  accepted:    { label: "Accepted",    color: "text-teal-700" },
   in_progress: { label: "In Progress", color: "text-amber-700" },
-  completed: { label: "Completed", color: "text-emerald-700" },
-  cancelled: { label: "Cancelled", color: "text-slate-500" },
+  completed:   { label: "Completed",   color: "text-emerald-700" },
+  cancelled:   { label: "Cancelled",   color: "text-slate-500" },
 };
 
 const PRIORITY_CONFIG = {
   critical: "bg-red-50 text-red-700 border-red-300",
-  high: "bg-orange-50 text-orange-700 border-orange-300",
-  medium: "bg-amber-50 text-amber-700 border-amber-300",
-  low: "bg-slate-50 text-slate-700 border-slate-300",
+  high:     "bg-orange-50 text-orange-700 border-orange-300",
+  medium:   "bg-amber-50 text-amber-700 border-amber-300",
+  low:      "bg-slate-50 text-slate-700 border-slate-300",
 };
 
 const CATEGORY_ICONS = {
   structural: <Building size={20} strokeWidth={2.5} />, 
   electrical: <Zap size={20} strokeWidth={2.5} />, 
-  plumbing: <Wrench size={20} strokeWidth={2.5} />, 
+  plumbing:   <Wrench size={20} strokeWidth={2.5} />, 
   sanitation: <Droplets size={20} strokeWidth={2.5} />, 
-  furniture: <Grid size={20} strokeWidth={2.5} />,
+  furniture:  <Grid size={20} strokeWidth={2.5} />,
 };
 
+// ─── Accept modal ─────────────────────────────────────────────────────────────
+function AcceptModal({ order, onAccepted, onClose }) {
+  const [scope, setScope] = useState('school');
+  const [note, setNote]   = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const confirm = async () => {
+    setSaving(true);
+    const res = await patch(`/api/tasks/${order._id}/respond`, { decision: 'accepted', scope, note });
+    setSaving(false);
+    if (res.success) onAccepted(order._id, scope);
+    onClose();
+  };
+
+  return (
+    <div className="mt-3 p-4 bg-teal-50 border border-teal-200 rounded space-y-3">
+      <p className="text-xs font-bold text-teal-800 uppercase tracking-widest">Accept scope:</p>
+      <div className="flex gap-4">
+        <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+          <input type="radio" name="scope" value="school" checked={scope === 'school'} onChange={() => setScope('school')} />
+          This school only
+        </label>
+        <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
+          <input type="radio" name="scope" value="district" checked={scope === 'district'} onChange={() => setScope('district')} />
+          All schools in this district
+        </label>
+      </div>
+      <textarea
+        rows={2}
+        value={note}
+        onChange={e => setNote(e.target.value)}
+        placeholder="Optional note..."
+        className="w-full text-sm border border-teal-200 rounded p-2 outline-none focus:ring-1 focus:ring-teal-400 resize-none"
+      />
+      <div className="flex gap-2">
+        <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+        <Button variant="primary" size="sm" isLoading={saving} onClick={confirm}>Confirm</Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Reject modal ─────────────────────────────────────────────────────────────
+function RejectModal({ order, onRejected, onClose }) {
+  const [note, setNote]   = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const confirm = async () => {
+    setSaving(true);
+    const res = await patch(`/api/tasks/${order._id}/respond`, { decision: 'rejected', note });
+    setSaving(false);
+    if (res.success) onRejected(order._id);
+    onClose();
+  };
+
+  return (
+    <div className="mt-3 p-4 bg-red-50 border border-red-200 rounded space-y-3">
+      <p className="text-sm font-medium text-red-800">Reject this work order?</p>
+      <textarea
+        rows={2}
+        value={note}
+        onChange={e => setNote(e.target.value)}
+        placeholder="Optional reason..."
+        className="w-full text-sm border border-red-200 rounded p-2 outline-none focus:ring-1 focus:ring-red-400 resize-none"
+      />
+      <div className="flex gap-2">
+        <Button variant="ghost" size="sm" onClick={onClose}>Cancel</Button>
+        <Button variant="danger" size="sm" isLoading={saving} onClick={confirm}>Reject</Button>
+      </div>
+    </div>
+  );
+}
 
 // ─── New Work Order Form ──────────────────────────────────────────────────────
 function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
   const [form, setForm] = useState({
-    schoolId: prefill.schoolId || "",
-    category: prefill.category || "structural",
-    subCategory: "",
-    description: "",
-    priority: prefill.score >= 76 ? "critical" : prefill.score >= 51 ? "high" : "medium",
-    estimatedDays: "",
-    riskScore: prefill.score || "",
-    dueDate: "",
+    schoolId:     prefill.schoolId || "",
+    category:     prefill.category || "structural",
+    subCategory:  "",
+    description:  "",
+    priority:     prefill.score >= 76 ? "critical" : prefill.score >= 51 ? "high" : "medium",
+    estimatedDays:"",
+    riskScore:    prefill.score || "",
+    dueDate:      "",
   });
   const [contractors, setContractors] = useState([]);
-  const [assignedTo, setAssignedTo] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const [assignedTo, setAssignedTo]   = useState("");
+  const [saving, setSaving]           = useState(false);
+  const [error, setError]             = useState("");
 
   useEffect(() => {
-    get("/api/admin/users").then(d => {
-      if (d.success) setContractors(d.users.filter(u => u.role === "contractor"));
+    // Phase 10 fix: use /api/users/contractors instead of /api/admin/users
+    get("/api/users/contractors").then(d => {
+      if (d.success) setContractors(d.contractors);
     });
   }, []);
 
@@ -104,9 +181,9 @@ function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
               onChange={e => setForm({ ...form, priority: e.target.value })}
               options={[
                 { value: "critical", label: "Critical" },
-                { value: "high", label: "High" },
-                { value: "medium", label: "Medium" },
-                { value: "low", label: "Low" }
+                { value: "high",     label: "High" },
+                { value: "medium",   label: "Medium" },
+                { value: "low",      label: "Low" }
               ]}
             />
             <div className="md:col-span-2">
@@ -145,24 +222,29 @@ function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function WorkOrders() {
-  const { user } = useAuth();
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const [orders, setOrders] = useState([]);
-  const [schools, setSchools] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { user }         = useAuth();
+  const socket           = useSocket();
+  const [searchParams]   = useSearchParams();
+  const navigate         = useNavigate();
+  const [orders, setOrders]           = useState([]);
+  const [schools, setSchools]         = useState([]);
+  const [loading, setLoading]         = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
-  const [showNew, setShowNew] = useState(false);
+  const [showNew, setShowNew]         = useState(false);
   const [completingOrder, setCompletingOrder] = useState(null);
+  const [acceptingId, setAcceptingId] = useState(null);
+  const [rejectingId, setRejectingId] = useState(null);
+  const newBadgeTimers = useRef({});
 
   const prefill = {
     schoolId: searchParams.get("schoolId") || "",
     category: searchParams.get("category") || "",
-    score: Number(searchParams.get("score")) || 0,
-    school: searchParams.get("school") || "",
+    score:    Number(searchParams.get("score")) || 0,
+    school:   searchParams.get("school") || "",
   };
 
   const canAssign = ["deo", "admin"].includes(user?.role);
+  const isContractor = user?.role === "contractor";
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -180,18 +262,50 @@ export default function WorkOrders() {
     if (prefill.schoolId && canAssign) setShowNew(true);
   }, []);
 
+  // Socket: new assignment for contractor
+  useEffect(() => {
+    if (!socket || !isContractor) return;
+    const handler = ({ task }) => {
+      if (!task) return;
+      const enriched = { ...task, _isNew: true };
+      setOrders(prev => [enriched, ...prev]);
+      // Remove "new" badge after 5 seconds
+      const t = setTimeout(() => {
+        setOrders(prev => prev.map(o => o._id === enriched._id ? { ...o, _isNew: false } : o));
+      }, 5000);
+      newBadgeTimers.current[enriched._id] = t;
+    };
+    socket.on('task:assigned', handler);
+    return () => {
+      socket.off('task:assigned', handler);
+      Object.values(newBadgeTimers.current).forEach(clearTimeout);
+    };
+  }, [socket, isContractor]);
+
   const updateOrderInList = (updated) => {
-    setOrders(orders.map(o => o._id === updated._id ? updated : o));
+    setOrders(prev => prev.map(o => o._id === updated._id ? updated : o));
   };
 
-  const filtered = orders.filter(o => statusFilter === "all" || o.status === statusFilter);
+  const handleAccepted = (orderId, scope) => {
+    if (scope === 'district') {
+      fetchOrders();
+    } else {
+      setOrders(prev => prev.map(o => o._id === orderId ? { ...o, status: 'accepted' } : o));
+    }
+  };
+
+  const handleRejected = (orderId) => {
+    setOrders(prev => prev.filter(o => o._id !== orderId));
+  };
+
+  const filtered    = orders.filter(o => statusFilter === "all" || o.status === statusFilter);
   const breachedCount = orders.filter(o => o.slaBreach).length;
 
   return (
     <div className="p-6 space-y-8 max-w-7xl mx-auto">
       <PageHeader 
         title="Infrastructure Directives"
-        subtitle={user?.role === "contractor" ? "Allocated tasks requiring operational resolution" : "Operational oversight of district-wide maintenance assignments"}
+        subtitle={isContractor ? "Allocated tasks requiring operational resolution" : "Operational oversight of district-wide maintenance assignments"}
         icon={Hammer}
         actions={
           canAssign && (
@@ -214,7 +328,7 @@ export default function WorkOrders() {
 
       {/* Status filter tabs */}
       <div className="flex border-b border-slate-200">
-        {["all", "pending", "assigned", "in_progress", "completed"].map(s => (
+        {["all", "pending", "assigned", "accepted", "in_progress", "completed"].map(s => (
           <button
             key={s}
             onClick={() => setStatusFilter(s)}
@@ -245,10 +359,12 @@ export default function WorkOrders() {
       ) : (
         <div className="grid gap-6">
           {filtered.map(order => {
-            const sc = STATUS_CONFIG[order.status];
-            const isAssignedToMe = user?.role === "contractor" && order.assignedTo?._id === user.id;
-            const canComplete = isAssignedToMe || canAssign;
-            
+            const sc = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
+            const assignedToId = order.assignment?.assignedTo?._id || order.assignment?.assignedTo;
+            const isAssignedToMe = isContractor && assignedToId?.toString() === user.id;
+            const canComplete    = isAssignedToMe || canAssign;
+            const canRespond     = isContractor && ['assigned', 'pending'].includes(order.status) && isAssignedToMe;
+
             return (
               <Card 
                 key={order._id}
@@ -265,9 +381,9 @@ export default function WorkOrders() {
                       <Badge variant={order.priority === 'critical' || order.priority === 'high' ? 'high' : 'default'} size="lg">
                         {order.priority}
                       </Badge>
-                      
-                      {order.slaBreach && (
-                        <Badge variant="critical" size="lg">SLA Breach</Badge>
+                      {order.slaBreach && <Badge variant="critical" size="lg">SLA Breach</Badge>}
+                      {order._isNew && (
+                        <Badge variant="info" size="lg" className="animate-pulse">New Assignment</Badge>
                       )}
                     </div>
                     
@@ -280,12 +396,12 @@ export default function WorkOrders() {
                       </div>
                       <div>
                         <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Designated Personnel</p>
-                        <p className="text-xs text-slate-900 font-bold">{order.assignedTo?.name || "Unassigned"}</p>
+                        <p className="text-xs text-slate-900 font-bold">{order.assignment?.assignedTo?.name || "Unassigned"}</p>
                       </div>
                       <div>
                         <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-1.5">Authorized Deadline</p>
                         <p className={`text-xs font-bold ${order.slaBreach ? 'text-red-600' : 'text-slate-900'}`}>
-                          {order.dueDate ? new Date(order.dueDate).toLocaleDateString() : 'Unscheduled'}
+                          {order.deadline ? new Date(order.deadline).toLocaleDateString() : 'Unscheduled'}
                         </p>
                       </div>
                       <div>
@@ -302,12 +418,50 @@ export default function WorkOrders() {
                         {order.completionNotes}
                       </div>
                     )}
+
+                    {/* Accept / Reject panels */}
+                    {acceptingId === order._id && (
+                      <AcceptModal
+                        order={order}
+                        onAccepted={handleAccepted}
+                        onClose={() => setAcceptingId(null)}
+                      />
+                    )}
+                    {rejectingId === order._id && (
+                      <RejectModal
+                        order={order}
+                        onRejected={handleRejected}
+                        onClose={() => setRejectingId(null)}
+                      />
+                    )}
                   </div>
 
                   <div className="flex flex-col items-end gap-3 shrink-0">
                     <Badge variant={order.status === 'completed' ? 'low' : order.status === 'in_progress' ? 'moderate' : 'info'} size="lg">
                       {sc.label}
                     </Badge>
+
+                    {/* Contractor: Accept / Reject buttons */}
+                    {canRespond && order.status !== 'accepted' && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => { setAcceptingId(order._id); setRejectingId(null); }}
+                          className="w-full"
+                        >
+                          <CheckCircle size={14} className="mr-1 text-teal-600" /> Accept
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => { setRejectingId(order._id); setAcceptingId(null); }}
+                          className="w-full"
+                        >
+                          <XCircle size={14} className="mr-1 text-red-500" /> Reject
+                        </Button>
+                      </>
+                    )}
                     
                     {order.status !== "completed" && order.status !== "cancelled" && canComplete && (
                       <Button

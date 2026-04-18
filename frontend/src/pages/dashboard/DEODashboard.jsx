@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, animate } from 'framer-motion';
 import { useNavigate } from "react-router-dom";
 import { get } from "../../services/api";
+import useSocket from "../../hooks/useSocket";
 import EvidenceDrawer from "../../components/common/EvidenceDrawer";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
@@ -48,7 +49,7 @@ export default function DEODashboard() {
   const [district, setDistrict] = useState("");
   const [block, setBlock] = useState("");
   const [category, setCategory] = useState("");
-  const [urgency, setUrgency] = useState(60);
+  const [urgency, setUrgency] = useState(365);   // show all forwarded issues ≤ 1 year
   const [selectedSchool, setSelectedSchool] = useState(null);
   const [lastSync, setLastSync] = useState(new Date());
   
@@ -57,8 +58,10 @@ export default function DEODashboard() {
   const [alerts, setAlerts] = useState([]);
   const [showNotificationPanel, setShowNotificationPanel] = useState(false);
   const [schoolsList, setSchoolsList] = useState([]);
-  
+  const [newItemIds, setNewItemIds] = useState(new Set());
+
   const navigate = useNavigate();
+  const socket   = useSocket();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -87,6 +90,26 @@ export default function DEODashboard() {
   }, [district, block, category, urgency]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Real-time: when a principal forwards a report, refresh the queue
+  useEffect(() => {
+    if (!socket) return;
+    const handler = ({ request }) => {
+      fetchData();
+      if (request?.schoolId) {
+        setNewItemIds(prev => new Set([...prev, String(request.schoolId)]));
+        setTimeout(() => {
+          setNewItemIds(prev => { const next = new Set(prev); next.delete(String(request.schoolId)); return next; });
+        }, 6000);
+      }
+    };
+    socket.on('maintenance:created', handler);
+    socket.on('report:forwarded',    handler);
+    return () => {
+      socket.off('maintenance:created', handler);
+      socket.off('report:forwarded',    handler);
+    };
+  }, [socket, fetchData]);
 
   const stats = {
     totalSchools: data.length,
@@ -173,8 +196,10 @@ export default function DEODashboard() {
                   ) : data.length === 0 ? (
                     <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-medium text-sm">No critical risk nodes identified in current registry scan.</td></tr>
                   ) : (
-                    data.map((s, idx) => (
-                      <tr key={idx} onClick={() => setSelectedSchool(s)} className="trow border-b border-slate-50 cursor-pointer">
+                    data.map((s, idx) => {
+                      const isNew = newItemIds.has(String(s.schoolId));
+                      return (
+                      <tr key={idx} onClick={() => setSelectedSchool(s)} className={`trow border-b cursor-pointer transition-colors ${isNew ? "border-emerald-200 bg-emerald-50/40" : "border-slate-50"}`}>
                         <td className="px-6 py-4">
                           <Button 
                             variant="outline" 
@@ -186,12 +211,15 @@ export default function DEODashboard() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded bg-slate-900 text-white flex items-center justify-center font-bold text-[10px]">
-                              {s.schoolName.charAt(0)}
+                            <div className={`w-8 h-8 rounded text-white flex items-center justify-center font-bold text-[10px] ${isNew ? "bg-emerald-600 ring-2 ring-emerald-300 animate-pulse" : "bg-slate-900"}`}>
+                              {(s.schoolName || '?').charAt(0)}
                             </div>
                             <div>
-                              <div className="text-xs font-bold text-slate-900">{s.schoolName}</div>
-                              <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{s.block}, {s.district}</div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-slate-900">{s.schoolName || `School ${s.schoolId}`}</span>
+                                {isNew && <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 border border-emerald-300">New</span>}
+                              </div>
+                              <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{s.block ? `${s.block}, ` : ''}{s.district}</div>
                             </div>
                           </div>
                         </td>
@@ -218,12 +246,12 @@ export default function DEODashboard() {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-slate-900">{s.studentImpactScore}</span>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Impact</span>
+                            <span className="text-sm font-bold text-slate-900">{s.studentImpactScore ?? '—'}</span>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Students</span>
                           </div>
                         </td>
                       </tr>
-                    ))
+                    )})
                   )
                 ) : (
                   // FLAGGED MISMATCH TAB

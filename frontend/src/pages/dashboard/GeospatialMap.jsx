@@ -1,15 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import React, { useState, useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.heat';
 import { get } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { Globe, RefreshCw, AlertTriangle, Building, ShieldCheck } from 'lucide-react';
+import { Globe, RefreshCw, AlertTriangle, Building, ShieldCheck, Layers } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import MetricCard from '../../components/common/MetricCard';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
+import useSocket from '../../hooks/useSocket';
+import { API_BASE } from '../../services/api';
 
 // Global Leaflet fix for base markers, though we use custom ones
 delete L.Icon.Default.prototype._getIconUrl;
@@ -20,11 +23,11 @@ L.Icon.Default.mergeOptions({
 });
 
 function getMarkerColor(score) {
-  if (score == null) return '#64748b'; // No risk data (slate)
-  if (score >= 80) return '#ef4444';   // Critical (red)
-  if (score >= 60) return '#f97316';   // High (orange)
-  if (score >= 40) return '#f59e0b';   // Moderate (amber)
-  return '#10b981';                    // Low (emerald)
+  if (score == null) return '#64748b';
+  if (score >= 80) return '#ef4444';
+  if (score >= 60) return '#f97316';
+  if (score >= 40) return '#f59e0b';
+  return '#10b981';
 }
 
 function getRiskLevel(score) {
@@ -55,16 +58,85 @@ const createCustomIcon = (score) => {
   });
 };
 
+// ─── HeatmapLayer component (uses leaflet.heat imperatively) ─────────────────
+function HeatmapLayer({ heatmapData, visible }) {
+  const map = useMap();
+  const heatRef = useRef(null);
+
+  useEffect(() => {
+    if (!map) return;
+    if (heatRef.current) {
+      map.removeLayer(heatRef.current);
+      heatRef.current = null;
+    }
+    if (visible && heatmapData.length > 0) {
+      heatRef.current = L.heatLayer(heatmapData, {
+        radius: 35,
+        blur: 25,
+        gradient: { 0.4: '#22c55e', 0.65: '#f59e0b', 1.0: '#ef4444' },
+      }).addTo(map);
+    }
+    return () => {
+      if (heatRef.current) {
+        map.removeLayer(heatRef.current);
+        heatRef.current = null;
+      }
+    };
+  }, [map, heatmapData, visible]);
+
+  return null;
+}
+
+// ─── Map Legend component ────────────────────────────────────────────────────
+function MapLegend() {
+  const map = useMap();
+
+  useEffect(() => {
+    const legend = L.control({ position: 'bottomleft' });
+    legend.onAdd = () => {
+      const div = L.DomUtil.create('div', '');
+      div.innerHTML = `
+        <div style="background:white;padding:10px 14px;border-radius:8px;border:1px solid #e2e8f0;font-size:11px;font-family:sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.1)">
+          <div style="font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;color:#0f172a">Risk Level</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#10b981"></span> Low (&lt;40)</div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#f59e0b"></span> Medium (40–70)</div>
+          <div style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#ef4444"></span> Critical (&gt;70)</div>
+        </div>
+      `;
+      return div;
+    };
+    legend.addTo(map);
+    return () => legend.remove();
+  }, [map]);
+
+  return null;
+}
+
 export default function GeospatialMap() {
   const { user } = useAuth();
+  const socket = useSocket();
   const [schools, setSchools] = useState([]);
+  const [heatmapData, setHeatmapData] = useState([]);
+  const [heatmapSchools, setHeatmapSchools] = useState([]);
+  const [heatmapVisible, setHeatmapVisible] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
+
+  const fetchHeatmap = async () => {
+    const res = await get('/api/risk/heatmap');
+    if (res.success && res.heatmap) {
+      setHeatmapSchools(res.heatmap);
+      setHeatmapData(
+        res.heatmap
+          .filter(s => s.lat && s.lng)
+          .map(s => [s.lat, s.lng, (s.maxPriorityScore || 0) / 100])
+      );
+    }
+  };
 
   const fetchMapData = async () => {
     setLoading(true);
     try {
-      // Fetch both coordinates and risk data simultaneously
       const [schoolsRes, riskRes] = await Promise.all([
         get('/api/schools'),
         get('/api/risk/queue')
@@ -73,13 +145,11 @@ export default function GeospatialMap() {
       if (schoolsRes.success) {
         let mergedSchools = schoolsRes.schools;
         
-        // Merge priority scores into the school data
         if (riskRes.success && riskRes.queue) {
           const riskMap = {};
           riskRes.queue.forEach(r => {
             riskMap[r.schoolId] = r.priorityScore;
           });
-          
           mergedSchools = mergedSchools.map(s => ({
             ...s,
             priorityScore: riskMap[s.schoolId] ?? null
@@ -88,6 +158,8 @@ export default function GeospatialMap() {
 
         setSchools(mergedSchools);
       }
+
+      await fetchHeatmap();
     } catch (err) {
       console.error("Map fetch error:", err);
     }
@@ -97,7 +169,6 @@ export default function GeospatialMap() {
   useEffect(() => {
     fetchMapData();
     
-    // Get user's current location
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -113,6 +184,14 @@ export default function GeospatialMap() {
     }
   }, []);
 
+  // Socket: re-fetch heatmap when a maintenance decision is created
+  useEffect(() => {
+    if (!socket) return;
+    const handler = () => fetchHeatmap();
+    socket.on('maintenance:created', handler);
+    return () => socket.off('maintenance:created', handler);
+  }, [socket]);
+
   if (!user || (user.role !== 'deo' && user.role !== 'admin')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 font-body">
@@ -121,14 +200,16 @@ export default function GeospatialMap() {
     );
   }
 
-  // Calculate stats for the header
-  const total = schools.length;
+  const total    = schools.length;
   const critical = schools.filter(s => s.priorityScore >= 80).length;
-  const safe = schools.filter(s => s.priorityScore != null && s.priorityScore < 40).length;
+  const safe     = schools.filter(s => s.priorityScore != null && s.priorityScore < 40).length;
+
+  // Build lookup from heatmapSchools for popup enrichment
+  const heatMap = {};
+  heatmapSchools.forEach(hs => { heatMap[hs.schoolId] = hs; });
 
   return (
     <div className="p-6 h-screen flex flex-col space-y-8 overflow-hidden">
-      {/* CSS overrides for Leaflet Popups to match Bento Box theme */}
       <style>{`
         .leaflet-popup-content-wrapper {
           border-radius: 8px;
@@ -147,13 +228,23 @@ export default function GeospatialMap() {
         subtitle="Live structural risk matrix across regional infrastructure nodes"
         icon={Globe}
         actions={
-          <Button 
-            variant="primary" 
-            isLoading={loading} 
-            onClick={fetchMapData}
-          >
-            Refresh Node Registry
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={heatmapVisible ? 'primary' : 'secondary'}
+              size="sm"
+              onClick={() => setHeatmapVisible(v => !v)}
+            >
+              <Layers size={14} className="mr-1.5" />
+              Heatmap
+            </Button>
+            <Button 
+              variant="primary" 
+              isLoading={loading} 
+              onClick={fetchMapData}
+            >
+              Refresh Node Registry
+            </Button>
+          </div>
         }
       />
 
@@ -178,17 +269,20 @@ export default function GeospatialMap() {
             zoom={6} 
             style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}
           >
-            {/* White-themed CartoDB Positron tiles */}
             <TileLayer
               url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
             />
+
+            <HeatmapLayer heatmapData={heatmapData} visible={heatmapVisible} />
+            <MapLegend />
             
             {schools.map((school, idx) => {
                if (!school.location || !school.location.lat) return null;
                
-               const color = getMarkerColor(school.priorityScore);
-               const level = getRiskLevel(school.priorityScore);
+               const color  = getMarkerColor(school.priorityScore);
+               const level  = getRiskLevel(school.priorityScore);
+               const hsData = heatMap[school.schoolId];
 
                return (
                  <Marker 
@@ -197,25 +291,45 @@ export default function GeospatialMap() {
                    icon={createCustomIcon(school.priorityScore)}
                  >
                     <Popup>
-                      <div className="p-4 bg-white min-w-[220px]">
-                        <div className="mb-4">
+                      <div className="p-4 bg-white min-w-[240px]">
+                        <div className="mb-3">
                           <h3 className="font-bold text-slate-900 text-sm leading-tight uppercase tracking-tight">{school.name}</h3>
                           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mt-1">{school.district}</p>
                         </div>
                         
-                        <div className="flex items-center justify-between gap-4 p-3 rounded bg-slate-50 border border-slate-100">
+                        <div className="flex items-center justify-between gap-4 p-3 rounded bg-slate-50 border border-slate-100 mb-2">
                           <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Designation</span>
                           <Badge variant={level.toLowerCase()} size="sm">
                             {level} {school.priorityScore ? `(${Math.round(school.priorityScore)})` : ''}
                           </Badge>
                         </div>
+
+                        {hsData && (
+                          <>
+                            <div className="text-[10px] font-bold text-slate-600 mt-2">
+                              Open issues: {hsData.openCount || 0}
+                            </div>
+                            {hsData.categories?.length > 0 && (
+                              <div className="text-[10px] font-bold text-slate-600">
+                                Categories: {hsData.categories.join(', ')}
+                              </div>
+                            )}
+                            {hsData.latestDecisionId && (
+                              <button
+                                onClick={() => window.open(`${API_BASE}/api/reports/${hsData.latestDecisionId}/pdf`, '_blank')}
+                                className="mt-2 w-full text-[10px] font-bold uppercase tracking-widest py-1.5 px-3 bg-slate-900 text-white rounded hover:bg-slate-700 transition-colors"
+                              >
+                                Download Report
+                              </button>
+                            )}
+                          </>
+                        )}
                       </div>
                     </Popup>
                  </Marker>
                );
             })}
                 
-                {/* User Location Marker */}
                 {userLocation && (
                   <Marker 
                     position={[userLocation.lat, userLocation.lng]}
