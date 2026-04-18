@@ -4,6 +4,7 @@
  */
 import mongoose from 'mongoose';
 import { WorkOrder, MaintenanceDecision, RepairLog, SchoolConditionRecord, School, Alert } from '../models/index.js';
+import cloudinary from '../config/cloudinary.js';
 import { getIO } from '../socket/index.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
 
@@ -145,7 +146,8 @@ export const assignTask = async (req, res) => {
 // PS-03 learning rule: create a RepairLog recording before/after state
 export const completeTask = async (req, res) => {
   try {
-    const { workOrderId, afterConditionScore, beforeConditionScore, notes, lat, lng, photoUrl } = req.body;
+    const { workOrderId, afterConditionScore, beforeConditionScore, notes, lat, lng } = req.body;
+    let { photoUrl } = req.body;
 
     const workOrder = await WorkOrder.findById(workOrderId);
     if (!workOrder) {
@@ -157,6 +159,22 @@ export const completeTask = async (req, res) => {
     const isAuthorised = isContractor || ['deo', 'admin'].includes(req.user?.role);
     if (!isAuthorised) {
       return res.status(403).json({ success: false, message: 'Not authorised' });
+    }
+
+    // 0. Cloudinary Upload for completion image
+    if (req.file) {
+      try {
+        const result = await new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            { folder: 'saksham/completion_proofs' },
+            (err, res) => err ? reject(err) : resolve(res)
+          );
+          stream.end(req.file.buffer);
+        });
+        photoUrl = result.secure_url;
+      } catch (uploadErr) {
+        console.warn('Cloudinary completion upload failed:', uploadErr.message);
+      }
     }
 
     // 1. GPS Validation

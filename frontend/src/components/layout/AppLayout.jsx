@@ -353,8 +353,6 @@ export default function AppLayout({ children }) {
       }`}>
         {children}
       </main>
-
-      <Footer />
     </div>
   );
 }

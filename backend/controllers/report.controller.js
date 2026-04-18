@@ -4,6 +4,7 @@
  * GET  /api/reports/:school_id → returns records for one school
  */
 import { SchoolConditionRecord, MaintenanceDecision, School, ReportImage } from '../models/index.js';
+import cloudinary from '../config/cloudinary.js';
 import { predictRiskForCategory } from '../services/predictionEngine.js';
 import { predictWithLR } from '../services/lrModel.js';
 import { recomputeDistrictAnalytics } from '../services/districtAnalytics.js';
@@ -33,19 +34,60 @@ const parseBool = (val) => val === true || val === 'true' || val === '1' || val 
  * Returns `/api/images/<id>` — the same URL shape the frontend already
  * concatenates onto API_BASE.
  */
-async function persistImageToMongo(file, ctx = {}) {
+/**
+ * Uploads a multer memory file to Cloudinary and returns the secure URL.
+ */
+async function uploadImageToCloudinary(file) {
   if (!file || !file.buffer) return null;
-  const doc = await ReportImage.create({
-    schoolId:    ctx.schoolId,
-    weekNumber:  ctx.weekNumber,
-    category:    ctx.category,
-    uploadedBy:  ctx.uploadedBy,
-    originalName:file.originalname,
-    mimeType:    file.mimetype,
-    sizeBytes:   file.size,
-    data:        file.buffer,
+
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      { folder: 'saksham/reports' },
+      (error, result) => {
+        if (error) {
+          console.error('Cloudinary upload error:', error);
+          return reject(error);
+        }
+        resolve(result.secure_url);
+      }
+    );
+    uploadStream.end(file.buffer);
   });
-  return `/api/images/${doc._id}`;
+}
+
+/**
+ * Robust helper to fetch the School profile and use its values if the submission
+ * lacks district, schoolType, materialType, etc.
+ */
+async function augmentWithSchoolMetadata(payload, user) {
+  const school = await School.findOne({ schoolId: payload.schoolId }).lean();
+  
+  const merged = { ...payload };
+
+  // Helper to pick the first "real" value (not undefined, not null, not empty string)
+  const pick = (val1, val2, val3) => {
+    if (val1 !== undefined && val1 !== null && val1 !== "") return val1;
+    if (val2 !== undefined && val2 !== null && val2 !== "") return val2;
+    if (val3 !== undefined && val3 !== null && val3 !== "") return val3;
+    return undefined;
+  };
+
+  merged.district      = pick(payload.district,      school?.district, user?.district);
+  merged.block         = pick(payload.block,         school?.block);
+  merged.schoolType    = pick(payload.schoolType,    school?.schoolType);
+  merged.isGirlsSchool = payload.isGirlsSchool ?? school?.isGirlsSchool ?? false;
+  merged.numStudents   = payload.numStudents   || school?.numStudents || 0;
+  merged.buildingAge   = payload.buildingAge   || school?.infrastructure?.buildingAge || 0;
+  merged.materialType  = pick(payload.materialType,  school?.infrastructure?.materialType);
+  merged.weatherZone   = pick(payload.weatherZone,   school?.infrastructure?.weatherZone, 'Dry');
+
+  // CLEANUP: If an enum field is STILL empty string after merging, remove it so
+  // Mongoose validation doesn't block the save.
+  if (merged.schoolType === "")   delete merged.schoolType;
+  if (merged.materialType === "") delete merged.materialType;
+  if (merged.weatherZone === "")  delete merged.weatherZone;
+
+  return merged;
 }
 
 // POST /api/reports
@@ -90,7 +132,7 @@ export const submitReport = async (req, res) => {
       ? [req.file]
       : [];
     const imageUrls = (
-      await Promise.all(incomingFiles.map(f => persistImageToMongo(f, ctxForImages)))
+      await Promise.all(incomingFiles.map(f => uploadImageToCloudinary(f)))
     ).filter(Boolean);
 
     const hasPhoto      = imageUrls.length > 0;
@@ -145,6 +187,12 @@ export const submitReport = async (req, res) => {
     const record = await SchoolConditionRecord.findOneAndUpdate(
       { schoolId: Number(schoolId), category, weekNumber: Number(weekNumber) },
       { $set: updatePayload, ...unsetClause },
+    // ── FALLBACK: Load missing metadata from School doc ─────────────────────
+    const finalPayload = await augmentWithSchoolMetadata(updatePayload, req.user);
+
+    const record = await SchoolConditionRecord.findOneAndUpdate(
+      { schoolId: Number(schoolId), category, weekNumber: Number(weekNumber) },
+      finalPayload,
       { upsert: true, new: true, runValidators: true },
     );
 
@@ -169,11 +217,11 @@ export const submitReport = async (req, res) => {
 
     const prediction = await predictRiskForCategory({
       weekHistory,
-      buildingAge:   Number(buildingAge)  || 20,
-      weatherZone:   weatherZone           || 'Dry',
+      buildingAge:   Number(finalPayload.buildingAge)   || 20,
+      weatherZone:   finalPayload.weatherZone           || 'Dry',
       category,
-      isGirlsSchool: parseBool(isGirlsSchool),
-      numStudents:   Number(numStudents)   || 0,
+      isGirlsSchool: parseBool(finalPayload.isGirlsSchool),
+      numStudents:   Number(finalPayload.numStudents)   || 0,
       flags: {
         waterLeak:             parseBool(waterLeak),
         wiringExposed:         parseBool(wiringExposed),
@@ -197,9 +245,9 @@ export const submitReport = async (req, res) => {
     // ── Machine-learning (LR) prediction — runs alongside heuristic engine ──
     const lr = predictWithLR({
       conditionScore:        Number(conditionScore),
-      buildingAge:           Number(buildingAge) || 20,
-      numStudents:           Number(numStudents) || 0,
-      isGirlsSchool:         parseBool(isGirlsSchool),
+      buildingAge:           Number(finalPayload.buildingAge) || 20,
+      numStudents:           Number(finalPayload.numStudents) || 0,
+      isGirlsSchool:         parseBool(finalPayload.isGirlsSchool),
       waterLeak:             parseBool(waterLeak),
       wiringExposed:         parseBool(wiringExposed),
       roofLeakFlag:          parseBool(roofLeakFlag),
@@ -207,7 +255,7 @@ export const submitReport = async (req, res) => {
       crackWidthMM:          Number(crackWidthMM)        || 0,
       toiletFunctionalRatio: toiletRatioVal ?? 1,
       powerOutageHours:      Number(powerOutageHours)    || 0,
-      weatherZone:           weatherZone || 'Dry',
+      weatherZone:           finalPayload.weatherZone || 'Dry',
       category,
     });
 
@@ -247,7 +295,7 @@ export const submitReport = async (req, res) => {
       category,
       conditionScore: Number(conditionScore),
     });
-    refreshDistrict(district);
+    refreshDistrict(finalPayload.district);
 
     res.status(201).json({
       success: true,
@@ -337,6 +385,9 @@ export const submitWeeklyReport = async (req, res) => {
       weekNumber: Number(weekNumber),
     };
 
+    // ── FALLBACK: Load missing metadata from School doc (once per bundled call) ──
+    const augmentedBase = await augmentWithSchoolMetadata(baseMeta, req.user);
+
     const categoryResults = [];
 
     for (const c of categories) {
@@ -351,16 +402,11 @@ export const submitWeeklyReport = async (req, res) => {
       }
 
       const imgFile = filesByCat[cat];
-      const persistedUrl = imgFile ? await persistImageToMongo(imgFile, {
-        schoolId:   Number(schoolId),
-        weekNumber: Number(weekNumber),
-        category:   cat,
-        uploadedBy: req.user?._id || req.user?.id,
-      }) : null;
+      const persistedUrl = imgFile ? await uploadImageToCloudinary(imgFile) : null;
       const imageUrls = persistedUrl ? [persistedUrl] : [];
 
       const updatePayload = {
-        ...baseMeta,
+        ...augmentedBase,
         category: cat,
         conditionScore: Number(c.conditionScore),
         issueFlag:        parseBool(c.issueFlag),
@@ -414,11 +460,11 @@ export const submitWeeklyReport = async (req, res) => {
 
       const prediction = await predictRiskForCategory({
         weekHistory,
-        buildingAge:   Number(buildingAge) || 20,
-        weatherZone:   weatherZone || 'Dry',
+        buildingAge:   Number(augmentedBase.buildingAge) || 20,
+        weatherZone:   augmentedBase.weatherZone         || 'Dry',
         category:      cat,
-        isGirlsSchool: parseBool(isGirlsSchool),
-        numStudents:   Number(numStudents) || 0,
+        isGirlsSchool: parseBool(augmentedBase.isGirlsSchool),
+        numStudents:   Number(augmentedBase.numStudents) || 0,
         flags: {
           waterLeak:             parseBool(c.waterLeak),
           wiringExposed:         parseBool(c.wiringExposed),
@@ -441,9 +487,9 @@ export const submitWeeklyReport = async (req, res) => {
       // ── Machine-learning (LR) prediction for this category ─────────────────
       const lr = predictWithLR({
         conditionScore:        Number(c.conditionScore),
-        buildingAge:           Number(buildingAge) || 20,
-        numStudents:           Number(numStudents) || 0,
-        isGirlsSchool:         parseBool(isGirlsSchool),
+        buildingAge:           Number(augmentedBase.buildingAge) || 20,
+        numStudents:           Number(augmentedBase.numStudents) || 0,
+        isGirlsSchool:         parseBool(augmentedBase.isGirlsSchool),
         waterLeak:             parseBool(c.waterLeak),
         wiringExposed:         parseBool(c.wiringExposed),
         roofLeakFlag:          parseBool(c.roofLeakFlag),
@@ -451,7 +497,7 @@ export const submitWeeklyReport = async (req, res) => {
         crackWidthMM:          Number(c.crackWidthMM)        || 0,
         toiletFunctionalRatio: toiletRatioVal ?? 1,
         powerOutageHours:      Number(c.powerOutageHours)    || 0,
-        weatherZone:           weatherZone || 'Dry',
+        weatherZone:           augmentedBase.weatherZone || 'Dry',
         category:              cat,
       });
 
@@ -516,7 +562,7 @@ export const submitWeeklyReport = async (req, res) => {
       weekNumber: Number(weekNumber),
       categories: categoryResults.map(r => r.category),
     });
-    refreshDistrict(req.body.district);
+    refreshDistrict(augmentedBase.district);
 
     res.status(201).json({
       success: categoryResults.every(r => r.success),

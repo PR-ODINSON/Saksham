@@ -12,6 +12,7 @@ import fs          from 'fs';
 import path        from 'path';
 import { fileURLToPath } from 'url';
 import { SchoolConditionRecord, School, User, ReportImage } from '../models/index.js';
+import cloudinary from '../config/cloudinary.js';
 import { predictRiskForCategory } from './predictionEngine.js';
 
 const __dirname   = path.dirname(fileURLToPath(import.meta.url));
@@ -37,7 +38,12 @@ async function resolveImageSource(src) {
   if (!src) return null;
   if (typeof src !== 'string') return null;
 
-  // New format: bytes live in MongoDB
+  // Cloudinary URLs
+  if (src.startsWith('http')) {
+    return src;
+  }
+
+  // Legacy MongoDB format
   if (src.startsWith('/api/images/')) {
     const id = src.slice('/api/images/'.length);
     try {
@@ -433,5 +439,15 @@ export async function generateAndSendPDF(reportId) {
     doc.end();
   });
 
-  return filePath;
+  // ── Upload the generated PDF to Cloudinary ────────────────────────────────
+  const result = await cloudinary.uploader.upload(filePath, {
+    folder: 'saksham/pdf_reports',
+    resource_type: 'raw', // PDF needs to be treated as raw/auto
+    access_mode: 'public',
+  });
+
+  // Optional: Delete the local temp file after upload
+  try { fs.unlinkSync(filePath); } catch (_) {}
+
+  return result.secure_url;
 }
