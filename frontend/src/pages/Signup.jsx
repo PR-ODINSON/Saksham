@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Building2, User, Mail, Lock, Phone, MapPin, 
   ShieldCheck, ArrowRight, Loader2, Sparkles,
-  School as SchoolIcon, Briefcase
+  School as SchoolIcon, Briefcase, Activity, AlertTriangle
 } from 'lucide-react';
 
 const ROLES = [
@@ -23,10 +23,10 @@ const GLOBAL_STYLES = `
     border: 2px solid #0f172a;
     box-shadow: 8px 8px 0 rgba(15, 23, 42, 0.1);
   }
-  .grid-lines {
+  .grid-lines-dark {
     background-image: 
-      linear-gradient(rgba(30, 58, 138, 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(30, 58, 138, 0.05) 1px, transparent 1px);
+      linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
     background-size: 40px 40px;
   }
 `;
@@ -81,65 +81,117 @@ const Signup = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white grid-lines flex items-center justify-center p-6 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-white flex font-sans font-body selection:bg-blue-200">
       <style>{GLOBAL_STYLES}</style>
       
-      {/* Background Accents */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-blue-100/30 rounded-full blur-[100px] -mr-48 -mt-48" />
-      <div className="absolute bottom-0 left-0 w-96 h-96 bg-slate-100/30 rounded-full blur-[100px] -ml-48 -mb-48" />
+      {/* LEFT PANEL - BRANDING & VISUALS (Hidden on mobile) */}
+      <div className="hidden lg:flex w-[45%] bg-[#0f172a] grid-lines-dark relative flex-col justify-between p-12 overflow-hidden border-r-4 border-slate-900">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[120px] -mr-48 -mt-48 pointer-events-none" />
+        
+        {/* Top Logo Area */}
+        <div className="relative z-10 flex items-center gap-3">
+          <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-[4px_4px_0_#2563eb]">
+            <Sparkles size={24} className="text-[#0f172a]" />
+          </div>
+          <span className="text-3xl font-black text-white tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>Saksham</span>
+        </div>
 
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="w-full max-w-3xl relative z-10"
-      >
-        <div className="glass-card-terminal p-8 md:p-12 rounded-[2.5rem]">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-[#0f172a] rounded-lg flex items-center justify-center">
-                  <Sparkles size={20} className="text-white" />
-                </div>
-                <h1 className="text-2xl font-black text-[#0f172a] tracking-tight">Saksham <span className="text-blue-600">V3</span></h1>
+        {/* Center Content */}
+        <div className="relative z-10 my-auto">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border-2 border-blue-500/30 mb-6 backdrop-blur-sm">
+             <Activity size={14} className="text-blue-400" />
+             <span className="text-[10px] font-black text-blue-400 tracking-[0.2em] uppercase">Predictive Engine v3</span>
+          </div>
+          <h1 className="text-5xl lg:text-6xl font-black text-white leading-[1.1] mb-6" style={{ fontFamily: 'var(--font-display)' }}>
+            Build The <br />
+            <span className="text-blue-500">Infrastructure</span> <br />
+            Of Tomorrow.
+          </h1>
+          <p className="text-slate-400 text-lg max-w-md font-medium leading-relaxed">
+            Join the predictive maintenance network securing over 30,000+ schools. Stop failures before they happen.
+          </p>
+
+          {/* Floating Widget Mockup */}
+          <motion.div 
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+            className="mt-12 bg-white/5 border-2 border-white/10 backdrop-blur-md p-5 rounded-2xl max-w-xs shadow-2xl"
+          >
+             <div className="flex items-center gap-3 mb-3">
+               <div className="w-8 h-8 rounded-lg bg-red-500/20 flex items-center justify-center">
+                 <AlertTriangle size={16} className="text-red-400" />
+               </div>
+               <div>
+                 <p className="text-[10px] font-black text-red-400 uppercase tracking-widest">High Risk Detected</p>
+                 <p className="text-sm font-bold text-white">Structural Block B</p>
+               </div>
+             </div>
+             <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+               <motion.div 
+                 initial={{ width: "0%" }}
+                 animate={{ width: "85%" }}
+                 transition={{ duration: 1.5, delay: 0.5 }}
+                 className="h-full bg-red-500" 
+               />
+             </div>
+          </motion.div>
+        </div>
+
+        {/* Bottom Area */}
+        <div className="relative z-10 flex items-center justify-between text-slate-500 text-xs font-bold uppercase tracking-widest">
+          <span>© 2026 SAKSHAM</span>
+          <span className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            System Operational
+          </span>
+        </div>
+      </div>
+
+      {/* RIGHT PANEL - FORM */}
+      <div className="w-full lg:w-[55%] bg-slate-50 relative flex flex-col justify-center py-12 px-6 sm:px-12 md:px-20 lg:px-24 overflow-y-auto">
+        <motion.div 
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="w-full max-w-xl mx-auto"
+        >
+          <div className="mb-10">
+            {/* Mobile Logo */}
+            <div className="flex lg:hidden items-center gap-3 mb-8">
+              <div className="w-10 h-10 bg-[#0f172a] rounded-lg flex items-center justify-center shadow-[4px_4px_0_#2563eb]">
+                <Sparkles size={20} className="text-white" />
               </div>
-              <h2 className="text-4xl font-extrabold text-[#0f172a] tracking-tight mb-2">Create Account.</h2>
-              <p className="text-slate-500 font-bold text-sm uppercase tracking-widest">Access the predictive maintenance engine</p>
+              <span className="text-2xl font-black text-[#0f172a] tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>Saksham</span>
             </div>
-            
-            <div className="hidden md:block text-right">
-              <p className="text-xs font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Status</p>
-              <div className="flex items-center gap-2 justify-end">
-                <div className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-                <span className="text-[10px] font-black text-[#0f172a] uppercase tracking-widest">Protocol Active</span>
-              </div>
-            </div>
+
+            <h2 className="text-4xl sm:text-5xl font-black text-[#0f172a] tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)' }}>Initialize.</h2>
+            <p className="text-slate-500 font-bold text-sm uppercase tracking-[0.15em]">Set up your clearance profile</p>
           </div>
 
           {formError && (
             <motion.div 
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-8 p-4 bg-red-50 border-2 border-red-500 rounded-2xl text-red-600 text-xs font-bold flex items-center gap-3"
+              className="mb-8 p-4 bg-red-50 border-2 border-red-500 rounded-xl text-red-700 text-xs font-bold flex items-center gap-3 shadow-[4px_4px_0_#ef4444]"
             >
-              <div className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+              <div className="w-2 h-2 rounded-full bg-red-600 animate-ping" />
               {formError}
             </motion.div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-8">
             {/* Role Grid */}
-            <div className="space-y-4">
-              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">Select Access Protocol (RBAC)</label>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="space-y-3">
+              <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Select Access Level (RBAC)</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                 {ROLES.map((role) => (
                   <button 
                     type="button"
                     key={role.id}
                     onClick={() => setFormData(prev => ({ ...prev, role: role.id }))}
-                    className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
+                    className={`p-3 rounded-xl border-2 transition-all flex flex-col items-center justify-center gap-2 ${
                       formData.role === role.id 
-                        ? `${role.bg} ${role.border} ${role.text} shadow-[4px_4px_0_#0f172a]` 
-                        : 'bg-white border-slate-100 text-slate-400 hover:border-slate-300'
+                        ? `${role.bg} border-slate-900 ${role.text} shadow-[4px_4px_0_#0f172a] scale-[1.02]` 
+                        : 'bg-white border-slate-200 text-slate-400 hover:border-slate-400 hover:bg-slate-50'
                     }`}
                   >
                     {role.icon}
@@ -149,7 +201,7 @@ const Signup = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
               <InputGroup icon={<User size={18} />} label="Full Name" name="name" value={formData.name} onChange={handleChange} placeholder="Enter Full Name" />
               <InputGroup icon={<Mail size={18} />} label="Email Address" name="email" value={formData.email} onChange={handleChange} placeholder="name@org.gov" />
               <InputGroup icon={<Phone size={18} />} label="Contact Number" name="phone" value={formData.phone} onChange={handleChange} placeholder="+91 XXXX XXXX" />
@@ -158,7 +210,9 @@ const Signup = () => {
               <AnimatePresence>
                 {(formData.role === 'peon' || formData.role === 'principal') && (
                   <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="md:col-span-2 overflow-hidden">
-                    <InputGroup icon={<Building2 size={18} />} label="Canonical School ID" name="schoolId" value={formData.schoolId} onChange={handleChange} placeholder="Enter numeric school code" />
+                    <div className="pt-2">
+                      <InputGroup icon={<Building2 size={18} />} label="Canonical School ID" name="schoolId" value={formData.schoolId} onChange={handleChange} placeholder="Enter numeric school code" />
+                    </div>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -170,32 +224,32 @@ const Signup = () => {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-[#0f172a] hover:bg-blue-600 text-white font-black py-5 rounded-2xl transition-all flex items-center justify-center gap-3 shadow-[8px_8px_0_#2563eb] active:translate-x-1 active:translate-y-1 active:shadow-none disabled:opacity-50 mt-10"
+              className="w-full bg-[#0f172a] hover:bg-blue-600 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center gap-3 shadow-[6px_6px_0_#2563eb] active:translate-x-1 active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed mt-12 text-sm uppercase tracking-widest border-2 border-[#0f172a]"
             >
-              {isSubmitting ? <Loader2 className="animate-spin" /> : <><Sparkles size={20} /> Initialize Access Protocol</>}
+              {isSubmitting ? <Loader2 className="animate-spin" /> : <><Sparkles size={18} /> Authorize Clearance</>}
             </button>
           </form>
 
-          <p className="mt-10 text-center text-xs font-bold text-slate-400">
+          <p className="mt-10 text-center text-xs font-black uppercase tracking-widest text-slate-400">
             Already have clearance? {" "}
-            <Link to="/login" className="text-blue-600 hover:underline">Return to Hub</Link>
+            <Link to="/login" className="text-blue-600 hover:text-[#0f172a] transition-colors border-b-2 border-blue-600 hover:border-[#0f172a] pb-0.5">Return to Hub</Link>
           </p>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </div>
   );
 };
 
 const InputGroup = ({ icon, label, ...props }) => (
   <div className="space-y-2">
-    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-1">{label}</label>
+    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">{label}</label>
     <div className="relative group">
-      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600">
+      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
         {icon}
       </div>
       <input
         {...props}
-        className="w-full bg-slate-50 border-2 border-[#0f172a] text-[#0f172a] pl-11 pr-4 py-4 rounded-xl outline-none focus:bg-white focus:shadow-[4px_4px_0_#2563eb] transition-all font-bold placeholder:text-slate-300"
+        className="w-full bg-white border-2 border-slate-300 text-[#0f172a] pl-11 pr-4 py-3.5 rounded-xl outline-none focus:border-slate-900 focus:shadow-[4px_4px_0_#0f172a] hover:border-slate-400 transition-all font-bold placeholder:text-slate-300 text-sm"
       />
     </div>
   </div>

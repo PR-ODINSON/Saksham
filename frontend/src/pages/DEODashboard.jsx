@@ -2,32 +2,31 @@ import { useState, useEffect, useCallback } from "react";
 import { get } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import EvidenceDrawer from "../components/EvidenceDrawer";
-
-const RISK_CONFIG = {
-  critical: { color: "text-red-400", bg: "bg-red-500/15 border-red-500/40", badge: "bg-red-500 text-white", bar: "bg-red-500" },
-  high: { color: "text-orange-400", bg: "bg-orange-500/15 border-orange-500/40", badge: "bg-orange-500 text-white", bar: "bg-orange-500" },
-  moderate: { color: "text-amber-400", bg: "bg-amber-500/15 border-amber-500/40", badge: "bg-amber-500 text-white", bar: "bg-amber-500" },
-  low: { color: "text-emerald-400", bg: "bg-emerald-500/15 border-emerald-500/40", badge: "bg-emerald-600 text-white", bar: "bg-emerald-500" },
-};
+import { Activity, LayoutList, CheckCircle2, ShieldCheck, Wrench, AlertTriangle } from 'lucide-react';
 
 const CATEGORY_COLORS = {
-  structural: "bg-purple-500/20 text-purple-300 border-purple-500/30",
-  electrical: "bg-amber-500/20 text-amber-300 border-amber-500/30",
-  plumbing: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  sanitation: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
-  furniture: "bg-slate-500/20 text-slate-300 border-slate-500/30",
+  structural: "bg-purple-100 text-purple-800 border-purple-300",
+  electrical: "bg-amber-100 text-amber-800 border-amber-300",
+  plumbing: "bg-blue-100 text-blue-800 border-blue-300",
+  sanitation: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  furniture: "bg-slate-100 text-slate-800 border-slate-300",
 };
 
 const CATEGORY_ICONS = {
   structural: "🏗️", electrical: "⚡", plumbing: "🔧", sanitation: "🚿", furniture: "🪑",
 };
 
-function StatCard({ label, value, sub, color = "text-white" }) {
+function StatCard({ label, value, sub, color = "text-slate-900", icon }) {
   return (
-    <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-5 shadow-sm">
-      <p className="text-slate-400 text-sm mb-1">{label}</p>
-      <p className={`text-3xl font-bold ${color}`}>{value}</p>
-      {sub && <p className="text-slate-500 text-xs mt-1">{sub}</p>}
+    <div className="bg-white border-2 border-slate-900 rounded-2xl p-5 shadow-[4px_4px_0_#0f172a] hover:-translate-y-1 transition-transform flex flex-col justify-between">
+      <div className="flex justify-between items-start mb-4">
+        <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">{label}</p>
+        {icon && <div className="text-blue-600">{icon}</div>}
+      </div>
+      <div>
+        <p className={`text-4xl font-black ${color}`} style={{ fontFamily: 'var(--font-display)' }}>{value}</p>
+        {sub && <p className="text-slate-600 text-xs mt-1 font-semibold">{sub}</p>}
+      </div>
     </div>
   );
 }
@@ -66,52 +65,57 @@ export default function DEODashboard() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+    <div className="p-6 space-y-8 max-w-7xl mx-auto min-h-screen bg-slate-50 font-body">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">District Maintenance Queue</h1>
-          <p className="text-slate-400 text-sm mt-0.5">Aggregated school risks and pending decisions</p>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border-2 border-slate-900 mb-3 shadow-[2px_2px_0_#2563eb]">
+             <ShieldCheck size={14} className="text-blue-600" />
+             <span className="text-[10px] font-black text-slate-900 tracking-widest uppercase">Dashboard Active</span>
+          </div>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>District Maintenance Queue</h1>
+          <p className="text-slate-600 text-sm mt-1 font-medium">Aggregated school risks and pending decisions</p>
         </div>
         <button
           onClick={() => navigate("/dashboard/work-orders")}
-          className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-all shadow-md active:scale-95"
+          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-black transition-all shadow-[4px_4px_0_#2563eb] active:translate-y-1 active:shadow-none border-2 border-slate-900"
         >
+          <LayoutList size={18} />
           Manage Work Orders
         </button>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard label="Schools at Risk" value={stats.totalSchools} sub="Across all categories" />
-        <StatCard label="Critical Priority" value={stats.criticalCount} color="text-red-400" sub="Immediate attention" />
-        <StatCard label="High Priority" value={stats.highRiskCount} color="text-orange-400" sub="Next 15-30 days" />
-        <StatCard label="Avg. Days to Failure" value={`${stats.avgUrgency}d`} sub="System-wide urgency" color="text-blue-400" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard label="Schools at Risk" value={stats.totalSchools} sub="Across all categories" icon={<Activity size={20} />} />
+        <StatCard label="Critical Priority" value={stats.criticalCount} color="text-red-600" sub="Immediate attention" icon={<AlertTriangle size={20} className="text-red-600" />} />
+        <StatCard label="High Priority" value={stats.highRiskCount} color="text-orange-500" sub="Next 15-30 days" />
+        <StatCard label="Avg. Days to Failure" value={`${stats.avgUrgency}d`} sub="System-wide urgency" color="text-blue-600" icon={<Wrench size={20} />} />
       </div>
 
       {/* Filters & Controls */}
-      <div className="flex flex-wrap gap-4 items-center bg-slate-800/40 p-4 rounded-xl border border-slate-700/50">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap gap-4 items-center bg-white p-5 rounded-2xl border-2 border-slate-900 shadow-[4px_4px_0_#0f172a]">
+        <div className="flex items-center gap-3">
           <input
             type="text"
             placeholder="Search district..."
             value={district}
             onChange={e => setDistrict(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm w-40 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            className="px-4 py-2.5 rounded-xl bg-slate-50 border-2 border-slate-200 text-slate-900 text-sm font-semibold w-40 focus:border-slate-900 focus:outline-none transition-colors"
           />
           <input
             type="text"
             placeholder="Search block..."
             value={block}
             onChange={e => setBlock(e.target.value)}
-            className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm w-40 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+            className="px-4 py-2.5 rounded-xl bg-slate-50 border-2 border-slate-200 text-slate-900 text-sm font-semibold w-40 focus:border-slate-900 focus:outline-none transition-colors"
           />
         </div>
 
         <select
           value={category}
           onChange={e => setCategory(e.target.value)}
-          className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+          className="px-4 py-2.5 rounded-xl bg-slate-50 border-2 border-slate-200 text-slate-900 text-sm font-semibold focus:border-slate-900 focus:outline-none transition-colors"
         >
           <option value="">All Categories</option>
           {Object.entries(CATEGORY_ICONS).map(([k, v]) => (
@@ -120,102 +124,102 @@ export default function DEODashboard() {
         </select>
 
         {/* Urgency Toggle */}
-        <div className="flex p-1 bg-slate-900 rounded-lg border border-slate-700">
+        <div className="flex p-1 bg-slate-100 rounded-xl border-2 border-slate-200">
           <button
             onClick={() => setUrgency(30)}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${urgency === 30 ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-300"}`}
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${urgency === 30 ? "bg-white text-slate-900 shadow-sm border-2 border-slate-900" : "text-slate-500 hover:text-slate-700 border-2 border-transparent"}`}
           >
             30 Days
           </button>
           <button
             onClick={() => setUrgency(60)}
-            className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${urgency === 60 ? "bg-blue-600 text-white shadow-sm" : "text-slate-500 hover:text-slate-300"}`}
+            className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${urgency === 60 ? "bg-white text-slate-900 shadow-sm border-2 border-slate-900" : "text-slate-500 hover:text-slate-700 border-2 border-transparent"}`}
           >
             60 Days
           </button>
         </div>
 
-        <button onClick={fetchData} className="ml-auto px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-sm border border-slate-600 transition-colors">
+        <button onClick={fetchData} className="ml-auto px-5 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 text-sm font-bold border-2 border-blue-200 transition-colors">
           Refresh Data
         </button>
       </div>
 
       {/* Main Table */}
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-24 space-y-4">
-          <div className="w-10 h-10 border-4 border-blue-600/20 border-t-blue-600 rounded-full animate-spin" />
-          <p className="text-slate-500 animate-pulse">Analyzing predictive queue...</p>
+        <div className="flex flex-col items-center justify-center py-32 space-y-4 bg-white border-2 border-slate-900 rounded-2xl shadow-[4px_4px_0_#0f172a]">
+          <div className="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin" />
+          <p className="text-slate-500 font-bold tracking-widest text-sm uppercase">Analyzing predictive queue...</p>
         </div>
       ) : (
-        <div className="bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden shadow-xl backdrop-blur-sm">
+        <div className="bg-white border-2 border-slate-900 rounded-2xl overflow-hidden shadow-[4px_4px_0_#0f172a]">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead>
-                <tr className="border-b border-slate-700 bg-slate-800/80">
-                  <th className="px-5 py-4 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">School & Location</th>
-                  <th className="px-5 py-4 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">At-Risk Categories</th>
-                  <th className="px-5 py-4 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Days to Failure</th>
-                  <th className="px-5 py-4 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Student Impact</th>
-                  <th className="px-5 py-4 text-slate-400 font-semibold uppercase tracking-wider text-[10px]">Indicators</th>
-                  <th className="px-5 py-4 text-slate-400 font-semibold uppercase tracking-wider text-[10px] text-right">Actions</th>
+                <tr className="border-b-2 border-slate-900 bg-slate-50">
+                  <th className="px-6 py-4 text-slate-900 font-black uppercase tracking-widest text-[10px]">School & Location</th>
+                  <th className="px-6 py-4 text-slate-900 font-black uppercase tracking-widest text-[10px]">At-Risk Categories</th>
+                  <th className="px-6 py-4 text-slate-900 font-black uppercase tracking-widest text-[10px]">Days to Failure</th>
+                  <th className="px-6 py-4 text-slate-900 font-black uppercase tracking-widest text-[10px]">Student Impact</th>
+                  <th className="px-6 py-4 text-slate-900 font-black uppercase tracking-widest text-[10px]">Indicators</th>
+                  <th className="px-6 py-4 text-slate-900 font-black uppercase tracking-widest text-[10px] text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/50">
+              <tbody className="divide-y-2 divide-slate-100">
                 {data.length === 0 && (
-                  <tr><td colSpan={6} className="text-center py-20 text-slate-500 italic">No schools found matching the current urgency window.</td></tr>
+                  <tr><td colSpan={6} className="text-center py-24 text-slate-500 font-semibold">No schools found matching the current urgency window.</td></tr>
                 )}
                 {data.map((s) => (
                   <tr key={s.schoolId} 
-                    className="hover:bg-slate-700/30 transition-all cursor-pointer group"
+                    className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
                     onClick={() => setSelectedSchool(s)}
                   >
-                    <td className="px-5 py-4">
-                      <div className="font-bold text-slate-100 group-hover:text-blue-400 transition-colors">{s.schoolName}</div>
-                      <div className="text-slate-500 text-xs mt-0.5">{s.block}, {s.district}</div>
+                    <td className="px-6 py-4">
+                      <div className="font-black text-slate-900 group-hover:text-blue-600 transition-colors">{s.schoolName}</div>
+                      <div className="text-slate-500 text-xs font-semibold mt-1">{s.block}, {s.district}</div>
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="flex flex-wrap gap-1.5">
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-2">
                         {s.categories.map(cat => (
-                          <span key={cat} className={`px-2 py-0.5 rounded text-[10px] font-bold border ${CATEGORY_COLORS[cat] || "bg-slate-700 text-slate-300 border-slate-600"}`}>
+                          <span key={cat} className={`px-2.5 py-1 rounded-lg text-[10px] font-black tracking-wider border-2 ${CATEGORY_COLORS[cat] || "bg-slate-100 text-slate-700 border-slate-300"}`}>
                             {cat.toUpperCase()}
                           </span>
                         ))}
                       </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <div className={`text-sm font-bold ${s.daysToFailure <= 15 ? "text-red-400" : s.daysToFailure <= 30 ? "text-orange-400" : "text-blue-400"}`}>
+                    <td className="px-6 py-4">
+                      <div className={`text-sm font-black ${s.daysToFailure <= 15 ? "text-red-600" : s.daysToFailure <= 30 ? "text-orange-500" : "text-blue-600"}`}>
                         {s.daysToFailure} days
                       </div>
-                      <div className="w-24 h-1 bg-slate-700 rounded-full mt-1 overflow-hidden">
+                      <div className="w-24 h-2 bg-slate-100 rounded-full mt-2 overflow-hidden border border-slate-200">
                         <div 
-                          className={`h-full ${s.daysToFailure <= 15 ? "bg-red-500" : s.daysToFailure <= 30 ? "bg-orange-500" : "bg-blue-500"}`}
+                          className={`h-full rounded-full ${s.daysToFailure <= 15 ? "bg-red-500" : s.daysToFailure <= 30 ? "bg-orange-500" : "bg-blue-500"}`}
                           style={{ width: `${Math.max(10, 100 - (s.daysToFailure))}%` }}
                         />
                       </div>
                     </td>
-                    <td className="px-5 py-4">
-                      <div className="text-slate-200 font-medium">{s.studentImpactScore} students</div>
-                      <div className="text-[10px] text-slate-500">Predicted failure impact</div>
+                    <td className="px-6 py-4">
+                      <div className="text-slate-900 font-bold">{s.studentImpactScore} students</div>
+                      <div className="text-[10px] font-semibold text-slate-500 mt-0.5">Predicted failure impact</div>
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-6 py-4">
                       <div className="flex gap-2">
                         {s.isGirlsSchool && (
-                          <span className="flex items-center gap-1 text-pink-400 px-2 py-0.5 rounded-full bg-pink-500/10 border border-pink-500/20 text-[10px] font-bold">
+                          <span className="flex items-center gap-1 text-pink-700 px-2.5 py-1 rounded-lg bg-pink-100 border-2 border-pink-200 text-[10px] font-black">
                             👩‍🎓 GIRLS
                           </span>
                         )}
-                        <span className="flex items-center gap-1 text-slate-400 px-2 py-0.5 rounded-full bg-slate-700/50 border border-slate-600/50 text-[10px] font-bold">
+                        <span className="flex items-center gap-1 text-slate-700 px-2.5 py-1 rounded-lg bg-slate-100 border-2 border-slate-200 text-[10px] font-black">
                           📋 {s.topEvidence.length} CLUES
                         </span>
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-right">
+                    <td className="px-6 py-4 text-right">
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/dashboard/work-orders/new?schoolId=${s.schoolId}&school=${encodeURIComponent(s.schoolName)}&category=${s.highestPriorityCategory}&score=${s.priorityScore}`);
                         }}
-                        className="px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-md shadow-blue-900/20 active:translate-y-0.5"
+                        className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black transition-transform active:scale-95 shadow-[2px_2px_0_#0f172a] border-2 border-slate-900"
                       >
                         Assign
                       </button>
@@ -238,19 +242,17 @@ export default function DEODashboard() {
       />
 
       {/* Explanation callout */}
-      <div className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5 backdrop-blur-sm">
+      <div className="bg-white border-2 border-slate-900 rounded-2xl p-6 shadow-[4px_4px_0_#0f172a]">
         <div className="flex items-start gap-4">
-          <div className="p-2 rounded-lg bg-blue-500/10 text-blue-400">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+          <div className="p-3 rounded-xl bg-blue-50 border-2 border-blue-200 text-blue-600">
+            <CheckCircle2 size={24} />
           </div>
           <div>
-            <h3 className="text-sm font-bold text-slate-200 mb-1">Predictive Aggregation Logic</h3>
-            <p className="text-slate-400 text-xs leading-relaxed max-w-4xl">
+            <h3 className="text-sm font-black text-slate-900 mb-2 uppercase tracking-wide">Predictive Aggregation Logic</h3>
+            <p className="text-slate-600 text-sm font-medium leading-relaxed max-w-4xl">
               This queue aggregates multiple infrastructure predictions into single school rows. 
-              <strong className="text-slate-300"> Days to Failure</strong> reflects the earliest predicted breakdown across plumbing, electrical, or structural categories. 
-              <strong className="text-slate-300"> Highest Priority Category</strong> is selected based on the component with the steepest deterioration trend. 
+              <strong className="text-slate-900 font-black mx-1">Days to Failure</strong> reflects the earliest predicted breakdown across plumbing, electrical, or structural categories. 
+              <strong className="text-slate-900 font-black mx-1">Highest Priority Category</strong> is selected based on the component with the steepest deterioration trend. 
               Click any row to reveal the specific data-points that triggered the maintenance alert.
             </p>
           </div>

@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { Building2, LogOut, Menu, X, ChevronDown, User as UserIcon } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const ROLE_NAV = {
   peon: [
@@ -48,6 +50,7 @@ export default function AppLayout({ children }) {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const role = user?.role || 'peon';
   const navItems = ROLE_NAV[role] || ROLE_NAV.peon;
@@ -59,125 +62,154 @@ export default function AppLayout({ children }) {
     navigate('/login');
   };
 
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex flex-col">
-      {/* Top nav */}
-      <header className="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
-          {/* Brand */}
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-              </svg>
-            </div>
-            <span className="font-bold text-sm leading-tight hidden sm:block">
-              <span className="text-white">Saksham</span>
-              <span className="text-blue-400"> PS-03</span>
-            </span>
-          </div>
-
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1 flex-1 justify-center">
-            {navItems.map(item => (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive(item.path, item.exact)
-                    ? 'bg-blue-600 text-white'
-                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
-              >
-                <span>{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          {/* Right: role badge + user */}
-          <div className="flex items-center gap-3 shrink-0">
-            <span className={`hidden sm:inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${ROLE_COLORS[role]} text-white`}>
-              {ROLE_LABELS[role]}
-            </span>
-
-            <div className="relative">
-              <button
-                onClick={() => setProfileOpen(!profileOpen)}
-                className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-800 transition-colors"
-              >
-                <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-xs font-bold">
-                  {user?.name?.[0]?.toUpperCase() || 'U'}
+    <div className="min-h-screen bg-slate-50 text-[#0f172a] flex flex-col font-body selection:bg-blue-200">
+      {/* Floating Navbar Container */}
+      <div className="fixed top-0 left-0 right-0 z-50 px-4 pt-4 sm:px-6 transition-all duration-300">
+        <header 
+          className={`max-w-7xl mx-auto transition-all duration-300 ${
+            isScrolled 
+              ? 'bg-white/95 backdrop-blur-xl border-2 border-[#0f172a] shadow-[8px_8px_0_rgba(15,23,42,0.1)] rounded-2xl py-2 px-4' 
+              : 'bg-white/80 backdrop-blur-md border-2 border-[#0f172a] shadow-[4px_4px_0_rgba(15,23,42,0.05)] rounded-2xl py-3 px-5'
+          }`}
+        >
+          <div className="flex items-center justify-between gap-4">
+            {/* Brand */}
+            <div className="flex items-center gap-4 shrink-0">
+              <Link to="/dashboard" className="flex items-center gap-2 group outline-none">
+                <div className="w-10 h-10 rounded-xl bg-[#0f172a] flex items-center justify-center border-2 border-[#0f172a] shadow-[2px_2px_0_#2563eb] group-hover:shadow-[4px_4px_0_#2563eb] transition-all group-active:translate-y-0.5 group-active:shadow-none">
+                  <Building2 size={20} className="text-white" />
                 </div>
-                <span className="text-sm text-slate-300 max-w-24 truncate hidden sm:block">{user?.name}</span>
-                <svg className="w-3 h-3 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              {profileOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-44 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden">
-                    <div className="px-3 py-2 border-b border-slate-700">
-                      <p className="text-white text-sm font-medium truncate">{user?.name}</p>
-                      <p className="text-slate-400 text-xs truncate">{user?.email}</p>
-                    </div>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-red-400 hover:bg-slate-700 text-sm transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
-                      Sign out
-                    </button>
-                  </div>
-                </>
-              )}
+                <span className="font-black text-xl tracking-tight hidden sm:block" style={{ fontFamily: 'var(--font-display)' }}>
+                  Saksham
+                </span>
+              </Link>
+              <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
+                <span className="text-[9px] font-black tracking-widest uppercase text-blue-700">System Ready</span>
+              </div>
             </div>
 
-            {/* Mobile menu toggle */}
-            <button
-              className="md:hidden p-1.5 rounded-lg hover:bg-slate-800 text-slate-400"
-              onClick={() => setMobileOpen(!mobileOpen)}
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                {mobileOpen
-                  ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />}
-              </svg>
-            </button>
-          </div>
-        </div>
+            {/* Desktop nav */}
+            <nav className="hidden md:flex items-center gap-2 flex-1 justify-center">
+              {navItems.map(item => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all border-2 ${
+                    isActive(item.path, item.exact)
+                      ? 'bg-[#0f172a] text-white border-[#0f172a] shadow-[3px_3px_0_#2563eb]'
+                      : 'bg-transparent text-slate-600 border-transparent hover:border-slate-300 hover:bg-slate-100 hover:text-[#0f172a]'
+                  }`}
+                >
+                  <span className={isActive(item.path, item.exact) ? '' : 'opacity-80'}>{item.icon}</span>
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
 
-        {/* Mobile nav */}
-        {mobileOpen && (
-          <div className="md:hidden border-t border-slate-800 px-4 py-3 flex flex-col gap-1">
-            {navItems.map(item => (
-              <Link
-                key={item.path}
-                to={item.path}
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
-                  isActive(item.path, item.exact) ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                }`}
+            {/* Right: role badge + user */}
+            <div className="flex items-center gap-3 shrink-0">
+              <span className={`hidden sm:inline-flex px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border-2 ${ROLE_COLORS[role]}`}>
+                {ROLE_LABELS[role]}
+              </span>
+
+              <div className="relative">
+                <button
+                  onClick={() => setProfileOpen(!profileOpen)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white border-2 border-slate-200 hover:border-[#0f172a] transition-all outline-none focus:border-[#0f172a] shadow-[2px_2px_0_rgba(15,23,42,0.05)] hover:shadow-[4px_4px_0_#0f172a]"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-blue-100 border border-blue-200 flex items-center justify-center text-xs font-black text-blue-700 uppercase">
+                    {user?.name?.[0] || 'U'}
+                  </div>
+                  <span className="text-sm font-bold text-[#0f172a] max-w-[100px] truncate hidden sm:block">{user?.name}</span>
+                  <ChevronDown size={14} className="text-slate-400" />
+                </button>
+                
+                <AnimatePresence>
+                  {profileOpen && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute right-0 mt-3 w-56 bg-white border-2 border-[#0f172a] rounded-2xl shadow-[8px_8px_0_rgba(15,23,42,0.1)] z-50 overflow-hidden"
+                      >
+                        <div className="px-4 py-3 bg-slate-50 border-b-2 border-slate-100">
+                          <p className="text-[#0f172a] text-sm font-black truncate">{user?.name}</p>
+                          <p className="text-slate-500 text-xs font-semibold truncate mt-0.5">{user?.email}</p>
+                        </div>
+                        <div className="p-2">
+                          <button
+                            onClick={handleLogout}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-red-600 font-bold hover:bg-red-50 hover:text-red-700 transition-colors"
+                          >
+                            <LogOut size={16} />
+                            Sign out
+                          </button>
+                        </div>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Mobile menu toggle */}
+              <button
+                className="md:hidden p-2 rounded-xl bg-white border-2 border-slate-200 hover:border-[#0f172a] text-[#0f172a] transition-all"
+                onClick={() => setMobileOpen(!mobileOpen)}
               >
-                <span>{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
+                {mobileOpen ? <X size={20} /> : <Menu size={20} />}
+              </button>
+            </div>
           </div>
-        )}
-      </header>
+        </header>
 
-      {/* Main content */}
-      <main className="flex-1">
+        {/* Mobile nav dropdown */}
+        <AnimatePresence>
+          {mobileOpen && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              className="md:hidden mt-2 max-w-7xl mx-auto bg-white border-2 border-[#0f172a] rounded-2xl shadow-[8px_8px_0_rgba(15,23,42,0.1)] p-3 flex flex-col gap-2"
+            >
+              {navItems.map(item => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={() => setMobileOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all border-2 ${
+                    isActive(item.path, item.exact) 
+                      ? 'bg-[#0f172a] text-white border-[#0f172a]' 
+                      : 'bg-slate-50 text-slate-600 border-transparent hover:border-slate-300'
+                  }`}
+                >
+                  <span className="text-lg">{item.icon}</span>
+                  {item.label}
+                </Link>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Main content - Add padding top to account for floating fixed navbar */}
+      <main className="flex-1 pt-28 pb-12">
         {children}
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800/60 py-3 px-6 text-center text-slate-600 text-xs">
-        Saksham — Predictive Maintenance Engine · School Infrastructure · PS-03
+      <footer className="border-t-2 border-slate-200 py-6 px-6 text-center text-slate-400 text-xs font-bold uppercase tracking-widest bg-white">
+        Saksham © 2026 · Predictive Maintenance Engine · PS-03
       </footer>
     </div>
   );

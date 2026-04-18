@@ -51,19 +51,7 @@ const Footer = () => {
   return (
     <footer style={{ background: '#fff', fontFamily: 'var(--font-body)', position: 'relative', overflow: 'hidden', borderTop: '3px solid #0f172a' }}>
       
-      {/* Background Decor - Fixed UNDEFINED variables */}
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
-        <div className="grid-lines" style={{ position: 'absolute', inset: 0, opacity: 0.5 }} />
-        <div 
-          style={{ 
-            position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', 
-            fontFamily: 'var(--font-display)', fontSize: '18vw', fontWeight: 900, 
-            color: '#f8fafc', letterSpacing: '-0.05em', whiteSpace: 'nowrap', userSelect: 'none', zIndex: 0 
-          }}
-        >
-          SAKSHAM_SYS
-        </div>
-      </div>
+
 
       <div style={{ maxWidth: 1440, margin: '0 auto', position: 'relative', zIndex: 10 }}>
         
@@ -156,6 +144,20 @@ const Footer = () => {
           opacity: 1 !important;
         }
       `}</style>
+
+            {/* Background Decor - Fixed UNDEFINED variables */}
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        <div className="grid-lines mb-40" style={{ position: 'absolute', inset: 0, opacity: 0.5 }} />
+        <div 
+          style={{ 
+            position: 'absolute', top: '60%', left: '50%', transform: 'translate(-50%, -50%)', 
+            fontFamily: 'var(--font-display)', fontSize: '20vw', fontWeight: 900, 
+            color: '#f8fafc', letterSpacing: '-0.05em', whiteSpace: 'nowrap', userSelect: 'none', zIndex: 0 
+          }}
+        >
+          SAKSHAM
+        </div>
+      </div>
     </footer>
   );
 };
