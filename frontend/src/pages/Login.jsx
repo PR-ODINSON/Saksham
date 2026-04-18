@@ -1,13 +1,31 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { motion } from "framer-motion";
+import { Building2, Lock, Mail, ArrowRight, ShieldCheck, User, Wrench, Activity } from "lucide-react";
 
 const ROLE_HINTS = {
-  school: { email: "school1@demo.com", label: "School Admin" },
-  deo: { email: "deo@demo.com", label: "District Education Officer" },
-  contractor: { email: "contractor1@demo.com", label: "Contractor" },
   admin: { email: "admin@demo.com", label: "System Admin" },
+  deo: { email: "deo@demo.com", label: "District Officer" },
+  bmo: { email: "bmo@demo.com", label: "Block Officer" },
+  school: { email: "school1@demo.com", label: "School Admin" },
+  contractor: { email: "contractor1@demo.com", label: "Contractor" },
 };
+
+const GLOBAL_STYLES = `
+  .glass-card-terminal {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(24px);
+    border: 2px solid #0f172a;
+    box-shadow: 8px 8px 0 rgba(15, 23, 42, 0.1);
+  }
+  .grid-lines {
+    background-image: 
+      linear-gradient(rgba(30, 58, 138, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(30, 58, 138, 0.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+`;
 
 export default function Login() {
   const { login } = useAuth();
@@ -25,7 +43,7 @@ export default function Login() {
     if (result.success) {
       navigate("/dashboard");
     } else {
-      setError(result.message || "Login failed");
+      setError(result.message || "Invalid credentials. Please try again.");
     }
   };
 
@@ -34,80 +52,118 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-600 mb-4 shadow-lg shadow-blue-600/30">
-            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-white">Saksham</h1>
-          <p className="text-blue-300 text-sm mt-1">School Infrastructure · Predictive Maintenance</p>
-        </div>
+    <div className="min-h-screen bg-white grid-lines flex items-center justify-center p-6 font-sans">
+      <style>{GLOBAL_STYLES}</style>
+      
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md relative"
+      >
+        {/* Floating Accent */}
+        <div className="absolute -top-12 -left-12 w-24 h-24 bg-blue-500/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-blue-600/10 rounded-full blur-3xl" />
 
-        {/* Card */}
-        <div className="bg-slate-800/60 backdrop-blur border border-slate-700 rounded-2xl p-8 shadow-2xl">
-          <h2 className="text-lg font-semibold text-white mb-6">Sign in to your account</h2>
+        <div className="glass-card-terminal p-8 md:p-10 rounded-[2rem] relative z-10">
+          {/* Brand Header */}
+          <div className="flex items-center gap-3 mb-10">
+            <div className="w-12 h-12 bg-[#0f172a] rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <Building2 size={24} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black text-[#0f172a] tracking-tight">Saksham <span className="text-blue-600 italic">V3</span></h1>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Secure Access Gateway</p>
+            </div>
+          </div>
+
+          <h2 className="text-3xl font-extrabold text-[#0f172a] mb-2 tracking-tight">Welcome Back.</h2>
+          <p className="text-slate-500 text-sm mb-8 font-medium">Enter your credentials to access the infrastructure portal.</p>
 
           {error && (
-            <div className="mb-4 px-4 py-3 rounded-lg bg-red-500/20 border border-red-500/40 text-red-300 text-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mb-6 p-4 bg-red-50 border-2 border-red-500 rounded-xl text-red-600 text-xs font-bold flex items-center gap-3"
+            >
+              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
               {error}
-            </div>
+            </motion.div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Email</label>
-              <input
-                type="email"
-                required
-                value={form.email}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg bg-slate-700/60 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="you@example.com"
-              />
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Identity/Email</label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                  <Mail size={18} />
+                </div>
+                <input
+                  type="email"
+                  required
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="w-full bg-slate-50 border-2 border-[#0f172a] text-[#0f172a] pl-11 pr-4 py-4 rounded-xl outline-none focus:bg-white focus:shadow-[4px_4px_0_#2563eb] transition-all font-bold placeholder:text-slate-300"
+                  placeholder="name@organization.gov"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Password</label>
-              <input
-                type="password"
-                required
-                value={form.password}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg bg-slate-700/60 border border-slate-600 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="••••••••"
-              />
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Secret/Password</label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
+                  <Lock size={18} />
+                </div>
+                <input
+                  type="password"
+                  required
+                  value={form.password}
+                  onChange={(e) => setForm({ ...form, password: e.target.value })}
+                  className="w-full bg-slate-50 border-2 border-[#0f172a] text-[#0f172a] pl-11 pr-4 py-4 rounded-xl outline-none focus:bg-white focus:shadow-[4px_4px_0_#2563eb] transition-all font-bold placeholder:text-slate-300"
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
+
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold transition-colors shadow-lg shadow-blue-600/20"
+              className="w-full bg-[#0f172a] hover:bg-blue-600 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center gap-3 shadow-[6px_6px_0_#2563eb] active:translate-x-1 active:translate-y-1 active:shadow-none disabled:opacity-50 mt-4"
             >
-              {loading ? "Signing in…" : "Sign In"}
+              {loading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>Sign In <ArrowRight size={20} /></>
+              )}
             </button>
           </form>
 
-          {/* Demo quick-fill */}
-          <div className="mt-6 pt-6 border-t border-slate-700">
-            <p className="text-xs text-slate-400 mb-3 text-center uppercase tracking-wider font-medium">
-              Demo accounts (password: password123)
-            </p>
+          {/* Role Quick Links */}
+          <div className="mt-12 pt-8 border-t-2 border-slate-100">
+            <div className="flex items-center gap-2 mb-4">
+              <ShieldCheck size={14} className="text-blue-600" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sandbox Identities</span>
+            </div>
             <div className="grid grid-cols-2 gap-2">
               {Object.entries(ROLE_HINTS).map(([role, { label }]) => (
                 <button
                   key={role}
                   onClick={() => fillDemo(role)}
-                  className="px-3 py-2 rounded-lg text-xs font-medium bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors border border-slate-600"
+                  className="px-3 py-2.5 rounded-lg text-[10px] font-black bg-slate-50 border border-slate-200 hover:border-[#0f172a] hover:bg-white text-[#0f172a] transition-all flex items-center justify-between group"
                 >
                   {label}
+                  <Activity size={12} className="opacity-0 group-hover:opacity-100 text-blue-600" />
                 </button>
               ))}
             </div>
           </div>
+
+          <p className="mt-8 text-center text-xs font-bold text-slate-400">
+            Internal Portal. Need access? {" "}
+            <Link to="/signup" className="text-blue-600 hover:underline">Request Account</Link>
+          </p>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }
