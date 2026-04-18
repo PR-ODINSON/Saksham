@@ -9,6 +9,7 @@ import connectDB from './config/database.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 
 // Routes
+import { seedDatabase } from './controllers/seed.controller.js';
 import authRoutes     from './routes/auth.routes.js';
 import profileRoutes  from './routes/profile.routes.js';
 import adminRoutes    from './routes/admin.routes.js';
@@ -42,6 +43,9 @@ app.use('/api', apiLimiter);
 
 // Static uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// ─── One-time seed endpoint (remove after demo setup) ────────────────────────
+app.get('/api/seed-demo', seedDatabase);
 
 // ─── Health ──────────────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
