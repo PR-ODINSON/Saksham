@@ -48,12 +48,12 @@ export const assignTask = async (req, res) => {
       const decision = await MaintenanceDecision.findOne({
         schoolId: Number(schoolId),
         category,
-        'status.status': 'pending',
+        status: 'pending',
       }).sort({ 'decision.computedPriorityScore': -1 });
       if (decision) {
         resolvedDecisionId = decision._id;
         // Update decision status to 'assigned'
-        decision.status.status = 'assigned';
+        decision.status = 'assigned';
         await decision.save();
       }
     }
@@ -135,7 +135,7 @@ export const completeTask = async (req, res) => {
     if (workOrder.decisionId) {
       await MaintenanceDecision.findByIdAndUpdate(
         workOrder.decisionId,
-        { 'status.status': 'completed' },
+        { status: 'completed' },
       );
     }
 

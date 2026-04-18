@@ -11,10 +11,70 @@ const RISK_CONFIG = {
 };
 
 const CONDITION_CONFIG = {
-  good: { dot: "bg-emerald-400", text: "text-emerald-300", label: "Good" },
-  moderate: { dot: "bg-amber-400", text: "text-amber-300", label: "Moderate" },
-  poor: { dot: "bg-red-400", text: "text-red-300", label: "Poor" },
+  good:     { dot: "bg-emerald-400", text: "text-emerald-300", label: "Good" },
+  moderate: { dot: "bg-amber-400",   text: "text-amber-300",   label: "Moderate" },
+  poor:     { dot: "bg-red-400",     text: "text-red-300",     label: "Poor" },
 };
+
+// Map 1-5 conditionScore to a condition label
+function scoreToCondition(cs) {
+  if (cs <= 2) return "good";
+  if (cs <= 3) return "moderate";
+  return "poor";
+}
+
+// Map 0-100 priorityScore to a risk level
+function priorityToLevel(ps) {
+  if (ps >= 80) return "critical";
+  if (ps >= 60) return "high";
+  if (ps >= 40) return "moderate";
+  return "low";
+}
+
+// Derive a SchoolView-compatible analysis object from the /api/risk/:id predictions array
+function buildAnalysis(predictions) {
+  if (!predictions || predictions.length === 0) return null;
+
+  const overallScore = Math.round(Math.max(...predictions.map(p => p.priorityScore || 0)));
+  const level = priorityToLevel(overallScore);
+
+  const worst = predictions.reduce((a, b) => (b.priorityScore > a.priorityScore ? b : a));
+
+  const dtfValues = predictions
+    .map(p => p.daysToFailure)
+    .filter(d => d != null && !isNaN(d) && d > 0);
+  const timeToFailureDays = dtfValues.length ? Math.round(Math.min(...dtfValues)) : null;
+
+  const hasFail30 = predictions.some(p => p.willFailWithin30Days);
+  const hasFail60 = predictions.some(p => p.willFailWithin60Days);
+  const trend = hasFail30 ? "deteriorating" : overallScore >= 60 ? "deteriorating" : "stable";
+
+  const breakdown = {};
+  for (const p of predictions) {
+    breakdown[p.category] = {
+      score: Math.round(p.priorityScore || 0),
+      level: priorityToLevel(p.priorityScore || 0),
+      conditionScore: p.conditionScore,
+      willFailWithin30Days: p.willFailWithin30Days,
+    };
+  }
+
+  let explanation = `Overall priority score: ${overallScore}/100. `;
+  if (hasFail30) explanation += "⚠ Failure predicted within 30 days. ";
+  else if (hasFail60) explanation += "Failure predicted within 60 days. ";
+  explanation += `Worst category: ${worst.category}.`;
+
+  return {
+    score: overallScore,
+    level,
+    trend,
+    worstCategory: worst.category,
+    timeToFailureDays,
+    reportCount: predictions.length,
+    explanation,
+    breakdown,
+  };
+}
 
 function RiskGauge({ score, level }) {
   const cfg = RISK_CONFIG[level] || RISK_CONFIG.low;
@@ -57,13 +117,13 @@ export default function SchoolView() {
       if (!schoolId) { setLoading(false); return; }
 
       const [riskRes, reportsRes, schoolRes] = await Promise.all([
-        get(`/api/risk-scores/${schoolId}`),
-        get(`/api/condition-report?schoolId=${schoolId}&limit=4`),
+        get(`/api/risk/${schoolId}`),
+        get(`/api/condition-report?schoolId=${schoolId}&limit=20`),
         get(`/api/schools/${schoolId}`),
       ]);
 
-      if (riskRes.success) setAnalysis(riskRes.analysis);
-      if (reportsRes.success) setReports(reportsRes.reports);
+      if (riskRes.success) setAnalysis(buildAnalysis(riskRes.predictions));
+      if (reportsRes.success) setReports(reportsRes.records || []);
       if (schoolRes.success) setSchool(schoolRes.school);
       setLoading(false);
     };
@@ -90,7 +150,7 @@ export default function SchoolView() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">{school?.name || "My School"}</h1>
-          <p className="text-slate-400 text-sm">{school?.district} · Building age: {school?.buildingAge}y · {school?.studentCount} students</p>
+          <p className="text-slate-400 text-sm">{school?.district} · Building age: {school?.buildingAge}y · {school?.numStudents} students</p>
         </div>
         <button
           onClick={() => navigate("/dashboard/report")}
@@ -167,42 +227,48 @@ export default function SchoolView() {
         </div>
       )}
 
-      {/* Recent reports */}
+      {/* Condition records */}
       <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-5">
-        <h3 className="text-sm font-semibold text-slate-300 mb-4">Recent Reports</h3>
+        <h3 className="text-sm font-semibold text-slate-300 mb-4">Condition Records</h3>
         {reports.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-slate-500 text-sm">No reports submitted yet.</p>
+            <p className="text-slate-500 text-sm">No records found for this school.</p>
             <button onClick={() => navigate("/dashboard/report")} className="mt-3 px-4 py-2 rounded-lg bg-blue-600/20 border border-blue-600/50 text-blue-300 text-sm hover:bg-blue-600/30">
               Submit First Report
             </button>
           </div>
         ) : (
           <div className="space-y-3">
-            {reports.map((r) => (
-              <div key={r._id} className="border border-slate-700 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-white text-sm font-medium">
-                    Week of {new Date(r.weekOf).toLocaleDateString()}
-                  </span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${RISK_CONFIG[r.riskLevel]?.bg} ${RISK_CONFIG[r.riskLevel]?.color} border`}>
-                    Score: {r.riskScore}
-                  </span>
+            {reports.map((r) => {
+              const condition = scoreToCondition(r.conditionScore);
+              const recLevel  = priorityToLevel(r.priorityScore || 0);
+              const cc  = CONDITION_CONFIG[condition];
+              const rc  = RISK_CONFIG[recLevel];
+              return (
+                <div key={r._id} className="border border-slate-700 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-white text-sm font-medium capitalize">
+                      {r.category} — Week {r.weekNumber}
+                    </span>
+                    <span className={`text-xs px-2 py-0.5 rounded-full border ${rc.bg} ${rc.color}`}>
+                      Priority: {Math.round(r.priorityScore || 0)}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <div className="flex items-center gap-1.5 bg-slate-700/40 rounded px-2 py-1">
+                      <span className={`w-1.5 h-1.5 rounded-full ${cc.dot}`} />
+                      <span className="text-slate-300 text-xs">Condition</span>
+                      <span className={`text-xs ${cc.text}`}>{cc.label} ({r.conditionScore}/5)</span>
+                    </div>
+                    {r.issueFlag   && <span className="text-xs bg-red-500/20 border border-red-500/40 text-red-300 rounded px-2 py-1">Issue flagged</span>}
+                    {r.waterLeak   && <span className="text-xs bg-blue-500/20 border border-blue-500/40 text-blue-300 rounded px-2 py-1">Water leak</span>}
+                    {r.wiringExposed && <span className="text-xs bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 rounded px-2 py-1">Wiring exposed</span>}
+                    {r.roofLeakFlag  && <span className="text-xs bg-orange-500/20 border border-orange-500/40 text-orange-300 rounded px-2 py-1">Roof leak</span>}
+                    {r.willFailWithin30Days && <span className="text-xs bg-red-500/30 border border-red-500/60 text-red-200 rounded px-2 py-1 font-semibold">⚠ Fail &lt;30d</span>}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {r.items.map((item, i) => {
-                    const cc = CONDITION_CONFIG[item.condition];
-                    return (
-                      <div key={i} className="flex items-center gap-1.5 bg-slate-700/40 rounded px-2 py-1">
-                        <span className={`w-1.5 h-1.5 rounded-full ${cc.dot}`} />
-                        <span className="text-slate-300 text-xs capitalize">{item.category}</span>
-                        <span className={`text-xs ${cc.text}`}>{cc.label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

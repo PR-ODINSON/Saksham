@@ -95,7 +95,7 @@ export const getMaintenanceQueue = async (req, res) => {
   try {
     const { district, category, status = 'pending' } = req.query;
 
-    const filter = { 'status.status': status };
+    const filter = { status };
     if (district) filter.district = district;
     if (category) filter.category = category;
 
@@ -113,7 +113,7 @@ export const getMaintenanceQueue = async (req, res) => {
       is_girls_school: d.impact.isGirlsSchool,
       students_affected: d.impact.studentsAffected,
       reasons:       d.explainability.reasons,
-      status:        d.status.status,
+      status:        d.status,
     }));
 
     res.json({ success: true, queue, total: queue.length });

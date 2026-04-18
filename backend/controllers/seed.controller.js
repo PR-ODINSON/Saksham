@@ -73,7 +73,7 @@ export const seedDatabase = async (_req, res) => {
         decision: { computedPriorityScore: 57, priorityLevel: 'medium' },
         impact: { studentsAffected: 662, isGirlsSchool: false, criticalFacility: true },
         explainability: { reasons: ['Condition score 5/5 — poor', 'Active water leak', 'Failure predicted within 30 days'] },
-        status: { status: 'pending' },
+        status: 'pending',
       },
       {
         recordId: records[2]._id,
@@ -81,7 +81,7 @@ export const seedDatabase = async (_req, res) => {
         decision: { computedPriorityScore: 75, priorityLevel: 'high' },
         impact: { studentsAffected: 1021, isGirlsSchool: true, criticalFacility: true },
         explainability: { reasons: ['Condition score 5/5 — poor', 'Building age 50 years', 'Heavy Rain weather zone', 'Failure predicted within 30 days'] },
-        status: { status: 'pending' },
+        status: 'pending',
       },
     ]);
 

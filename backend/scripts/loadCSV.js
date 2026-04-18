@@ -234,7 +234,7 @@ async function main() {
       explainability: {
         reasons: buildReasons(r, computedScore),
       },
-      status: { status: 'pending' },
+      status: 'pending',
     };
   });
 
