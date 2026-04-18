@@ -12,6 +12,7 @@ import ContractorDashboard from './pages/dashboard/ContractorDashboard.jsx';
 import Signup from './pages/auth/Signup.jsx';
 import ConditionLogView from './pages/dashboard/ConditionLogView.jsx';
 import GeospatialMap from './pages/dashboard/GeospatialMap.jsx';
+import { LanguageProvider } from './context/LanguageContext';
 import AuditLogView from './pages/dashboard/AuditLogView.jsx';
 import { dashboardPathFor } from './utils/roleRoutes.js';
 import './App.css';
@@ -40,9 +41,10 @@ function DashboardRedirect() {
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <Routes>
+    <LanguageProvider>
+      <Router>
+        <AuthProvider>
+          <Routes>
           {/* Public */}
           <Route path="/"       element={<Landing />} />
           <Route path="/login"  element={<Login />} />
@@ -82,6 +84,7 @@ function App() {
         </Routes>
       </AuthProvider>
     </Router>
+    </LanguageProvider>
   );
 }
 

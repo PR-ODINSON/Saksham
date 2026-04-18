@@ -1,55 +1,56 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { useLanguage } from '../../context/LanguageContext';
 // Pehle wale import mein MapPin add kar diya hai
 import { Building2, ShieldAlert, Activity, LayoutList, Wrench, BarChart3, Clock, CheckCircle2, Search, MapPin } from 'lucide-react';
 
 const capabilities = [
   {
-    title: "Structural Forecaster",
-    description: "AI-driven detection of concrete degradation and slab stress.",
+    titleKey: "gs.cap_1_title",
+    descKey: "gs.cap_1_desc",
     icon: Building2,
     url: "#"
   },
   {
-    title: "Impact Priority",
-    description: "Automatic ranking based on student usage and facility type.",
+    titleKey: "gs.cap_2_title",
+    descKey: "gs.cap_2_desc",
     icon: LayoutList,
     url: "#"
   },
   {
-    title: "60-Day Horizon",
-    description: "Failure window predictions for plumbing and electrical grids.",
+    titleKey: "gs.cap_3_title",
+    descKey: "gs.cap_3_desc",
     icon: Clock,
     url: "#"
   },
   {
-    title: "2-Min Staff Audit",
-    description: "Structured weekly health reports with zero free-text friction.",
+    titleKey: "gs.cap_4_title",
+    descKey: "gs.cap_4_desc",
     icon: CheckCircle2,
     url: "#"
   },
   {
-    title: "GPS Verification",
-    description: "Contractor resolution audits with geo-tagged documentation.",
+    titleKey: "gs.cap_5_title",
+    descKey: "gs.cap_5_desc",
     icon: MapPin,
     url: "#"
   },
   {
-    title: "SLA Tracking",
-    description: "Real-time monitoring of complaint resolution timelines.",
+    titleKey: "gs.cap_6_title",
+    descKey: "gs.cap_6_desc",
     icon: Activity,
     url: "#"
   },
   {
-    title: "DEO Dashboard",
-    description: "Centralized district-wide asset health visualization.",
+    titleKey: "gs.cap_7_title",
+    descKey: "gs.cap_7_desc",
     icon: BarChart3,
     url: "#"
   },
   {
-    title: "Predictive Risk",
-    description: "Identify high-risk zones using building age and weather data.",
+    titleKey: "gs.cap_8_title",
+    descKey: "gs.cap_8_desc",
     icon: ShieldAlert,
     url: "#"
   }
@@ -59,6 +60,8 @@ const capabilities = [
 const extendedCapabilities = [...capabilities, ...capabilities];
 
 function GovSchemes() {
+  const { t } = useLanguage();
+
   return (
     <section className="bg-[#040705] grid-lines-dark py-24 border-y border-blue-500/10 overflow-hidden relative">
       {/* Background Decor - Subtle Blue Glows */}
@@ -72,11 +75,11 @@ function GovSchemes() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
             </span>
-            <span className="text-blue-400 text-[12px] font-black uppercase tracking-[0.2em]">Live Intelligence</span>
+            <span className="text-blue-400 text-[12px] font-black uppercase tracking-[0.2em]">{t('gs.live_intelligence')}</span>
           </div>
         </div>
         <h2 className="text-4xl md:text-5xl font-[900] text-white tracking-tighter uppercase leading-[1]">
-          Engine <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300 italic">Capabilities.</span>
+          {t('gs.engine')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300 italic">{t('gs.capabilities')}</span>
         </h2>
       </div>
 
@@ -96,10 +99,10 @@ function GovSchemes() {
               </div>
               <div className="flex flex-col text-left">
                 <h4 className="text-white font-[900] text-xl leading-tight uppercase tracking-tight mb-2">
-                  {item.title}
+                  {t(item.titleKey)}
                 </h4>
                 <p className="text-slate-400 text-sm font-bold whitespace-normal max-w-[250px] leading-relaxed">
-                  {item.description}
+                  {t(item.descKey)}
                 </p>
               </div>
             </div>

@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { get } from '../../services/api';
 import Card from '../common/Card';
+import { useLanguage } from '../../context/LanguageContext';
 import { TrendingUp, Activity } from 'lucide-react';
 
 export default function HealthTimeline({ schoolId, className }) {
+  const { t } = useLanguage();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -20,10 +22,10 @@ export default function HealthTimeline({ schoolId, className }) {
     fetchData();
   }, [schoolId]);
 
-  if (loading) return <div className={`h-64 flex items-center justify-center bg-slate-50 rounded-lg animate-pulse ${className}`}>Loading Chart...</div>;
+  if (loading) return <div className={`h-64 flex items-center justify-center bg-slate-50 rounded-lg animate-pulse ${className}`}>{t('ht.loading_chart')}</div>;
 
   return (
-    <Card variant="gov" className={className} title="Infrastructure Health Timeline" icon={Activity} subtitle="Historical condition analysis across domains">
+    <Card variant="gov" className={className} title={t('ht.title')} icon={Activity} subtitle={t('ht.subtitle')}>
       <div className="h-[220px] w-full mt-2">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -62,7 +64,7 @@ export default function HealthTimeline({ schoolId, className }) {
             <Area 
               type="monotone" 
               dataKey="plumbing" 
-              name="Plumbing"
+              name={t('ht.plumbing')}
               stroke="#2563eb" 
               fillOpacity={1}
               fill="url(#colorPlumbing)"
@@ -73,7 +75,7 @@ export default function HealthTimeline({ schoolId, className }) {
             <Area 
               type="monotone" 
               dataKey="electrical" 
-              name="Electrical"
+              name={t('ht.electrical')}
               stroke="#f59e0b" 
               fillOpacity={1}
               fill="url(#colorElectrical)"
@@ -84,7 +86,7 @@ export default function HealthTimeline({ schoolId, className }) {
             <Area 
               type="monotone" 
               dataKey="structural" 
-              name="Structural"
+              name={t('ht.structural')}
               stroke="#ef4444" 
               fillOpacity={1}
               fill="url(#colorStructural)"
@@ -97,7 +99,7 @@ export default function HealthTimeline({ schoolId, className }) {
       </div>
       <div className="mt-4 flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 p-3 rounded border border-slate-100">
         <TrendingUp size={14} className="text-emerald-600" />
-        Higher values indicate optimal infrastructure integrity (0-100 index)
+        {t('ht.footer_text')}
       </div>
     </Card>
   );

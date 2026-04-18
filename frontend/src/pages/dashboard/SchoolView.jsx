@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { get } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { roleSubPath } from "../../utils/roleRoutes.js";
 import Card from "../../components/common/Card";
@@ -88,6 +89,7 @@ function buildAnalysis(predictions) {
 
 export default function SchoolView() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [analysis, setAnalysis] = useState(null);
   const [reports, setReports] = useState([]);
@@ -118,7 +120,7 @@ export default function SchoolView() {
     return (
       <div className="flex flex-col items-center justify-center py-32 space-y-4 font-body">
         <div className="w-12 h-12 border-4 border-slate-200 border-t-[#0f172a] rounded-full animate-spin" />
-        <p className="text-slate-400 font-black tracking-[0.2em] text-[12px] uppercase animate-pulse">Analysing Profile...</p>
+        <p className="text-slate-400 font-black tracking-[0.2em] text-[12px] uppercase animate-pulse">{t('sv.analyzing')}</p>
       </div>
     );
   }
@@ -128,8 +130,8 @@ export default function SchoolView() {
   if (!user?.schoolId || !isPrincipal) {
     return (
       <div className="p-12 text-center text-slate-500 font-bold bg-white border border-slate-200 rounded-lg max-w-xl mx-auto mt-12 shadow-sm">
-        <p className="text-xl text-slate-900 font-bold">Access Restricted</p>
-        <p className="text-sm mt-2">Administrative credentials required to view this profile.</p>
+        <p className="text-xl text-slate-900 font-bold">{t('sv.access_restricted')}</p>
+        <p className="text-sm mt-2">{t('sv.admin_credentials_req')}</p>
       </div>
     );
   }
@@ -177,29 +179,29 @@ export default function SchoolView() {
             <div>
               <div className="flex gap-2 mb-3">
                 <Badge variant="info" className="bg-white/10 text-white border-white/20 backdrop-blur-md">
-                  <MapPin size={12} className="mr-1.5" /> {school?.district || "Unspecified Region"}
+                  <MapPin size={12} className="mr-1.5" /> {school?.district || t('sv.unspecified_region')}
                 </Badge>
                 <Badge variant="default" className="bg-white/10 text-white border-white/20 backdrop-blur-md">
-                  <Calendar size={12} className="mr-1.5" /> Age: {school?.buildingAge ?? "?"}Y
+                  <Calendar size={12} className="mr-1.5" /> {t('sv.age')}: {school?.buildingAge ?? "?"}Y
                 </Badge>
                 <Badge variant="default" className="bg-white/10 text-white border-white/20 backdrop-blur-md">
-                  <Users size={12} className="mr-1.5" /> Registry: {school?.numStudents ?? "?"}
+                  <Users size={12} className="mr-1.5" /> {t('sv.registry')}: {school?.numStudents ?? "?"}
                 </Badge>
               </div>
               <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-md">
-                {school?.name || "Generic Node"}
+                {school?.name || t('sv.generic_node')}
               </h1>
               <p className="mt-2 text-sm font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
-                <Building size={14} /> Administrative Oversight Center
+                <Building size={14} /> {t('sv.admin_oversight')}
               </p>
             </div>
 
             <div className="flex gap-3">
               <Button onClick={() => navigate("/peon/dashboard")} variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-md shadow-xl">
-                Submit Audit
+                {t('sv.submit_audit')}
               </Button>
               <Button onClick={() => navigate(roleSubPath(user?.role, "reports"))} variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-md shadow-xl">
-                Resource Registry
+                {t('sv.resource_registry')}
               </Button>
             </div>
           </div>
@@ -210,32 +212,32 @@ export default function SchoolView() {
         {/* REPORT METRICS - Floating Over Banner */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 -mt-16 relative z-10">
           <MetricCard
-            label="Infrastructure Health"
+            label={t('sv.infra_health')}
             value={analysis ? `${100 - analysis.score}%` : "0%"}
             icon={Shield}
             variant={analysis?.score > 60 ? "critical" : analysis?.score > 30 ? "high" : "success"}
-            trendValue="Global condition index"
+            trendValue={t('sv.global_condition')}
           />
           <MetricCard
-            label="Pending Audits"
+            label={t('sv.pending_audits')}
             value={totalPending}
             icon={Clock}
             variant={totalPending > 0 ? "high" : "success"}
-            trendValue={`${pendingThisMonth} due this month`}
+            trendValue={`${pendingThisMonth} ${t('sv.due_this_month')}`}
           />
           <MetricCard
-            label="Critical Risks"
+            label={t('sv.critical_risks')}
             value={analysis?.breakdown ? Object.values(analysis.breakdown).filter(v => v.level === 'critical' || v.level === 'high').length : 0}
             icon={AlertTriangle}
             variant="critical"
-            trendValue="High risk vectors"
+            trendValue={t('sv.high_risk_vectors')}
           />
           <MetricCard
-            label="Audit History"
+            label={t('sv.audit_history')}
             value={uniqueCompletedWeeks}
             icon={FileText}
             variant="info"
-            trendValue={`Registry Volume: ${reports.length}`}
+            trendValue={`${t('sv.registry_volume')}: ${reports.length}`}
           />
         </div>
 
@@ -255,7 +257,7 @@ export default function SchoolView() {
           </div>
           <div className="lg:col-span-1">
             {analysis?.breakdown && Object.keys(analysis.breakdown).length > 0 && (
-              <Card variant="gov" className="h-full" title="Risk Spectrum" subtitle="Domain-specific assessment" icon={LayoutDashboard}>
+              <Card variant="gov" className="h-full" title={t('sv.risk_spectrum')} subtitle={t('sv.domain_specific')} icon={LayoutDashboard}>
                 <div className="space-y-6">
                   {Object.entries(analysis.breakdown).map(([cat, data]) => (
                     <div key={cat} className="space-y-2">
@@ -291,25 +293,25 @@ export default function SchoolView() {
                 <div className="mb-6">
                   <h3 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
                     <ActivityIcon size={20} className="text-blue-400" />
-                    Infrastructure Survival Analysis
+                    {t('sv.infra_survival')}
                   </h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Predictive Analytics Engine</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t('sv.predictive_engine')}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Failure Horizon</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t('sv.failure_horizon')}</p>
                     <div className={`text-3xl font-black ${analysis.timeToFailureDays <= 15 ? "text-red-400" : "text-white"}`}>
-                      {analysis.timeToFailureDays || "N/A"} <span className="text-xs font-bold opacity-60 uppercase">Days</span>
+                      {analysis.timeToFailureDays || "N/A"} <span className="text-xs font-bold opacity-60 uppercase">{t('deo.days')}</span>
                     </div>
                   </div>
                   <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10 flex flex-col justify-center">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Trend & Vector</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t('sv.trend_vector')}</p>
                     <div className={`text-xs font-bold flex items-center gap-1.5 uppercase ${analysis.trend === "deteriorating" ? "text-red-400" : "text-emerald-400"}`}>
                       {analysis.trend === "deteriorating" ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
                       {analysis.trend}
                     </div>
-                    <div className="text-[10px] font-black text-white uppercase mt-1 opacity-80">Critical: {analysis.worstCategory || "None"}</div>
+                    <div className="text-[10px] font-black text-white uppercase mt-1 opacity-80">{t('sv.critical_worst')}: {analysis.worstCategory || t('sv.none')}</div>
                   </div>
                 </div>
 
@@ -320,7 +322,7 @@ export default function SchoolView() {
               </div>
             ) : (
               <div className="py-8 text-center text-slate-400 font-medium text-sm italic relative z-10">
-                Insufficient audit data for predictive survival analysis.
+                {t('sv.insufficient_data')}
               </div>
             )}
           </Card>

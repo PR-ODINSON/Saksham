@@ -3,6 +3,7 @@ import { motion, animate } from 'framer-motion';
 import { useNavigate } from "react-router-dom";
 import { get } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { roleSubPath } from "../../utils/roleRoutes.js";
 import EvidenceDrawer from "../../components/common/EvidenceDrawer";
 import Card from "../../components/common/Card";
@@ -63,6 +64,7 @@ export default function DEODashboard() {
   
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -129,10 +131,10 @@ export default function DEODashboard() {
           <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
               <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-md">
-                Administrative Oversight Center
+                {t('deo.title')}
               </h1>
               <p className="mt-2 text-sm font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
-                <LayoutList size={14} /> District Infrastructure Health & Predictive Maintenance Management
+                <LayoutList size={14} /> {t('deo.subtitle')}
               </p>
             </div>
             
@@ -142,7 +144,7 @@ export default function DEODashboard() {
                 variant="secondary"
                 className="font-black uppercase tracking-widest text-[10px] bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md shadow-xl"
               >
-                All Work Orders
+                {t('deo.all_work_orders')}
               </Button>
             </div>
           </div>
@@ -152,10 +154,10 @@ export default function DEODashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-8 pb-12">
         {/* REPORT METRICS - Floating Over Banner */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 -mt-16 relative z-10">
-          <MetricCard label="Assessed Schools" value={<Counter to={stats.totalSchools} />} icon={Building2} variant="info" />
-          <MetricCard label="Critical Risk" value={<Counter to={stats.criticalCount} />} icon={AlertTriangle} variant="critical" />
-          <MetricCard label="High Priority" value={<Counter to={stats.highRiskCount} />} icon={Activity} variant="high" trend="up" trendValue="Trending" />
-          <MetricCard label="Avg Survival" value={<Counter to={stats.avgUrgency} suffix=" Days" />} icon={Wrench} variant="success" />
+          <MetricCard label={t('deo.assessed_schools')} value={<Counter to={stats.totalSchools} />} icon={Building2} variant="info" />
+          <MetricCard label={t('deo.critical_risk')} value={<Counter to={stats.criticalCount} />} icon={AlertTriangle} variant="critical" />
+          <MetricCard label={t('deo.high_priority')} value={<Counter to={stats.highRiskCount} />} icon={Activity} variant="high" trend="up" trendValue={t('deo.trending')} />
+          <MetricCard label={t('deo.avg_survival')} value={<Counter to={stats.avgUrgency} suffix={` ${t('deo.days')}`} />} icon={Wrench} variant="success" />
         </div>
 
         {/* FORWARDED-BY-PRINCIPAL bundles — sorted by LR urgency */}
@@ -169,21 +171,21 @@ export default function DEODashboard() {
                 size="sm" 
                 onClick={() => setActiveTab("queue")}
               >
-                Risk Queue
+                {t('deo.risk_queue_tab')}
               </Button>
               <Button 
                 variant={activeTab === 'flagged' ? 'danger' : 'ghost'} 
                 size="sm" 
                 onClick={() => setActiveTab("flagged")}
               >
-                GPS Mismatches
+                {t('deo.gps_mismatches_tab')}
               </Button>
             </div>
             <div className="flex items-center gap-2">
               <div className="relative">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input 
-                  placeholder="Filter District..." 
+                  placeholder={t('deo.filter_placeholder')} 
                   value={district} 
                   onChange={e => setDistrict(e.target.value)} 
                   className="text-xs pl-8 pr-4 py-2 border border-slate-200 rounded outline-none focus:border-blue-900 transition-colors" 
@@ -198,9 +200,9 @@ export default function DEODashboard() {
           <div className="p-6">
             {activeTab === "queue" ? (
               loading ? (
-                <div className="py-12 text-center text-slate-400">Loading Risk Scans...</div>
+                <div className="py-12 text-center text-slate-400">{t('deo.loading_scans')}</div>
               ) : data.length === 0 ? (
-                <div className="py-12 text-center text-slate-400 font-medium text-sm">No critical risk nodes identified in current registry scan.</div>
+                <div className="py-12 text-center text-slate-400 font-medium text-sm">{t('deo.no_critical_nodes')}</div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {data.map((s, idx) => {
@@ -233,7 +235,7 @@ export default function DEODashboard() {
                           {/* Badges on Image */}
                           <div className="absolute top-3 left-3 flex gap-2">
                             <span className="bg-red-500/90 backdrop-blur-sm text-white px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest shadow-sm">
-                              Score: {s.priorityScore}
+                              {t('deo.score')}: {s.priorityScore}
                             </span>
                           </div>
                           
@@ -253,8 +255,8 @@ export default function DEODashboard() {
 
                           <div className="mt-auto space-y-2 mb-4">
                             <div className="flex justify-between items-end">
-                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Failure Horizon</span>
-                              <span className="text-sm font-black text-slate-800">{s.daysToFailure} Days</span>
+                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('deo.failure_horizon')}</span>
+                              <span className="text-sm font-black text-slate-800">{s.daysToFailure} {t('deo.days')}</span>
                             </div>
                             <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
                               <motion.div 
@@ -267,8 +269,8 @@ export default function DEODashboard() {
 
                           <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                             <div className="flex flex-col">
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Student Impact</span>
-                              <span className="text-sm font-black text-slate-800">{s.studentImpactScore} <span className="text-slate-400">Pts</span></span>
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('deo.student_impact')}</span>
+                              <span className="text-sm font-black text-slate-800">{s.studentImpactScore} <span className="text-slate-400">{t('deo.pts')}</span></span>
                             </div>
                             <Button 
                               variant="primary" 
@@ -279,7 +281,7 @@ export default function DEODashboard() {
                                 navigate(`${roleSubPath(user?.role, "work-orders/new")}?schoolId=${s.schoolId}&school=${encodeURIComponent(s.schoolName)}&category=${s.highestPriorityCategory}&score=${s.priorityScore}`); 
                               }}
                             >
-                              Resolve
+                              {t('deo.resolve')}
                             </Button>
                           </div>
                         </div>
@@ -291,39 +293,39 @@ export default function DEODashboard() {
             ) : (
               // FLAGGED MISMATCH TAB
               flaggedOrders.length === 0 ? (
-                <div style={{ padding: 60, textAlign: 'center' }}><ShieldAlert size={32} color="#fecaca" style={{ margin: '0 auto 12px' }} /><p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>NO LOCATION MISMATCHES DETECTED</p></div>
+                <div style={{ padding: 60, textAlign: 'center' }}><ShieldAlert size={32} color="#fecaca" style={{ margin: '0 auto 12px' }} /><p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>{t('deo.no_mismatches')}</p></div>
               ) : (
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Protocol</th>
-                      <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Contractor / Site</th>
-                      <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Coordinates</th>
-                      <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Alert</th>
-                      <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Variance</th>
+                      <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">{t('deo.th.protocol')}</th>
+                      <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">{t('deo.th.contractor')}</th>
+                      <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">{t('deo.th.coordinates')}</th>
+                      <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">{t('deo.th.alert')}</th>
+                      <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">{t('deo.th.variance')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {flaggedOrders.map((o, idx) => (
                       <tr key={idx} className="trow border-b border-red-50 bg-red-50/30">
                         <td className="px-6 py-4">
-                          <Button variant="danger" size="sm" onClick={() => window.open(o.completionProof?.photoUrl, '_blank')}>Verify Proof</Button>
+                          <Button variant="danger" size="sm" onClick={() => window.open(o.completionProof?.photoUrl, '_blank')}>{t('deo.verify_proof')}</Button>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-xs font-bold text-[#b91c1c]">{o.school?.name || 'Unknown School'}</div>
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">Verified By: {o.contractor?.name || 'Staff'}</div>
+                          <div className="text-xs font-bold text-[#b91c1c]">{o.school?.name || t('deo.unknown_school')}</div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">{t('deo.verified_by')}: {o.contractor?.name || t('deo.staff')}</div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">SUBMITTED: {o.completionProof?.gpsLocation?.lat?.toFixed(4)}, {o.completionProof?.gpsLocation?.lng?.toFixed(4)}</div>
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-1 opacity-60">REGISTRY: {o.school?.location?.lat?.toFixed(4)}, {o.school?.location?.lng?.toFixed(4)}</div>
+                          <div className="text-[10px] font-bold text-slate-600 uppercase tracking-tight">{t('deo.submitted')}: {o.completionProof?.gpsLocation?.lat?.toFixed(4)}, {o.completionProof?.gpsLocation?.lng?.toFixed(4)}</div>
+                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-1 opacity-60">{t('deo.registry')}: {o.school?.location?.lat?.toFixed(4)}, {o.school?.location?.lng?.toFixed(4)}</div>
                         </td>
                         <td className="px-6 py-4">
-                           <Badge variant="critical" className="text-[9px] font-bold uppercase py-0.5 px-2">Location Variance</Badge>
+                           <Badge variant="critical" className="text-[9px] font-bold uppercase py-0.5 px-2">{t('deo.location_variance')}</Badge>
                         </td>
                         <td className="px-6 py-4">
                            <div className="flex flex-col">
-                             <span className="text-[10px] font-bold text-red-700 uppercase tracking-widest">Breach Detected</span>
-                             <span className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">Outside Security Perimeter</span>
+                             <span className="text-[10px] font-bold text-red-700 uppercase tracking-widest">{t('deo.breach_detected')}</span>
+                             <span className="text-[9px] font-bold text-slate-400 uppercase mt-0.5">{t('deo.outside_perimeter')}</span>
                            </div>
                         </td>
                       </tr>
@@ -335,10 +337,10 @@ export default function DEODashboard() {
           </div>
 
           <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
-            <span className="text-[12px] font-bold text-slate-400 uppercase tracking-widest leading-none">Last Synchronization: {lastSync.toLocaleTimeString()}</span>
+            <span className="text-[12px] font-bold text-slate-400 uppercase tracking-widest leading-none">{t('deo.last_sync')}: {lastSync.toLocaleTimeString()}</span>
             <div className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-blue-600"></div>
-              <span className="text-[12px] font-bold text-blue-900 uppercase tracking-widest leading-none">Security Registry Operational</span>
+              <span className="text-[12px] font-bold text-blue-900 uppercase tracking-widest leading-none">{t('deo.security_registry_operational')}</span>
             </div>
           </div>
         </Card>

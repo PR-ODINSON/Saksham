@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { Building2, LogOut, Menu, X, ChevronDown, Activity, LayoutDashboard, FileText, School, Zap, Crosshair, Hammer, Shield, Globe, ClipboardList } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 import { dashboardPathFor } from '../../utils/roleRoutes.js';
+import { useLanguage } from '../../context/LanguageContext';
 
 // Each role's nav uses its own URL prefix (/peon/dashboard, /principal/dashboard, ...)
 const ROLE_NAV = {
@@ -69,6 +70,7 @@ const GLOBAL_STYLES = `
 
 export default function AppLayout({ children }) {
   const { user, logout } = useAuth();
+  const { language, setLanguage } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -114,9 +116,26 @@ export default function AppLayout({ children }) {
             </div>
           </div>
           <div className="flex items-center gap-4 uppercase font-bold">
-            <button className="hover:text-blue-700">English</button>
+            <button 
+              onClick={() => setLanguage('en')}
+              className={`hover:text-blue-700 transition-colors ${language === 'en' ? 'text-blue-800 border-b-2 border-blue-800' : 'text-slate-500'}`}
+            >
+              English
+            </button>
             <span className="text-slate-300">|</span>
-            <button className="hover:text-blue-700 text-[11px]">ગુજરાતી</button>
+            <button 
+              onClick={() => setLanguage('hi')}
+              className={`hover:text-blue-700 transition-colors ${language === 'hi' ? 'text-blue-800 border-b-2 border-blue-800' : 'text-slate-500'}`}
+            >
+              हिन्दी
+            </button>
+            <span className="text-slate-300">|</span>
+            <button 
+              onClick={() => setLanguage('gu')}
+              className={`hover:text-blue-700 transition-colors text-[11px] ${language === 'gu' ? 'text-blue-800 border-b-2 border-blue-800' : 'text-slate-500'}`}
+            >
+              ગુજરાતી
+            </button>
           </div>
         </div>
       </div>
