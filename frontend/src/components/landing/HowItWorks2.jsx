@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { LayoutList, Activity, Wrench, ShieldCheck, ClipboardList, BrainCircuit, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 /* ─────────────────────────────────────────────────────────
    MICRO-TAG COMPONENT (Blue Theme)
@@ -78,6 +79,7 @@ const TimelineStep = ({ step, idx, isEven }) => (
    MAIN HOW IT WORKS COMPONENT
    ───────────────────────────────────────────────────────── */
 const HowItWorks = () => {
+  const { t } = useLanguage();
   const targetRef = useRef(null);
   const { scrollYProgress } = useScroll({ target: targetRef, offset: ["start end", "end start"] });
   const springProgress = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
@@ -87,10 +89,10 @@ const HowItWorks = () => {
   const parallaxRev = useTransform(scrollYProgress, [0, 1], [200, -200]);
 
   const steps = [
-    { num: "01", title: "REPORT", tag: "FIELD_DATA", icon: <ClipboardList size={28} color="#2563eb" />, desc: "School staff submits structured weekly reports on asset conditions in under 2 minutes." },
-    { num: "02", title: "FORECAST", tag: "AI_ANALYSIS", icon: <BrainCircuit size={28} color="#2563eb" />, desc: "Saksham's AI models analyze the data to predict infrastructure failures within a 30-60 day window." },
-    { num: "03", title: "RANK", tag: "IMPACT_PRIORITY", icon: <AlertTriangle size={28} color="#2563eb" />, desc: "The system prioritizes repairs based on student impact, ranking critical facilities like girls' toilets first." },
-    { num: "04", title: "RESOLVE", tag: "AUDIT_DONE", icon: <CheckCircle2 size={28} color="#2563eb" />, desc: "Maintenance crews are dispatched, and the final resolution is verified with before/after documentation." }
+    { num: "01", title: t('hiw.report'), tag: t('hiw.field_data'), icon: <ClipboardList size={28} color="#2563eb" />, desc: t('hiw.report_desc') },
+    { num: "02", title: t('hiw.forecast'), tag: t('hiw.ai_analysis'), icon: <BrainCircuit size={28} color="#2563eb" />, desc: t('hiw.forecast_desc') },
+    { num: "03", title: t('hiw.rank'), tag: t('hiw.impact_priority'), icon: <AlertTriangle size={28} color="#2563eb" />, desc: t('hiw.rank_desc') },
+    { num: "04", title: t('hiw.resolve'), tag: t('hiw.audit_done'), icon: <CheckCircle2 size={28} color="#2563eb" />, desc: t('hiw.resolve_desc') }
   ];
 
   return (
@@ -114,14 +116,14 @@ const HowItWorks = () => {
         {/* Header */}
         <div style={{ textAlign: 'center', maxWidth: 720, margin: '0 auto 120px' }}>
           <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} style={{ display: 'inline-flex', padding: '8px 20px', borderRadius: 99, border: '2px solid #0f172a', background: '#fff', color: '#0f172a', fontSize: 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 32, boxShadow: '6px 6px 0 #2563eb' }}>
-            The Predictive Cycle
+            {t('hiw.cycle')}
           </motion.div>
           <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3rem, 7vw, 5.5rem)', fontWeight: 800, color: '#0f172a', lineHeight: 0.95, letterSpacing: '-0.04em', marginBottom: 32 }}>
-            Predicting To <br/>
-            <span style={{ color: '#2563eb', WebkitTextStroke: '1px #0f172a' }}>Protect Safety.</span>
+            {t('hiw.predicting_to')} <br/>
+            <span style={{ color: '#2563eb', WebkitTextStroke: '1px #0f172a' }}>{t('hiw.protect_safety')}</span>
           </h2>
           <p style={{ fontSize: '1.35rem', color: '#64748b', fontWeight: 600, lineHeight: 1.4, maxWidth: 540, margin: '0 auto' }}>
-            We transitioned from reactive repairs to predictive maintenance, ensuring school assets are always secure.
+            {t('hiw.desc')}
           </p>
         </div>
 

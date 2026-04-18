@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { get, post, postFile } from "../../services/api";
 import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
@@ -217,12 +218,12 @@ function VisualSelectGrid({ options, value, onChange }) {
 }
 
 // ─── PhotoUpload ──────────────────────────────────────────────────────────────
-function PhotoUpload({ file, onChange }) {
+function PhotoUpload({ file, onChange, t }) {
   const inputRef = useRef(null);
   return (
     <div className="space-y-3 h-full flex flex-col">
       <label className="text-xs font-bold text-slate-700 block uppercase tracking-wide">
-        Evidence Photography
+        {t('peon.photo_evidence')}
       </label>
       {file ? (
         <div className="flex-1 flex items-center gap-4 p-4 rounded-lg bg-slate-50 border border-slate-200 shadow-sm">
@@ -233,7 +234,7 @@ function PhotoUpload({ file, onChange }) {
           />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-bold text-slate-900 truncate">{file.name}</p>
-            <p className="text-xs text-slate-500 font-medium">Image captured successfully</p>
+            <p className="text-xs text-slate-500 font-medium">{t('peon.photo_success')}</p>
           </div>
           <button
             type="button"
@@ -253,8 +254,8 @@ function PhotoUpload({ file, onChange }) {
             <Camera size={28} />
           </div>
           <div className="text-center">
-            <span className="text-sm font-bold text-slate-700 block transition-colors group-hover:text-blue-700">Select Inspection Photo</span>
-            <span className="text-xs text-slate-500">JPG, PNG allowed (Max 5MB)</span>
+            <span className="text-sm font-bold text-slate-700 block transition-colors group-hover:text-blue-700">{t('peon.photo_select')}</span>
+            <span className="text-xs text-slate-500">{t('peon.photo_format')}</span>
           </div>
         </button>
       )}
@@ -273,6 +274,7 @@ function PhotoUpload({ file, onChange }) {
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function WeeklyInputForm() {
   const { user } = useAuth();
+  const { t, language, setLanguage } = useLanguage();
 
   const [school,     setSchool]     = useState(null);
   const weekNumber = getISOWeek();  // auto-filled, not editable by peon
@@ -521,11 +523,30 @@ export default function WeeklyInputForm() {
           <div>
             <h1 className="text-lg font-extrabold text-white tracking-tight flex items-center gap-3">
               <Wrench size={20} className="text-blue-300" />
-              Condition Audit Form (Weekly)
+              {t('peon.title')}
             </h1>
             <p className="text-blue-200 text-[11px] font-bold uppercase tracking-wider mt-0.5">
-              Ref: {school?.district} / {school?.block} / Week {weekNumber}
+              {t('peon.ref')}: {school?.district} / {school?.block} / {t('peon.week')} {weekNumber}
             </p>
+          </div>
+
+          {/* Language Switcher */}
+          <div className="flex items-center gap-2 px-2 py-1 bg-[#002244] border border-[#004080] rounded-md shadow-inner">
+            <button 
+              type="button"
+              onClick={() => setLanguage('en')}
+              className={`text-[10px] font-black px-2 py-1 rounded transition-colors ${language === 'en' ? 'bg-white text-[#003366]' : 'text-blue-300 hover:bg-[#003366]'}`}
+            >EN</button>
+            <button 
+              type="button"
+              onClick={() => setLanguage('hi')}
+              className={`text-[10px] font-black px-2 py-1 rounded transition-colors ${language === 'hi' ? 'bg-white text-[#003366]' : 'text-blue-300 hover:bg-[#003366]'}`}
+            >HI</button>
+            <button 
+              type="button"
+              onClick={() => setLanguage('gu')}
+              className={`text-[10px] font-black px-2 py-1 rounded transition-colors ${language === 'gu' ? 'bg-white text-[#003366]' : 'text-blue-300 hover:bg-[#003366]'}`}
+            >GU</button>
           </div>
         </div>
 
@@ -533,9 +554,9 @@ export default function WeeklyInputForm() {
           <div className="mb-8 flex items-start gap-4 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-md">
             <ShieldAlert className="text-amber-500 shrink-0 mt-0.5" size={18} />
             <div>
-              <p className="text-xs font-black text-amber-900 uppercase mb-0.5">Instruction for School Personnel</p>
+              <p className="text-xs font-black text-amber-900 uppercase mb-0.5">{t('peon.instruction_title')}</p>
               <p className="text-xs font-medium text-amber-800 leading-relaxed">
-                Please provide accurate physical assessments for each category. Uploading a clear photo of identifiable issues is mandatory for priority maintenance allocation.
+                {t('peon.instruction_desc')}
               </p>
             </div>
           </div>
@@ -555,7 +576,7 @@ export default function WeeklyInputForm() {
                   }`}
                 >
                   {cat.icon}
-                  <span className="hidden sm:inline">{cat.label}</span>
+                  <span className="hidden sm:inline">{t(`peon.cat_${cat.id}`)}</span>
                 </button>
               ))}
             </div>
@@ -570,7 +591,7 @@ export default function WeeklyInputForm() {
                        {activeCat.icon}
                     </div>
                     <h2 className="text-sm font-black uppercase tracking-widest text-slate-800">
-                      I. {activeCat.label} Unit Assessment
+                      I. {t(`peon.cat_${activeCat.id}`)} {t('peon.unit_assessment')}
                     </h2>
                   </div>
 
@@ -579,8 +600,8 @@ export default function WeeklyInputForm() {
                        {/* 1. Condition Score */}
                        <div className="space-y-4">
                           <label className="text-[11px] font-black text-slate-500 uppercase flex items-center gap-2">
-                            <span>Condition State (1-5)</span>
-                            <span className="text-[9px] font-bold text-white bg-slate-400 px-1.5 py-0.5 rounded">Required</span>
+                            <span>{t('peon.condition_state')}</span>
+                            <span className="text-[9px] font-bold text-white bg-slate-400 px-1.5 py-0.5 rounded">{t('peon.required')}</span>
                           </label>
                           <div className="grid grid-cols-5 gap-2">
                             {CONDITION_LEVELS.map(({ score, label, color }) => {
@@ -615,8 +636,8 @@ export default function WeeklyInputForm() {
 
                       {/* 3. Deficiency Check-list (Shifted from Right Side) */}
                       <MultiSelect
-                        label="Deficiency Check-list"
-                        placeholder="Observe and Select..."
+                        label={t('peon.deficiency_list')}
+                        placeholder={t('peon.observe')}
                         options={activeCat.flags.map(f => ({ value: f.key, label: f.label, desc: f.desc }))}
                         selectedValues={activeCat.flags.filter(f => activeState[f.key]).map(f => f.key)}
                         onChange={(newKeys) => {
@@ -633,6 +654,7 @@ export default function WeeklyInputForm() {
                         <PhotoUpload
                           file={catPhotos[activeTab]}
                           onChange={(f) => setPhoto(activeTab, f)}
+                          t={t}
                         />
                       </div>
 
@@ -645,7 +667,7 @@ export default function WeeklyInputForm() {
                         isLoading={submitting}
                         className="w-full bg-[#003366] hover:bg-blue-900 text-white font-black uppercase tracking-widest text-[10px] h-12 shadow-sm"
                       >
-                        Submit Audit Report
+                        {t('peon.submit_report')}
                       </Button>
                     </div>
                   </div>

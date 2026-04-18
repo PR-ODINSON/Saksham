@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Building2, Activity, Wrench, ShieldAlert, BarChart3, LayoutList, History, ChevronRight, Cpu, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 /* ─────────────────────────────────────────────────────────
    MICRO-COMPONENTS (Hardware Aesthetic - Now in Blue)
@@ -22,6 +23,7 @@ const GrainOverlay = () => (
    MAIN FEATURES SECTION: SAKSHAM (BLUE THEME)
    ───────────────────────────────────────────────────────── */
 const FeaturesSection = () => {
+  const { t } = useLanguage();
   const [activeCard, setActiveCard] = useState(null);
 
   const cardVariants = {
@@ -40,11 +42,11 @@ const FeaturesSection = () => {
         {/* Header: Institutional Precision */}
         <div style={{ textAlign: 'center', maxWidth: 760, margin: '0 auto 80px' }}>
           <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '8px 16px', borderRadius: 99, background: '#f8fafc', border: '2px solid #0f172a', color: '#0f172a', fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 24, boxShadow: '4px 4px 0 #2563eb' }}>
-            <Cpu size={14} color="#2563eb" /> Infrastructure Intelligence
+            <Cpu size={14} color="#2563eb" /> {t('feat.infra_intel')}
           </motion.div>
           <motion.h2 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(2.8rem, 5vw, 4.5rem)', fontWeight: 800, color: '#0f172a', lineHeight: 1.05, letterSpacing: '-0.03em' }}>
-            Predictive Core.<br/>
-            <span style={{ color: '#64748b' }}>Structural Precision.</span>
+            {t('feat.predictive_core')}<br/>
+            <span style={{ color: '#64748b' }}>{t('feat.structural_precision')}</span>
           </motion.h2>
         </div>
 
@@ -65,13 +67,13 @@ const FeaturesSection = () => {
               <div style={{ width: 64, height: 64, borderRadius: 16, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 32 }}>
                 <Activity size={32} color="#2563eb" />
               </div>
-              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '3rem', fontWeight: 800, color: '#0f172a', margin: '0 0 20px 0', lineHeight: 1.1 }}>Multi-Factor Forecast</h3>
+              <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '3rem', fontWeight: 800, color: '#0f172a', margin: '0 0 20px 0', lineHeight: 1.1 }}>{t('feat.multi_factor')}</h3>
               <p style={{ fontSize: '1.2rem', color: '#64748b', fontWeight: 500, lineHeight: 1.6, margin: '0 0 40px' }}>
-                Forecast failure windows for 30,000+ buildings using building age, material, and weather zone data[cite: 103, 105, 120].
+                {t('feat.multi_factor_desc')}
               </p>
               
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                {['STRUCTURAL', 'PLUMBING', 'ELECTRICAL'].map((tag, i) => (
+                {[t('feat.structural'), t('feat.plumbing'), t('feat.electrical')].map((tag, i) => (
                   <div key={i} style={{ padding: '8px 14px', borderRadius: 10, background: '#f1f5f9', border: '1px solid #e2e8f0', fontSize: 11, fontWeight: 900, color: '#0f172a', fontFamily: 'monospace' }}>{tag}</div>
                 ))}
               </div>
@@ -105,9 +107,9 @@ const FeaturesSection = () => {
               <LayoutList size={28} color="#2563eb" />
             </div>
             
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 800, margin: '0 0 16px 0', lineHeight: 1.1 }}>Impact Bias Queue</h3>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 800, margin: '0 0 16px 0', lineHeight: 1.1 }}>{t('feat.impact_bias')}</h3>
             <p style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.6)', fontWeight: 500, lineHeight: 1.6, maxWidth: 380, margin: '0 0 40px 0' }}>
-              Automatic ranking system: Girls' school toilet repairs rank above cracked storage room walls.
+              {t('feat.impact_desc')}
             </p>
 
             <div style={{ background: 'rgba(255,255,255,0.03)', border: '2px solid rgba(255,255,255,0.1)', borderRadius: 20, padding: 24 }}>
@@ -138,9 +140,9 @@ const FeaturesSection = () => {
               <CheckCircle2 size={28} color="#0f172a" />
             </div>
             
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 800, color: '#0f172a', margin: '0 0 16px 0', lineHeight: 1.1 }}>2-Min Audits</h3>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '2.5rem', fontWeight: 800, color: '#0f172a', margin: '0 0 16px 0', lineHeight: 1.1 }}>{t('feat.two_min_audits')}</h3>
             <p style={{ fontSize: '1.1rem', color: '#0f172a', fontWeight: 700, lineHeight: 1.5, opacity: 0.8, margin: '0 0 40px 0' }}>
-              Structured weekly condition forms—completables in under 2 minutes by school staff[cite: 104, 116].
+              {t('feat.two_min_desc')}
             </p>
 
             <div style={{ background: '#fff', border: '2px solid #0f172a', borderRadius: 20, padding: 24, boxShadow: '6px 6px 0 rgba(0,0,0,0.05)' }}>
@@ -148,7 +150,7 @@ const FeaturesSection = () => {
                  <span style={{ fontSize: 11, fontWeight: 800, color: '#94a3b8' }}>ENTRY TIME</span>
                  <span style={{ fontSize: 11, fontWeight: 900, color: '#2563eb' }}>&lt; 120s</span>
                </div>
-               <p style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 900, color: '#0f172a', margin: 0 }}>99.8<span style={{ fontSize: 14, color: '#94a3b8' }}>% Compliant</span></p>
+               <p style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 900, color: '#0f172a', margin: 0 }}>99.8<span style={{ fontSize: 14, color: '#94a3b8' }}>{t('feat.compliant')}</span></p>
             </div>
           </motion.div>
 

@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { get, post } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
 import { dashboardPathFor } from "../../utils/roleRoutes.js";
+import { useLanguage } from "../../context/LanguageContext";
 import { motion } from "framer-motion";
 import {
   Building2, Lock, Mail, ArrowRight,
@@ -69,12 +70,51 @@ const GLOBAL_STYLES = `
 `;
 
 export default function Login() {
+  const { t, language, setLanguage } = useLanguage();
   const { login } = useAuth();
   const navigate  = useNavigate();
   const [form,    setForm]    = useState({ email: "", password: "" });
   const [error,   setError]   = useState("");
   const [loading, setLoading] = useState(false);
   const [active,  setActive]  = useState(null);
+
+  const ROLE_HINTS = [
+    {
+      role:    "admin",
+      label:   t('login.role_admin'),
+      email:   "admin@demo.com",
+      icon:    <ShieldCheck size={14} />,
+      accent:  "bg-red-50 border-red-500 text-red-700",
+    },
+    {
+      role:    "deo",
+      label:   t('login.role_deo'),
+      email:   "deo@demo.com",
+      icon:    <Building2 size={14} />,
+      accent:  "bg-blue-50 border-blue-500 text-blue-700",
+    },
+    {
+      role:    "principal",
+      label:   t('login.role_principal'),
+      email:   "principal@demo.com",
+      icon:    <SchoolIcon size={14} />,
+      accent:  "bg-indigo-50 border-indigo-500 text-indigo-700",
+    },
+    {
+      role:    "contractor",
+      label:   t('login.role_contractor'),
+      email:   "contractor1@demo.com",
+      icon:    <HardHat size={14} />,
+      accent:  "bg-orange-50 border-orange-500 text-orange-700",
+    },
+    {
+      role:    "peon",
+      label:   t('login.role_peon'),
+      email:   "peon@demo.com",
+      icon:    <User size={14} />,
+      accent:  "bg-slate-50 border-slate-500 text-slate-700",
+    },
+  ];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -85,7 +125,7 @@ export default function Login() {
     if (result.success) {
       navigate(dashboardPathFor(result.user?.role));
     } else {
-      setError(result.message || "Invalid credentials. Please try again.");
+      setError(result.message || t('login.invalid_creds'));
     }
   };
 
@@ -114,14 +154,14 @@ export default function Login() {
         <div className="relative z-10 my-auto">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/10 border-2 border-blue-500/30 mb-6 backdrop-blur-sm">
              <Activity size={14} className="text-blue-400" />
-             <span className="text-[12px] font-black text-blue-400 tracking-[0.2em] uppercase">Predictive Engine v3</span>
+             <span className="text-[12px] font-black text-blue-400 tracking-[0.2em] uppercase">{t('login.predictive_engine')}</span>
           </div>
           <h1 className="text-5xl lg:text-6xl font-black text-white leading-[1.1] mb-6" style={{ fontFamily: 'var(--font-display)' }}>
-            Welcome To <br />
-            <span className="text-blue-500">The Core.</span>
+            {t('login.welcome')} <br />
+            <span className="text-blue-500">{t('login.the_core')}</span>
           </h1>
           <p className="text-slate-400 text-lg max-w-md font-medium leading-relaxed">
-            Secure Access Gateway. Authenticate your identity to access the predictive infrastructure dashboard.
+            {t('login.desc')}
           </p>
 
           {/* Floating Widget Mockup */}
@@ -135,8 +175,8 @@ export default function Login() {
                  <ShieldCheck size={16} className="text-emerald-400" />
                </div>
                <div>
-                 <p className="text-[12px] font-black text-emerald-400 uppercase tracking-widest">System Secure</p>
-                 <p className="text-sm font-bold text-white">Encrypted Connection</p>
+                 <p className="text-[12px] font-black text-emerald-400 uppercase tracking-widest">{t('login.system_secure')}</p>
+                 <p className="text-sm font-bold text-white">{t('login.encrypted_conn')}</p>
                </div>
              </div>
              <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
@@ -155,7 +195,7 @@ export default function Login() {
           <span>© 2026 SAKSHAM</span>
           <span className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            System Operational
+            {t('login.system_operational')}
           </span>
         </div>
       </div>
@@ -168,16 +208,34 @@ export default function Login() {
           className="w-full max-w-lg mx-auto"
         >
           <div className="mb-10">
-            {/* Mobile Logo */}
-            <div className="flex lg:hidden items-center gap-3 mb-8">
-              <div className="w-10 h-10 bg-[#0f172a] rounded-lg flex items-center justify-center shadow-[4px_4px_0_#2563eb]">
-                <Sparkles size={20} className="text-white" />
+            {/* Top row with Logo and Language switcher for mobile & desktop */}
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex lg:hidden items-center gap-3">
+                <div className="w-10 h-10 bg-[#0f172a] rounded-lg flex items-center justify-center shadow-[4px_4px_0_#2563eb]">
+                  <Sparkles size={20} className="text-white" />
+                </div>
+                <span className="text-2xl font-black text-[#0f172a] tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>Saksham</span>
               </div>
-              <span className="text-2xl font-black text-[#0f172a] tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>Saksham</span>
+              
+              {/* Language Switcher */}
+              <div className="flex items-center gap-2 px-3 py-1.5 border border-slate-200 rounded-lg ml-auto bg-white shadow-sm">
+                <button 
+                  onClick={() => setLanguage('en')}
+                  className={`text-[10px] font-black px-2 py-1 rounded transition-colors ${language === 'en' ? 'bg-[#0f172a] text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+                >EN</button>
+                <button 
+                  onClick={() => setLanguage('hi')}
+                  className={`text-[10px] font-black px-2 py-1 rounded transition-colors ${language === 'hi' ? 'bg-[#0f172a] text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+                >HI</button>
+                <button 
+                  onClick={() => setLanguage('gu')}
+                  className={`text-[10px] font-black px-2 py-1 rounded transition-colors ${language === 'gu' ? 'bg-[#0f172a] text-white' : 'text-slate-500 hover:bg-slate-100'}`}
+                >GU</button>
+              </div>
             </div>
 
-            <h2 className="text-4xl sm:text-5xl font-black text-[#0f172a] tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)' }}>Authenticate.</h2>
-            <p className="text-slate-500 font-bold text-sm uppercase tracking-[0.15em]">Enter credentials to access portal</p>
+            <h2 className="text-4xl sm:text-5xl font-black text-[#0f172a] tracking-tight mb-3" style={{ fontFamily: 'var(--font-display)' }}>{t('login.auth_title')}</h2>
+            <p className="text-slate-500 font-bold text-sm uppercase tracking-[0.15em]">{t('login.auth_subtitle')}</p>
           </div>
 
           {error && (
@@ -194,7 +252,7 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <InputGroup 
               icon={<Mail size={18} />} 
-              label="Identity / Email Address" 
+              label={t('login.email_label')} 
               name="email" 
               type="email"
               value={form.email} 
@@ -204,7 +262,7 @@ export default function Login() {
             
             <InputGroup 
               icon={<Lock size={18} />} 
-              label="Secure Password" 
+              label={t('login.password_label')} 
               name="password" 
               type="password" 
               value={form.password} 
@@ -217,7 +275,7 @@ export default function Login() {
               disabled={loading}
               className="w-full bg-[#0f172a] hover:bg-blue-600 text-white font-black py-4 rounded-xl transition-all flex items-center justify-center gap-3 shadow-[6px_6px_0_#2563eb] active:translate-x-1 active:translate-y-1 active:shadow-none disabled:opacity-50 disabled:cursor-not-allowed mt-8 text-sm uppercase tracking-widest border-2 border-[#0f172a]"
             >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : <>Authenticate <ArrowRight size={18} /></>}
+              {loading ? <Loader2 className="animate-spin" size={20} /> : <>{t('login.authenticate_btn')} <ArrowRight size={18} /></>}
             </button>
           </form>
 
@@ -226,7 +284,7 @@ export default function Login() {
             <div className="flex items-center gap-2 mb-4">
               <ShieldCheck size={14} className="text-blue-600" />
               <span className="text-[12px] font-black uppercase tracking-widest text-slate-500">
-                Sandbox Identities · password: password123
+                {t('login.sandbox_identities')}
               </span>
             </div>
 
@@ -258,8 +316,8 @@ export default function Login() {
           </div>
 
           <p className="mt-10 text-center text-xs font-black uppercase tracking-widest text-slate-400">
-            Need infrastructure access? {" "}
-            <Link to="/signup" className="text-blue-600 hover:text-[#0f172a] transition-colors border-b-2 border-blue-600 hover:border-[#0f172a] pb-0.5">Request Profile</Link>
+            {t('login.need_access')}
+            <Link to="/signup" className="text-blue-600 hover:text-[#0f172a] transition-colors border-b-2 border-blue-600 hover:border-[#0f172a] pb-0.5">{t('login.request_profile')}</Link>
           </p>
         </motion.div>
       </div>

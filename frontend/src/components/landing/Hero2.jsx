@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, useSpring, useMotionValue, useTransform } from 'framer-motion';
 import { ArrowRight, Building2, Activity, BarChart3, Bell, User, LayoutDashboard, ShieldCheck, Wrench, Clock, AlertTriangle } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 /* ─────────────────────────────────────────────────────────
    GLOBAL STYLES (Unchanged)
@@ -60,16 +61,18 @@ const Typewriter = ({ words, delay = 2000 }) => {
 /* ─────────────────────────────────────────────────────────
    RIGHT PANEL: FLOATING WIDGETS (Unchanged)
    ───────────────────────────────────────────────────────── */
-const TelemetryWidget = ({ x, y }) => (
+const TelemetryWidget = ({ x, y }) => {
+  const { t } = useLanguage();
+  return (
   <motion.div style={{ x, y, position: 'absolute', left: '-12rem', top: '15%', zIndex: 60 }}>
     <div className="glass-card-terminal" style={{ padding: '20px', borderRadius: 20, minWidth: 240 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
         <Activity size={14} color="#2563eb" />
-        <span style={{ fontSize: 10, fontWeight: 900, color: '#0f172a', letterSpacing: '0.1em' }}>STRUCTURAL_SCAN</span>
+        <span style={{ fontSize: 10, fontWeight: 900, color: '#0f172a', letterSpacing: '0.1em' }}>{t('hero.scan')}</span>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>Health Index</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#64748b' }}>{t('hero.health_index')}</span>
           <span style={{ fontSize: 11, fontWeight: 900, color: '#0f172a' }}>92.8%</span>
         </div>
         <div style={{ height: 6, background: '#f1f5f9', borderRadius: 3, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
@@ -78,9 +81,12 @@ const TelemetryWidget = ({ x, y }) => (
       </div>
     </div>
   </motion.div>
-);
+  );
+};
 
-const RiskWidget = ({ x, y }) => (
+const RiskWidget = ({ x, y }) => {
+  const { t } = useLanguage();
+  return (
   <motion.div style={{ x, y, position: 'absolute', right: '-10rem', top: '40%', zIndex: 65 }}>
     <div className="glass-card-terminal" style={{ padding: '16px 20px', borderRadius: 20, borderLeft: '6px solid #ef4444' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -88,18 +94,21 @@ const RiskWidget = ({ x, y }) => (
           <AlertTriangle size={18} color="#ef4444" />
         </div>
         <div>
-          <p style={{ fontSize: 9, fontWeight: 900, color: '#ef4444', margin: 0 }}>HIGH RISK</p>
+          <p style={{ fontSize: 9, fontWeight: 900, color: '#ef4444', margin: 0 }}>{t('hero.high_risk')}</p>
           <p style={{ fontSize: 12, fontWeight: 800, color: '#0f172a', margin: 0 }}>Plumbing Block B</p>
         </div>
       </div>
     </div>
   </motion.div>
-);
+  );
+};
 
 /* ─────────────────────────────────────────────────────────
    RIGHT PANEL: MOBILE UI (Unchanged)
    ───────────────────────────────────────────────────────── */
-const SchoolAppMockup = () => (
+const SchoolAppMockup = () => {
+  const { t } = useLanguage();
+  return (
   <div style={{ position: 'relative', width: 330, height: 680, borderRadius: 52, border: '14px solid #0f172a', background: '#0f172a', boxShadow: '40px 40px 0 rgba(30,58,138,0.05)', overflow: 'hidden' }}>
     <div style={{ position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)', width: 90, height: 28, background: '#000', borderRadius: 99, zIndex: 50 }} />
     
@@ -116,21 +125,21 @@ const SchoolAppMockup = () => (
 
       <div style={{ flex: 1, padding: '24px', background: '#f8fafc' }}>
          <div style={{ background: '#fff', border: '2px solid #0f172a', padding: 20, borderRadius: 24, marginBottom: 20, boxShadow: '4px 4px 0 #0f172a' }}>
-            <p style={{ fontSize: 10, fontWeight: 900, color: '#64748b', marginBottom: 8, letterSpacing: '0.05em' }}>PREDICTION ENGINE</p>
+            <p style={{ fontSize: 10, fontWeight: 900, color: '#64748b', marginBottom: 8, letterSpacing: '0.05em' }}>{t('hero.prediction_engine')}</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                <div style={{ fontSize: 32, fontWeight: 900, color: '#0f172a' }}>60d</div>
                <div style={{ height: 24, width: 2, background: '#e2e8f0' }} />
-               <p style={{ fontSize: 11, fontWeight: 700, color: '#475569', lineHeight: 1.2 }}>Forecast <br/> Horizon</p>
+               <p style={{ fontSize: 11, fontWeight: 700, color: '#475569', lineHeight: 1.2 }}>{t('hero.forecast_horizon')}</p>
             </div>
          </div>
 
          <div style={{ background: '#0f172a', padding: 20, borderRadius: 24, color: '#fff', marginBottom: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                <ShieldCheck size={16} color="#3b82f6" />
-               <span style={{ fontSize: 9, fontWeight: 900, color: '#3b82f6' }}>PRIORITY_ACTIVE</span>
+               <span style={{ fontSize: 9, fontWeight: 900, color: '#3b82f6' }}>{t('hero.priority_active')}</span>
             </div>
             <h4 style={{ fontSize: 15, fontWeight: 800, marginBottom: 4 }}>Girls Toilet Block #01</h4>
-            <p style={{ fontSize: 11, color: '#94a3b8' }}>Ranked #1 for Student Impact</p>
+            <p style={{ fontSize: 11, color: '#94a3b8' }}>{t('hero.ranked_impact')}</p>
          </div>
       </div>
 
@@ -145,12 +154,14 @@ const SchoolAppMockup = () => (
       </div>
     </div>
   </div>
-);
+  );
+};
 
 /* ─────────────────────────────────────────────────────────
    MAIN HERO SECTION
    ───────────────────────────────────────────────────────── */
 const HeroSection = () => {
+  const { t } = useLanguage();
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const springX = useSpring(mouseX, { stiffness: 60, damping: 20 });
@@ -183,20 +194,20 @@ const HeroSection = () => {
           <motion.div initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 1 }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '8px 16px', borderRadius: 99, background: '#eff6ff', border: '2px solid #0f172a', marginBottom: 32 }}>
                <ShieldCheck size={14} color="#2563eb" />
-               <span style={{ fontSize: 11, fontWeight: 900, color: '#0f172a' }}>SECURE_CORE_ACTIVE</span>
+               <span style={{ fontSize: 11, fontWeight: 900, color: '#0f172a' }}>{t('hero.secure_core')}</span>
             </div>
             
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3.5rem, 8vw, 6.5rem)', fontWeight: 800, color: '#0f172a', lineHeight: 0.95, letterSpacing: '-0.04em', margin: '0 0 24px' }}>
-              Built To <br/>
-              <Typewriter words={["Predict.", "Repair.", "Secure.", "Maintain."]} />
+              {t('hero.built_to')} <br/>
+              <Typewriter words={[t('hero.typewriter_1'), t('hero.typewriter_2'), t('hero.typewriter_3'), t('hero.typewriter_4')]} />
             </h1>
 
             <p style={{ fontFamily: 'var(--font-body)', fontSize: '1.25rem', color: '#64748b', lineHeight: 1.6, maxWidth: 500, margin: '0 0 40px' }}>
-              AI-driven infrastructure intelligence for 30,000+ schools. Detect failures 60 days ahead with automated impact ranking.
+              {t('hero.description')}
             </p>
             <div style={{ display: 'flex', gap: 16 }}>
-               <button style={{ padding: '18px 36px', borderRadius: 16, background: '#0f172a', color: '#fff', fontWeight: 900, border: 'none', boxShadow: '8px 8px 0 #2563eb', cursor: 'pointer' }}>Enter Portal</button>
-               <button style={{ padding: '18px 36px', borderRadius: 16, background: 'transparent', color: '#0f172a', fontWeight: 900, border: '2px solid #0f172a', cursor: 'pointer' }}>View Logs</button>
+               <button style={{ padding: '18px 36px', borderRadius: 16, background: '#0f172a', color: '#fff', fontWeight: 900, border: 'none', boxShadow: '8px 8px 0 #2563eb', cursor: 'pointer' }}>{t('hero.enter_portal')}</button>
+               <button style={{ padding: '18px 36px', borderRadius: 16, background: 'transparent', color: '#0f172a', fontWeight: 900, border: '2px solid #0f172a', cursor: 'pointer' }}>{t('hero.view_logs')}</button>
             </div>
           </motion.div>
 
@@ -212,7 +223,7 @@ const HeroSection = () => {
               <motion.div style={{ position: 'absolute', bottom: '10%', left: '-5rem', zIndex: 70 }} animate={{ y: [0, -10, 0] }} transition={{ duration: 4, repeat: Infinity }}>
                  <div className="glass-card-terminal" style={{ padding: '14px 24px', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
                     <Wrench size={18} color="#2563eb" />
-                    <span style={{ fontSize: 12, fontWeight: 900, color: '#0f172a' }}>Audit Ready</span>
+                    <span style={{ fontSize: 12, fontWeight: 900, color: '#0f172a' }}>{t('hero.audit_ready')}</span>
                  </div>
               </motion.div>
             </motion.div>

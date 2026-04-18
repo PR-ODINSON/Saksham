@@ -163,7 +163,7 @@ export default function DEODashboard() {
         {/* FORWARDED-BY-PRINCIPAL bundles — sorted by LR urgency */}
         <ForwardedReportsPanel district={user?.district || district} />
 
-        <Card noPadding variant="gov" title="Risk Management Queue" subtitle="Real-time predictive analysis of infrastructure nodes" className="overflow-visible">
+        <Card noPadding variant="gov" title={t('deo.risk_queue_title')} subtitle={t('deo.risk_queue_subtitle')} className="overflow-visible">
           <div className="border-b border-slate-100 px-6 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="flex gap-1">
               <Button 

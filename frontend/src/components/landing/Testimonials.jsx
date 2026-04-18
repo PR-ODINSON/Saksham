@@ -1,39 +1,42 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, Building2, Wrench, ShieldAlert, BarChart3, Users } from 'lucide-react';
-
-const gridData = [
-  {
-    title: "District Officers",
-    desc: "A centralized dashboard for DEOs to monitor prioritized maintenance queues based on real-world student impact scores.",
-    icon: Building2,
-    img: "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1000",
-    span: "md:col-span-2 md:row-span-2"
-  },
-  {
-    title: "Field Reporting",
-    desc: "Optimized mobile forms for school staff to complete structural health checks in under 2 minutes.",
-    icon: Users,
-    img: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?q=80&w=1000",
-    span: "md:col-span-1 md:row-span-1"
-  },
-  {
-    title: "Contractor Sync",
-    desc: "Automated work orders with before/after verification and GPS-tagged resolution audits.",
-    icon: Wrench,
-    img: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1000",
-    span: "md:col-span-1 md:row-span-1"
-  },
-  {
-    title: "Predictive Analytics",
-    desc: "AI models forecasting failure windows for plumbing, electrical, and structural systems 30-60 days in advance.",
-    icon: BarChart3,
-    img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1000",
-    span: "md:col-span-3 md:row-span-1"
-  }
-];
+import { useLanguage } from '../../context/LanguageContext';
 
 function InteractiveBento() {
+  const { t } = useLanguage();
+  
+  const gridData = [
+    {
+      title: t('testi.title_1'),
+      desc: t('testi.desc_1'),
+      icon: Building2,
+      img: "https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=1000",
+      span: "md:col-span-2 md:row-span-2"
+    },
+    {
+      title: t('testi.title_2'),
+      desc: t('testi.desc_2'),
+      icon: Users,
+      img: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?q=80&w=1000",
+      span: "md:col-span-1 md:row-span-1"
+    },
+    {
+      title: t('testi.title_3'),
+      desc: t('testi.desc_3'),
+      icon: Wrench,
+      img: "https://images.unsplash.com/photo-1504307651254-35680f356dfd?q=80&w=1000",
+      span: "md:col-span-1 md:row-span-1"
+    },
+    {
+      title: t('testi.title_4'),
+      desc: t('testi.desc_4'),
+      icon: BarChart3,
+      img: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1000",
+      span: "md:col-span-3 md:row-span-1"
+    }
+  ];
+
   return (
     <section id="use-cases" className="py-32 px-6 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto mb-[-120px] mt-[-140px]">
@@ -41,7 +44,7 @@ function InteractiveBento() {
         {/* Header - Aligned with Saksham Branding */}
         <div className="mb-20">
           <h2 className="text-4xl md:text-[4.2rem] font-[900] text-[#0f172a] tracking-[-0.05em] leading-[1] uppercase">
-            Built for Every <br /> <span className="text-blue-600 italic">Institution.</span>
+            {t('testi.built_for')} <br /> <span className="text-blue-600 italic">{t('testi.institution')}</span>
           </h2>
         </div>
 

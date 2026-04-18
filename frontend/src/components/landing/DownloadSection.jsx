@@ -1,11 +1,13 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion';
 import { Smartphone, PlayCircle, Building2, ShieldCheck, Download, QrCode, Globe, CheckCircle2 } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 /* ─────────────────────────────────────────────────────────
    MICRO-COMPONENTS (Institutional Blue)
    ───────────────────────────────────────────────────────── */
 const LiveCounter = () => {
+  const { t } = useLanguage();
   const [count, setCount] = useState(30412);
   useEffect(() => {
     const interval = setInterval(() => {
@@ -16,7 +18,7 @@ const LiveCounter = () => {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 20px', borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#2563eb', boxShadow: '0 0 12px #2563eb' }} />
-       <span style={{ fontSize: 13, fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.05em', color: '#0f172a' }}>{count.toLocaleString()} SCHOOLS_MONITORED</span>
+       <span style={{ fontSize: 13, fontWeight: 900, fontFamily: 'monospace', letterSpacing: '0.05em', color: '#0f172a' }}>{count.toLocaleString()} {t('dl.schools_monitored')}</span>
     </div>
   );
 };
@@ -25,6 +27,7 @@ const LiveCounter = () => {
    MAIN DOWNLOAD SECTION: SAKSHAM AUDIT APP
    ───────────────────────────────────────────────────────── */
 const DownloadSection = () => {
+  const { t } = useLanguage();
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const springX = useSpring(mouseX, { stiffness: 60, damping: 20 });
@@ -60,14 +63,14 @@ const DownloadSection = () => {
           {/* Left: Text & UI */}
           <motion.div initial={{ opacity: 0, x: -40 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
             <div style={{ display: 'inline-flex', padding: '8px 16px', borderRadius: 99, background: '#eff6ff', border: '2px solid #0f172a', color: '#0f172a', fontSize: 11, fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 32, boxShadow: '6px 6px 0 #2563eb' }}>
-              Field Terminal Ready
+              {t('dl.terminal_ready')}
             </div>
             <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3rem, 6vw, 5rem)', fontWeight: 800, color: '#0f172a', lineHeight: 1, letterSpacing: '-0.04em', marginBottom: 24 }}>
-              The Audit App.<br/>
-              <span style={{ color: '#2563eb' }}>In Every School.</span>
+              {t('dl.title')}<br/>
+              <span style={{ color: '#2563eb' }}>{t('dl.subtitle')}</span>
             </h2>
             <p style={{ fontSize: '1.25rem', color: '#475569', fontWeight: 600, lineHeight: 1.5, maxWidth: 480, marginBottom: 48 }}>
-              Empower school staff with a structured auditing tool. Submit weekly condition reports in under 2 minutes with real-time sync.
+              {t('dl.desc')}
             </p>
 
             {/* Store Buttons with Hover QR Reveal */}
@@ -90,7 +93,7 @@ const DownloadSection = () => {
                 >
                   {i === 0 ? <Smartphone size={24} /> : <PlayCircle size={24} color="#2563eb" />}
                   <div style={{ textAlign: 'left' }}>
-                    <span style={{ display: 'block', fontSize: 10, fontWeight: 800, opacity: 0.6 }}>{i === 0 ? 'Download on' : 'Get it on'}</span>
+                    <span style={{ display: 'block', fontSize: 10, fontWeight: 800, opacity: 0.6 }}>{i === 0 ? t('dl.download_on') : t('dl.get_it_on')}</span>
                     <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800 }}>{store}</span>
                   </div>
                 </button>
@@ -136,7 +139,7 @@ const DownloadSection = () => {
                             <QrCode size={144} color="#0f172a" />
                             <div className="animate-scan" style={{ position: 'absolute', left: 0, right: 0, height: 2, background: '#2563eb', boxShadow: '0 0 12px #2563eb', zIndex: 10 }} />
                          </div>
-                         <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.1em', color: '#0f172a' }}>SCAN FOR {showQR.toUpperCase()}</span>
+                         <span style={{ fontSize: 11, fontWeight: 900, letterSpacing: '0.1em', color: '#0f172a' }}>{t('dl.scan_for')} {showQR.toUpperCase()}</span>
                       </div>
                    </motion.div>
                  )}
@@ -146,7 +149,7 @@ const DownloadSection = () => {
                <motion.div style={{ position: 'absolute', left: '-6rem', bottom: '8rem', zIndex: 50 }}>
                   <div className="glass-card" style={{ padding: '12px 20px', borderRadius: 16, display: 'flex', alignItems: 'center', gap: 10, background: '#fff', border: '2px solid #0f172a' }}>
                      <CheckCircle2 size={18} color="#2563eb" />
-                     <span style={{ fontSize: 13, fontWeight: 900, color: '#0f172a' }}>AUDIT_SYNC_ACTIVE</span>
+                     <span style={{ fontSize: 13, fontWeight: 900, color: '#0f172a' }}>{t('dl.sync_active')}</span>
                   </div>
                </motion.div>
             </motion.div>
