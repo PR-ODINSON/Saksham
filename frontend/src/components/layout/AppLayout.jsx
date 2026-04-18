@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Building2, LogOut, Menu, X, ChevronDown, Activity, LayoutDashboard, FileText, School, Zap, Crosshair, Hammer, Shield, Globe } from 'lucide-react';
+import { Building2, LogOut, Menu, X, ChevronDown, Activity, LayoutDashboard, FileText, School, Zap, Crosshair, Hammer, Shield, Globe, ClipboardList } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
 
 const ROLE_NAV = {
@@ -25,6 +25,7 @@ const ROLE_NAV = {
     { path: '/dashboard', label: 'Admin Panel', icon: <Shield size={18} strokeWidth={2.5} />, exact: true },
     { path: '/dashboard/map', label: 'Live Map', icon: <Globe size={18} strokeWidth={2.5} /> },
     { path: '/dashboard/work-orders', label: 'All Orders', icon: <FileText size={18} strokeWidth={2.5} /> },
+    { path: '/dashboard/audit', label: 'Audit Log', icon: <ClipboardList size={18} strokeWidth={2.5} /> },
   ],
 };
 

@@ -11,6 +11,7 @@ import WorkOrders from './pages/dashboard/WorkOrders.jsx';
 import Signup from './pages/auth/Signup.jsx';
 import ConditionLogView from './pages/dashboard/ConditionLogView.jsx';
 import GeospatialMap from './pages/dashboard/GeospatialMap.jsx';
+import AuditLogView from './pages/dashboard/AuditLogView.jsx';
 import './App.css';
 
 // Role-based default dashboard redirect
@@ -55,6 +56,7 @@ function App() {
                     <Route path="map" element={<GeospatialMap />} />
                     <Route path="work-orders" element={<WorkOrders />} />
                     <Route path="work-orders/new" element={<WorkOrders />} />
+                    <Route path="audit" element={<AuditLogView />} />
                   </Routes>
                 </AppLayout>
               </ProtectedRoute>
