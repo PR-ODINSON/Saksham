@@ -94,7 +94,7 @@ export default function GeospatialMap() {
     fetchMapData();
   }, []);
 
-  if (!user || user.role !== 'deo') {
+  if (!user || (user.role !== 'deo' && user.role !== 'admin')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 font-body">
         <p className="text-xl font-black text-[#0f172a]">Access Denied.</p>

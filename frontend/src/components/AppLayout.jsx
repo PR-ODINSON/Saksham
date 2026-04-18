@@ -23,6 +23,7 @@ const ROLE_NAV = {
   ],
   admin: [
     { path: '/dashboard', label: 'Admin Panel', icon: <Shield size={18} strokeWidth={2.5} />, exact: true },
+    { path: '/dashboard/map', label: 'Live Map', icon: <Globe size={18} strokeWidth={2.5} /> },
     { path: '/dashboard/work-orders', label: 'All Orders', icon: <FileText size={18} strokeWidth={2.5} /> },
   ],
 };
