@@ -38,12 +38,12 @@ export default function AuditCompliance({ schoolId, className }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-13 gap-1.5 sm:grid-cols-26 lg:grid-cols-52 lg:gap-1">
+        <div className="flex flex-wrap gap-1 mt-2">
           {stats.map(s => (
             <div 
               key={s.week} 
               title={`Week ${s.week}: ${s.submitted ? 'Submitted' : 'Missed'}`}
-              className={`h-6 sm:h-8 rounded-sm border ${s.submitted ? 'bg-emerald-500 border-emerald-600 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.2)]' : 'bg-slate-100 border-slate-200'}`} 
+              className={`w-3 h-6 sm:w-4 sm:h-8 rounded-[2px] border ${s.submitted ? 'bg-emerald-500 border-emerald-600 shadow-sm' : 'bg-slate-100 border-slate-200'}`} 
             />
           ))}
         </div>

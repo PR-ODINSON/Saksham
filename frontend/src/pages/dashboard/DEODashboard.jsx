@@ -159,93 +159,119 @@ export default function DEODashboard() {
             </div>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-100">
-                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Status/Action</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">School Details</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Risk Category</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Predicted Failure</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest">Service Impact</th>
-                </tr>
-              </thead>
-              <tbody>
-                {activeTab === "queue" ? (
-                  loading ? (
-                    <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400">Loading...</td></tr>
-                  ) : data.length === 0 ? (
-                    <tr><td colSpan={5} className="px-6 py-12 text-center text-slate-400 font-medium text-sm">No critical risk nodes identified in current registry scan.</td></tr>
-                  ) : (
-                    data.map((s, idx) => (
-                      <tr key={idx} onClick={() => setSelectedSchool(s)} className="trow border-b border-slate-50 cursor-pointer">
-                        <td className="px-6 py-4 text-center">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            className="text-[10px] font-bold uppercase tracking-wider py-1.5"
-                            onClick={(e) => { e.stopPropagation(); navigate(`${roleSubPath(user?.role, "work-orders/new")}?schoolId=${s.schoolId}&school=${encodeURIComponent(s.schoolName)}&category=${s.highestPriorityCategory}&score=${s.priorityScore}`); }}
-                          >
-                            Assign Task
-                          </Button>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded border border-slate-200 bg-white text-[#003366] flex items-center justify-center font-bold text-[12px] shadow-sm">
-                              {s.schoolName.charAt(0)}
-                            </div>
-                            <div>
-                              <div className="text-xs font-bold text-slate-900 leading-tight">{s.schoolName}</div>
-                              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wide mt-0.5">{s.block}, {s.district}</div>
-                            </div>
+          <div className="p-6">
+            {activeTab === "queue" ? (
+              loading ? (
+                <div className="py-12 text-center text-slate-400">Loading Risk Scans...</div>
+              ) : data.length === 0 ? (
+                <div className="py-12 text-center text-slate-400 font-medium text-sm">No critical risk nodes identified in current registry scan.</div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {data.map((s, idx) => {
+                    const imgIndex = (String(s.schoolId).split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 10;
+                    const images = [
+                      'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=600&q=80',
+                      'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&q=80',
+                      'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?w=600&q=80',
+                      'https://images.unsplash.com/photo-1510531704581-5b2870972060?w=600&q=80',
+                      'https://images.unsplash.com/photo-1498075702571-ecb018f3752d?w=600&q=80',
+                      'https://images.unsplash.com/photo-1599058917212-d750089bc07e?w=600&q=80',
+                      'https://images.unsplash.com/photo-1584697964149-14a9386d3b4d?w=600&q=80',
+                      'https://images.unsplash.com/photo-1536337005238-94b997371b40?w=600&q=80',
+                      'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=600&q=80',
+                      'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=600&q=80'
+                    ];
+                    const imageUrl = images[imgIndex];
+
+                    return (
+                      <div 
+                        key={idx} 
+                        onClick={() => setSelectedSchool({...s, coverImage: imageUrl})} 
+                        className="group relative bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col"
+                      >
+                        {/* Image Cover */}
+                        <div className="h-40 w-full relative overflow-hidden bg-slate-200">
+                          <img src={imageUrl} alt={s.schoolName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a]/90 via-[#0f172a]/40 to-transparent" />
+                          
+                          {/* Badges on Image */}
+                          <div className="absolute top-3 left-3 flex gap-2">
+                            <span className="bg-red-500/90 backdrop-blur-sm text-white px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest shadow-sm">
+                              Score: {s.priorityScore}
+                            </span>
                           </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex gap-1.5 flex-wrap"> 
+                          
+                          <div className="absolute bottom-3 left-4 right-4">
+                            <h3 className="text-white font-black text-lg leading-tight truncate drop-shadow-md">{s.schoolName}</h3>
+                            <p className="text-slate-200 text-xs font-semibold uppercase tracking-widest mt-0.5">{s.block}, {s.district}</p>
+                          </div>
+                        </div>
+
+                        {/* Card Content */}
+                        <div className="p-4 flex flex-col flex-grow">
+                          <div className="flex gap-1.5 flex-wrap mb-4"> 
                             {s.categories.map(cat => (
-                              <Badge key={cat} variant="default" size="sm" className="bg-slate-100 text-slate-600 border-none font-bold text-[9px] uppercase">
-                                {cat}
-                              </Badge>
+                              <Badge key={cat} variant="default" size="sm">{cat}</Badge>
                             ))} 
                           </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="space-y-1.5">
-                            <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wide">{s.daysToFailure} Days Remaining</div>
-                            <div className="w-24 h-1 bg-slate-100 rounded-full overflow-hidden">
+
+                          <div className="mt-auto space-y-2 mb-4">
+                            <div className="flex justify-between items-end">
+                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Failure Horizon</span>
+                              <span className="text-sm font-black text-slate-800">{s.daysToFailure} Days</span>
+                            </div>
+                            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
                               <motion.div 
                                 initial={{ width: 0 }} 
                                 animate={{ width: `${Math.max(10, 100 - (s.daysToFailure / 180 * 100))}%` }} 
-                                className={`h-full ${s.daysToFailure < 30 ? 'bg-red-500' : s.daysToFailure < 60 ? 'bg-orange-400' : 'bg-blue-500'}`} 
+                                className={`h-full ${s.daysToFailure < 30 ? 'bg-red-500' : s.daysToFailure < 60 ? 'bg-amber-500' : 'bg-blue-500'}`} 
                               />
                             </div>
                           </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-bold text-slate-800">{s.studentImpactScore}</span>
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Students</span>
+
+                          <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                            <div className="flex flex-col">
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Student Impact</span>
+                              <span className="text-sm font-black text-slate-800">{s.studentImpactScore} <span className="text-slate-400">Pts</span></span>
+                            </div>
+                            <Button 
+                              variant="primary" 
+                              size="sm"
+                              className="shadow-md"
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                navigate(`${roleSubPath(user?.role, "work-orders/new")}?schoolId=${s.schoolId}&school=${encodeURIComponent(s.schoolName)}&category=${s.highestPriorityCategory}&score=${s.priorityScore}`); 
+                              }}
+                            >
+                              Resolve
+                            </Button>
                           </div>
-                        </td>
-                      </tr>
-                    ))
-                  )
-                ) : (
-                  // FLAGGED MISMATCH TAB
-                  flaggedOrders.length === 0 ? (
-                    <tr><td colSpan={5} style={{ padding: 60, textAlign: 'center' }}><ShieldAlert size={32} color="#fecaca" style={{ margin: '0 auto 12px' }} /><p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>NO LOCATION MISMATCHES DETECTED</p></td></tr>
-                  ) : (
-                    flaggedOrders.map((o, idx) => (
-                      <tr key={idx} className="trow border-b border-slate-50">
-                        <td className="px-6 py-4 text-center">
-                          <Button 
-                            variant="danger" 
-                            size="sm"
-                            className="text-[10px] font-bold uppercase tracking-wider py-1.5"
-                            onClick={() => window.open(o.completionProof?.photoUrl, '_blank')}
-                          >
-                            Verify
-                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )
+            ) : (
+              // FLAGGED MISMATCH TAB
+              flaggedOrders.length === 0 ? (
+                <div style={{ padding: 60, textAlign: 'center' }}><ShieldAlert size={32} color="#fecaca" style={{ margin: '0 auto 12px' }} /><p style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: '#94a3b8', fontWeight: 700 }}>NO LOCATION MISMATCHES DETECTED</p></div>
+              ) : (
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200">
+                      <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Protocol</th>
+                      <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Contractor / Site</th>
+                      <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Coordinates</th>
+                      <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Alert</th>
+                      <th className="px-6 py-4 text-[12px] font-bold text-slate-500 uppercase tracking-widest">Variance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {flaggedOrders.map((o, idx) => (
+                      <tr key={idx} className="trow border-b border-red-50 bg-red-50/30">
+                        <td className="px-6 py-4">
+                          <Button variant="danger" size="sm" onClick={() => window.open(o.completionProof?.photoUrl, '_blank')}>Verify Proof</Button>
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-xs font-bold text-[#b91c1c]">{o.school?.name || 'Unknown School'}</div>
@@ -265,11 +291,11 @@ export default function DEODashboard() {
                            </div>
                         </td>
                       </tr>
-                    ))
-                  )
-                )}
-              </tbody>
-            </table>
+                    ))}
+                  </tbody>
+                </table>
+              )
+            )}
           </div>
 
           <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-between items-center">
@@ -288,6 +314,7 @@ export default function DEODashboard() {
         schoolName={selectedSchool?.schoolName}
         categories={selectedSchool?.categories}
         evidence={selectedSchool?.topEvidence}
+        coverImage={selectedSchool?.coverImage}
       />
     </div>
   );

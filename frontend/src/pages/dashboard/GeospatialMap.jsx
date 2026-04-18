@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { get } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { Globe, RefreshCw, AlertTriangle, Building, ShieldCheck, ChevronDown } from 'lucide-react';
+import { Globe, RefreshCw, AlertTriangle, Building, ShieldCheck, ChevronDown, Navigation, ExternalLink, Crosshair, Filter, X } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import MetricCard from '../../components/common/MetricCard';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
-import Card from '../../components/common/Card';
+import { useNavigate } from 'react-router-dom';
+import MarkerClusterGroup from 'react-leaflet-cluster';
 
 // Global Leaflet fix for base markers, though we use custom ones
 delete L.Icon.Default.prototype._getIconUrl;
@@ -46,8 +47,9 @@ const createCustomIcon = (score) => {
         height: 18px; 
         border-radius: 50%; 
         border: 2px solid white;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 0 10px ${color}, 0 2px 4px rgba(0,0,0,0.2);
         transform: translate(-50%, -50%);
+        ${score >= 60 ? 'animation: marker-pulse 2s infinite;' : ''}
       "></div>
     `,
     iconSize: [20, 20],
@@ -55,13 +57,94 @@ const createCustomIcon = (score) => {
   });
 };
 
+// Component to handle map controls (Recenter, Filters)
+const MapController = ({ userLocation, activeFilter, setFilter }) => {
+  const map = useMap();
+
+  return (
+    <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-3 pointer-events-none">
+      
+      {/* Filters */}
+      <div className="bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200 shadow-xl flex flex-col gap-2 pointer-events-auto">
+        <div className="flex items-center gap-2 px-1 pb-2 border-b border-slate-100 mb-1">
+          <Filter size={14} className="text-slate-500" />
+          <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">Map Filters</span>
+        </div>
+        <button 
+          onClick={() => setFilter('ALL')}
+          className={`text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-lg border-2 transition-all text-left ${activeFilter === 'ALL' ? 'bg-[#003366] text-white border-[#003366]' : 'bg-slate-50 text-slate-500 border-transparent hover:border-slate-200'}`}
+        >
+          Show All Sites
+        </button>
+        <button 
+          onClick={() => setFilter('CRITICAL')}
+          className={`text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-lg border-2 transition-all text-left ${activeFilter === 'CRITICAL' ? 'bg-red-50 text-red-600 border-red-600' : 'bg-slate-50 text-slate-500 border-transparent hover:border-slate-200'}`}
+        >
+          🔴 Critical Only
+        </button>
+      </div>
+
+      {/* Recenter Button */}
+      {userLocation && (
+        <button
+          onClick={() => {
+            map.flyTo([userLocation.lat, userLocation.lng], 14, { duration: 1.5 });
+          }}
+          className="w-12 h-12 bg-white text-blue-600 rounded-xl border border-slate-200 shadow-xl hover:-translate-y-1 hover:shadow-2xl transition-all flex items-center justify-center pointer-events-auto self-end"
+          title="Recenter to my location"
+        >
+          <Crosshair size={22} strokeWidth={2.5} />
+        </button>
+      )}
+    </div>
+  );
+};
+
 export default function GeospatialMap() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [schools, setSchools] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [districts, setDistricts] = useState([]);
+  const [activeFilter, setActiveFilter] = useState('ALL');
+  
+  // Navigation State
+  const [activeRoute, setActiveRoute] = useState(null);
+  const [routeDetails, setRouteDetails] = useState(null);
+  const [routingLoading, setRoutingLoading] = useState(false);
+
+  const fetchRoute = async (destination, schoolName) => {
+    if (!userLocation) {
+      alert("Please allow location access to get directions.");
+      return;
+    }
+    setRoutingLoading(true);
+    try {
+      const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${userLocation.lng},${userLocation.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson`);
+      const data = await res.json();
+      if (data.code === 'Ok' && data.routes.length > 0) {
+        const route = data.routes[0];
+        const latLngs = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+        setActiveRoute({ path: latLngs, destinationName: schoolName });
+        setRouteDetails({
+          distance: (route.distance / 1000).toFixed(1), // km
+          duration: Math.round(route.duration / 60) // mins
+        });
+        
+        // Close the popup card automatically
+        const closeBtn = document.querySelector('.leaflet-popup-close-button');
+        if (closeBtn) closeBtn.click();
+      } else {
+        alert("Could not calculate route.");
+      }
+    } catch (err) {
+      console.error("Routing error:", err);
+      alert("Failed to fetch route.");
+    }
+    setRoutingLoading(false);
+  };
 
   const fetchMapData = async () => {
     setLoading(true);
@@ -139,19 +222,40 @@ export default function GeospatialMap() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <div className="max-w-7xl mx-auto pt-8 sm:pt-12 pb-12 px-4 sm:px-8 flex flex-col">
+      <div className="max-w-7xl mx-auto pt-10 sm:pt-16 pb-12 px-4 sm:px-8 flex flex-col space-y-8">
         {/* CSS overrides for Leaflet Popups to match Bento Box theme */}
         <style>{`
         .leaflet-popup-content-wrapper {
-          border-radius: 8px;
+          border-radius: 12px;
           border: 1px solid #e2e8f0;
-          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important;
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
           padding: 0;
           overflow: hidden;
         }
         .leaflet-popup-content { margin: 0; }
         .leaflet-popup-tip-container { display: none; }
         .custom-map-marker { background: transparent; border: none; }
+        @keyframes marker-pulse {
+          0% { transform: translate(-50%, -50%) scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+          50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+          100% { transform: translate(-50%, -50%) scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        @keyframes route-flow {
+          0% { stroke-dashoffset: 100; }
+          100% { stroke-dashoffset: 0; }
+        }
+        .animated-route-path {
+          animation: route-flow 2s linear infinite;
+          filter: drop-shadow(0px 4px 6px rgba(59, 130, 246, 0.4));
+        }
+        .marker-cluster-small { background-color: rgba(241, 245, 249, 0.9) !important; border: 2px solid #94a3b8 !important; border-radius: 50% !important; font-family: 'Inter', sans-serif; font-weight: 900; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .marker-cluster-small div { background-color: #475569 !important; color: white !important; border-radius: 50% !important; }
+        
+        .marker-cluster-medium { background-color: rgba(255, 237, 213, 0.9) !important; border: 2px solid #f97316 !important; border-radius: 50% !important; font-family: 'Inter', sans-serif; font-weight: 900; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .marker-cluster-medium div { background-color: #ea580c !important; color: white !important; border-radius: 50% !important; }
+
+        .marker-cluster-large { background-color: rgba(254, 226, 226, 0.9) !important; border: 2px solid #ef4444 !important; border-radius: 50% !important; font-family: 'Inter', sans-serif; font-weight: 900; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .marker-cluster-large div { background-color: #dc2626 !important; color: white !important; border-radius: 50% !important; }
       `}</style>
 
         <PageHeader
@@ -195,11 +299,39 @@ export default function GeospatialMap() {
           <MetricCard label="Stable Baseline" value={safe} icon={ShieldCheck} variant="success" />
         </div>
 
-        {/* MAP CONTAINER - Increased fixed height for dominant visibility */}
-        <div className="h-[600px] w-full relative z-0 border border-slate-200 rounded-xl overflow-hidden shadow-xl bg-slate-100 mb-8">
+        {/* MAP CONTAINER */}
+        <div className="relative w-full h-[800px] border-2 border-slate-200 rounded-2xl overflow-hidden shadow-2xl bg-slate-100 mb-8 z-0">
+          
+          {/* Active Navigation HUD */}
+          {activeRoute && routeDetails && (
+            <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[1000] bg-[#003366]/95 backdrop-blur-xl border border-white/20 p-5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl flex items-center gap-8 pointer-events-auto transition-all animate-in slide-in-from-top-4">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black uppercase tracking-widest text-blue-300 mb-0.5">Navigating To Target</span>
+                <span className="text-base font-black text-white uppercase tracking-tight">{activeRoute.destinationName}</span>
+              </div>
+              <div className="w-px h-10 bg-white/20"></div>
+              <div className="flex flex-col items-center min-w-[80px]">
+                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-0.5">Distance</span>
+                <span className="text-xl font-black text-white">{routeDetails.distance} <span className="text-xs text-emerald-400">km</span></span>
+              </div>
+              <div className="w-px h-10 bg-white/20"></div>
+              <div className="flex flex-col items-center min-w-[80px]">
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 mb-0.5">Est. ETA</span>
+                <span className="text-xl font-black text-white">{routeDetails.duration} <span className="text-xs text-amber-400">min</span></span>
+              </div>
+              <button 
+                onClick={() => { setActiveRoute(null); setRouteDetails(null); }}
+                className="ml-2 w-12 h-12 flex items-center justify-center bg-red-500 hover:bg-red-600 border border-red-400 text-white rounded-xl transition-all hover:scale-105 shadow-lg shadow-red-500/30"
+                title="Cancel Navigation"
+              >
+                <X size={24} strokeWidth={2.5} />
+              </button>
+            </div>
+          )}
+
           {loading && schools.length === 0 ? (
             <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
-              <div className="w-12 h-12 border-4 border-slate-200 border-t-[#0f172a] rounded-full animate-spin" />
+              <div className="w-12 h-12 border-4 border-slate-200 border-t-[#003366] rounded-full animate-spin" />
               <p className="mt-4 text-[12px] font-black tracking-[0.2em] uppercase text-slate-400">Syncing GPS Nodes...</p>
             </div>
           ) : null}
@@ -216,36 +348,99 @@ export default function GeospatialMap() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
               />
 
-              {filteredSchools.map((school, idx) => {
-                if (!school.location || !school.location.lat) return null;
+              <MapController userLocation={userLocation} activeFilter={activeFilter} setFilter={setActiveFilter} />
 
-                const color = getMarkerColor(school.priorityScore);
-                const level = getRiskLevel(school.priorityScore);
+              {/* Active Route Polyline */}
+              {activeRoute && (
+                <Polyline 
+                  positions={activeRoute.path} 
+                  color="#2563eb" 
+                  weight={6} 
+                  opacity={0.9}
+                  dashArray="15, 15"
+                  className="animated-route-path"
+                />
+              )}
 
-                return (
-                  <Marker
-                    key={idx}
-                    position={[school.location.lat, school.location.lng]}
-                    icon={createCustomIcon(school.priorityScore)}
-                  >
-                    <Popup>
-                      <div className="p-4 bg-white min-w-[220px]">
-                        <div className="mb-4">
-                          <h3 className="font-bold text-slate-900 text-sm leading-tight uppercase tracking-tight">{school.name}</h3>
-                          <p className="text-[12px] font-bold uppercase tracking-widest text-slate-400 mt-1">{school.district}</p>
-                        </div>
+              <MarkerClusterGroup chunkedLoading maxClusterRadius={40}>
+                {filteredSchools.filter(s => {
+                  if (activeFilter === 'CRITICAL') return s.priorityScore >= 80 || s.willFailWithin30Days;
+                  return true; // ALL
+                }).map((school, idx) => {
+                  if (!school.location || !school.location.lat) return null;
 
-                        <div className="flex items-center justify-between gap-4 p-3 rounded bg-slate-50 border border-slate-100">
-                          <span className="text-[12px] font-bold uppercase tracking-widest text-slate-500">Designation</span>
-                          <Badge variant={level.toLowerCase()} size="sm">
-                            {level} {school.priorityScore ? `(${Math.round(school.priorityScore)})` : ''}
-                          </Badge>
+                  const color = getMarkerColor(school.priorityScore);
+                  const level = getRiskLevel(school.priorityScore);
+
+                  // Generate Google Maps routing URL
+                  const origin = userLocation ? `${userLocation.lat},${userLocation.lng}` : '';
+                  const destination = `${school.location.lat},${school.location.lng}`;
+                  const mapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
+
+                  // Determine image
+                  const imgIndex = (String(school.schoolId).split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 10;
+                  const images = [
+                    'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=600&q=80',
+                    'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&q=80',
+                    'https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?w=600&q=80',
+                    'https://images.unsplash.com/photo-1510531704581-5b2870972060?w=600&q=80',
+                    'https://images.unsplash.com/photo-1498075702571-ecb018f3752d?w=600&q=80',
+                    'https://images.unsplash.com/photo-1599058917212-d750089bc07e?w=600&q=80',
+                    'https://images.unsplash.com/photo-1584697964149-14a9386d3b4d?w=600&q=80',
+                    'https://images.unsplash.com/photo-1536337005238-94b997371b40?w=600&q=80',
+                    'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=600&q=80',
+                    'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=600&q=80'
+                  ];
+                  const imageUrl = images[imgIndex];
+
+                  return (
+                    <Marker
+                      key={idx}
+                      position={[school.location.lat, school.location.lng]}
+                      icon={createCustomIcon(school.priorityScore)}
+                    >
+                      <Popup>
+                        <div className="bg-white min-w-[240px] overflow-hidden flex flex-col">
+                          {/* Banner Image */}
+                          <div className="h-32 w-full relative bg-slate-200">
+                            <img src={imageUrl} alt={school.name} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent" />
+                            <div className="absolute bottom-3 left-4 right-4">
+                              <h3 className="text-white font-black text-sm leading-tight drop-shadow-md truncate">{school.name}</h3>
+                              <p className="text-slate-200 text-[10px] font-black uppercase tracking-widest mt-0.5">{school.district} District</p>
+                            </div>
+                          </div>
+
+                          <div className="p-4">
+                            <div className="flex items-center justify-between gap-4 p-2.5 mb-4 rounded bg-slate-50 border border-slate-100">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Designation</span>
+                            <Badge variant={level.toLowerCase()} size="sm">
+                              {level} {school.priorityScore ? `(${Math.round(school.priorityScore)})` : ''}
+                            </Badge>
+                          </div>
+
+                          <div className="flex flex-col gap-2">
+                            <button 
+                              onClick={() => fetchRoute(school.location, school.name)}
+                              disabled={routingLoading}
+                              className="w-full bg-[#003366] text-white py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-900 transition-colors disabled:opacity-50"
+                            >
+                              <Navigation size={12} /> {routingLoading ? 'Routing...' : 'Get Directions'}
+                            </button>
+                            <button 
+                              onClick={() => navigate(`/dashboard/school/${school.schoolId}`)}
+                              className="w-full bg-slate-100 text-[#003366] border border-slate-200 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-200 transition-colors"
+                            >
+                              <ExternalLink size={12} /> View Full Profile
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </Popup>
-                  </Marker>
-                );
-              })}
+                    </Marker>
+                  );
+                })}
+              </MarkerClusterGroup>
 
               {/* User Location Marker */}
               {userLocation && (
