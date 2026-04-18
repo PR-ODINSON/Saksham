@@ -28,7 +28,46 @@ const CATEGORIES = ['plumbing', 'electrical', 'structural'];
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 /**
+ * For Cloudinary delivery URLs, force a PDFKit-embeddable format (JPEG) by
+ * inserting an `f_jpg,q_auto` transformation segment after `/upload/`.
+ * PDFKit only supports JPEG and PNG; HEIC/WEBP/AVIF originals would otherwise
+ * crash `doc.image()`. Non-Cloudinary URLs are returned unchanged.
+ */
+function toEmbeddableImageUrl(url) {
+  if (typeof url !== 'string') return url;
+  if (!url.includes('res.cloudinary.com')) return url;
+  if (!url.includes('/upload/')) return url;
+  // Avoid double-injecting the transform on subsequent calls.
+  if (/\/upload\/[^/]*f_jpg/.test(url)) return url;
+  return url.replace('/upload/', '/upload/f_jpg,q_auto/');
+}
+
+// In-memory cache so the same Cloudinary URL is only downloaded once per
+// PDF generation (a peon often submits the same image across categories).
+const remoteImageCache = new Map();
+
+async function fetchRemoteImageBuffer(url) {
+  if (remoteImageCache.has(url)) return remoteImageCache.get(url);
+  try {
+    const res = await fetch(url);
+    if (!res.ok) {
+      console.warn(`[reportGenerator] Failed to fetch image ${url}: ${res.status}`);
+      remoteImageCache.set(url, null);
+      return null;
+    }
+    const buf = Buffer.from(await res.arrayBuffer());
+    remoteImageCache.set(url, buf);
+    return buf;
+  } catch (err) {
+    console.warn(`[reportGenerator] Error fetching image ${url}: ${err.message}`);
+    remoteImageCache.set(url, null);
+    return null;
+  }
+}
+
+/**
  * Resolve an image source into something PDFKit can embed.
+ *  • http(s) URL (e.g. Cloudinary) → download into a Buffer (forced JPEG).
  *  • `/api/images/<id>` → fetch Buffer from MongoDB.
  *  • `/uploads/<file>` (legacy) → read from local disk if it still exists.
  *  • absolute path → read from disk.
@@ -38,9 +77,9 @@ async function resolveImageSource(src) {
   if (!src) return null;
   if (typeof src !== 'string') return null;
 
-  // Cloudinary URLs
-  if (src.startsWith('http')) {
-    return src;
+  // Cloudinary (or any remote) URLs — must be downloaded; PDFKit cannot fetch.
+  if (src.startsWith('http://') || src.startsWith('https://')) {
+    return fetchRemoteImageBuffer(toEmbeddableImageUrl(src));
   }
 
   // Legacy MongoDB format
@@ -189,7 +228,9 @@ export async function generateAndSendPDF(reportId) {
   const filePath = path.join(REPORTS_DIR, `school-${schoolId}-w${weekNumber}-report.pdf`);
 
   // Pre-resolve evidence images BEFORE entering the (sync) PDF stream callback —
-  // images now live in MongoDB so the lookup is async.
+  // images live in Cloudinary (downloaded into Buffers here) or legacy storage.
+  // The cache is per-PDF so repeated Cloudinary URLs aren't re-downloaded.
+  remoteImageCache.clear();
   const imagesByRecordId = {};
   for (const r of weekRecords) {
     imagesByRecordId[String(r._id)] = (
@@ -397,7 +438,9 @@ export async function generateAndSendPDF(reportId) {
           }
           try {
             doc.image(imgSrc, imgX, rowY, { fit: [IMG_W, IMG_H], align: 'center', valign: 'center' });
-          } catch (_) { /* skip unembeddable images */ }
+          } catch (err) {
+            console.warn(`[reportGenerator] Skipping unembeddable image: ${err.message}`);
+          }
           imgX += IMG_W + IMG_GAP;
         }
         doc.y = rowY + IMG_H + IMG_GAP;
