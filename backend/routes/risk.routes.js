@@ -4,16 +4,17 @@ import { getRiskScores, getRiskBySchool, getAllRisks, getMaintenanceQueue } from
 
 const router = express.Router();
 
-// GET /api/risk/all  — must be before /:school_id to avoid shadowing
-router.get('/all', protect, authorize('deo', 'admin', 'contractor'), getAllRisks);
-
-// GET /api/risk/:school_id
-router.get('/:school_id', protect, getRiskBySchool);
+// Static routes MUST be registered before /:school_id to prevent shadowing.
+// GET /api/risk/all
+router.get('/all',   protect, authorize('deo', 'admin', 'contractor'), getAllRisks);
 
 // GET /api/risk/queue
 router.get('/queue', protect, authorize('deo', 'admin'), getMaintenanceQueue);
 
-// GET /api/risk-scores
+// GET /api/risk-scores (root)
 router.get('/', protect, authorize('deo', 'admin'), getRiskScores);
+
+// GET /api/risk/:school_id  (dynamic — must come last)
+router.get('/:school_id', protect, getRiskBySchool);
 
 export default router;

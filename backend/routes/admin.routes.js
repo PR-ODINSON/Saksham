@@ -1,16 +1,27 @@
 import express from 'express';
 import { protect, authorize } from '../middlewares/auth.middleware.js';
-import { getAdminStats, getAllUsers, deleteUser, loadCSVData } from '../controllers/admin.controller.js';
+import {
+  getAdminStats,
+  getAllUsers,
+  deleteUser,
+  loadCSVData,
+  getPriorityConfig,
+  updatePriorityConfig,
+} from '../controllers/admin.controller.js';
 
 const router = express.Router();
 
-router.use(protect, authorize('admin'));
+router.use(protect, authorize('admin', 'deo'));
 
-router.get('/stats',        getAdminStats);
-router.get('/users',        getAllUsers);
-router.delete('/users/:id', deleteUser);
+router.get('/stats',        authorize('admin'), getAdminStats);
+router.get('/users',        authorize('admin'), getAllUsers);
+router.delete('/users/:id', authorize('admin'), deleteUser);
 
 // Trigger CSV pipeline: GET /api/admin/load-csv
-router.get('/load-csv', loadCSVData);
+router.get('/load-csv', authorize('admin'), loadCSVData);
+
+// Priority config — DEO and admin can read; only admin can write
+router.get('/priority-config', getPriorityConfig);
+router.put('/priority-config', authorize('admin'), updatePriorityConfig);
 
 export default router;

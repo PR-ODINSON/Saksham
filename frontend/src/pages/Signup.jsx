@@ -202,7 +202,3 @@ const InputGroup = ({ icon, label, ...props }) => (
 );
 
 export default Signup;
-v>
-);
-
-export default Signup;

@@ -1,34 +1,66 @@
 /**
  * Predictive Maintenance Engine — School Infrastructure (PS-03)
+ * v2 — cited evidence, dynamic failure-window, girls' school + student weighting,
+ * and runtime PriorityConfig support.
  *
  * Two prediction modes:
- *  1. predictRiskForCategory()  — per-category, per-spec (stored in risk_predictions)
- *  2. analyseSchool()           — composite multi-category (legacy, used by old dashboard)
- *
- * All logic is rule-based and fully explainable.
- * Score range: 0–100.
+ *  1. predictRiskForCategory()  — per-category, fully explainable (primary)
+ *  2. analyseSchool()           — composite multi-category (legacy dashboard)
  */
 
-// ─── Shared constants ────────────────────────────────────────────────────────
+import PriorityConfig from '../models/priorityConfig.model.js';
 
+// ─── Default weights (used when no active PriorityConfig exists in DB) ────────
+const DEFAULT_CONFIG = {
+  conditionWeights: { good: 10, minor: 30, major: 60, critical: 90 },
+  multipliers: {
+    girlsSchool:      1.5,
+    criticalFacility: 1.6,
+    studentImpact:    1.4,
+  },
+  maxPriorityScore: 100,
+};
+
+// Module-level cache — populated on first call, invalidated after config update
+let _configCache = null;
+
+/**
+ * Return the active PriorityConfig document (DB-cached).
+ * Falls back to DEFAULT_CONFIG if none exists.
+ */
+export async function getActiveConfig() {
+  if (_configCache) return _configCache;
+  try {
+    const doc = await PriorityConfig.findOne({ isActive: true }).lean();
+    _configCache = doc ?? DEFAULT_CONFIG;
+    if (doc) {
+      console.log(`[PredictionEngine] PriorityConfig v${doc.version} loaded`);
+    } else {
+      console.warn('[PredictionEngine] No active PriorityConfig — using defaults');
+    }
+  } catch (err) {
+    console.warn('[PredictionEngine] DB read failed, using defaults:', err.message);
+    _configCache = DEFAULT_CONFIG;
+  }
+  return _configCache;
+}
+
+/** Flush the cache so the next prediction picks up a freshly saved config. */
+export function invalidateConfigCache() {
+  _configCache = null;
+}
+
+// ─── Shared constants ─────────────────────────────────────────────────────────
 const CONDITION_MAP = { good: 1, moderate: 2, poor: 3 };
 
 const CATEGORY_WEIGHTS = {
   structural: 1.0,
   electrical: 0.85,
   sanitation: 0.80,
-  plumbing: 0.65,
-  furniture: 0.35,
+  plumbing:   0.65,
+  furniture:  0.35,
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  PS-03 SPEC: Per-category prediction  (predictRiskForCategory)
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Building-age multiplier for the category-level prediction.
- * Older buildings have a higher base risk.
- */
 function ageFactorForRisk(age) {
   if (age < 10) return 0.80;
   if (age < 20) return 0.90;
@@ -37,94 +69,276 @@ function ageFactorForRisk(age) {
   return 1.25;
 }
 
-/**
- * Weather-zone risk multiplier.
- * Heavy rain and coastal zones accelerate deterioration.
- */
 const WEATHER_FACTORS = {
-  Dry: 0.90,
+  'Dry':        0.90,
   'Heavy Rain': 1.15,
-  Coastal: 1.10,
-  'Semi-Arid': 0.95,
+  'Coastal':    1.10,
+  'Semi-Arid':  0.95,
+  'Tribal':     1.00,
 };
 
+// ─── Deterioration-rate helpers ───────────────────────────────────────────────
+
 /**
- * Pure, category-specific risk prediction.
- *
- * Inputs
- * ------
- * conditionHistory : [{condition: 'good'|'moderate'|'poor', weekOf: Date}]
- *                    Newest first; max 3 entries used per spec.
- * buildingAge      : number  (years)
- * weatherZone      : string  ('Dry' | 'Heavy Rain' | 'Coastal' | ...)
- *
- * Scoring breakdown
- * -----------------
- *   conditionBase  0–50   (avg condition value, normalised)
- *   poorBonus      0–20   (proportion of "poor" reports)
- *   trendBonus     0–15   (worsening trend in last 3 weeks)
- *   × ageFactor           (0.80 – 1.25)
- *   × weatherFactor       (0.90 – 1.15)
- *   = riskScore    0–100
- *
- * Failure window
- * --------------
- *   riskScore > 66  → HIGH   → 30 days
- *   riskScore > 33  → MEDIUM → 45 days
- *   riskScore ≤ 33  → LOW    → 60 days
- *
- * @returns {{ riskScore, failureWindow, riskLevel, reason }}
+ * Compute linear-regression slope (condition score per week).
+ * weekHistory: [{conditionScore: 1-5, weekNumber: n}] — any order.
+ * Returns slope in score-units/week (positive = worsening condition).
  */
-export function predictRiskForCategory(
-  conditionHistory,
-  buildingAge = 20,
-  weatherZone = 'Dry',
-) {
-  if (!conditionHistory || conditionHistory.length === 0) {
+function deteriorationSlope(weekHistory) {
+  const pts = [...weekHistory].sort((a, b) => a.weekNumber - b.weekNumber);
+  const n = pts.length;
+  if (n < 2) return 0;
+
+  const sumX  = pts.reduce((s, p) => s + p.weekNumber,                    0);
+  const sumY  = pts.reduce((s, p) => s + p.conditionScore,                0);
+  const sumXY = pts.reduce((s, p) => s + p.weekNumber * p.conditionScore, 0);
+  const sumX2 = pts.reduce((s, p) => s + p.weekNumber ** 2,               0);
+
+  const denom = n * sumX2 - sumX ** 2;
+  if (denom === 0) return 0;
+
+  return (n * sumXY - sumX * sumY) / denom;
+}
+
+/**
+ * Project estimated days to failure.
+ * conditionScore 5 = worst (failure threshold).
+ * If slope ≤ 0 (stable / improving), returns 90 as a safe default.
+ */
+function projectDaysToFailure(latestScore, slopePerWeek) {
+  if (slopePerWeek <= 0) return 90;
+  const weeksLeft = (5 - latestScore) / slopePerWeek;
+  return Math.max(0, Math.round(weeksLeft * 7));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  PS-03 SPEC: Per-category prediction with full cited evidence
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * predictRiskForCategory — fully explainable per-category risk scoring.
+ *
+ * Every input flag from the CSV schema generates a named evidence item.
+ * No silent adjustments.
+ *
+ * @param {object}  params
+ * @param {Array}   params.weekHistory     [{conditionScore:1-5, weekNumber:n}]
+ *                                         Multiple weeks enable trend + slope calc.
+ * @param {number}  params.buildingAge     Building age in years
+ * @param {string}  params.weatherZone     'Dry'|'Heavy Rain'|'Coastal'|'Semi-Arid'|'Tribal'
+ * @param {string}  params.category        'plumbing'|'electrical'|'structural'|…
+ * @param {boolean} params.isGirlsSchool   PS-03 girls' school flag
+ * @param {number}  params.numStudents     Enrollment count
+ * @param {object}  params.flags           Individual CSV issue flags:
+ *                                         {waterLeak, wiringExposed, roofLeakFlag,
+ *                                          issueFlag, crackWidthMM,
+ *                                          toiletFunctionalRatio, powerOutageHours}
+ * @param {object}  [params.config]        PriorityConfig doc (null = auto-fetch from DB)
+ *
+ * @returns {Promise<{
+ *   riskScore: number,
+ *   failureWindow: number,
+ *   riskLevel: string,
+ *   reason: string,
+ *   evidence: string[],
+ *   estimated_days_to_failure: number,
+ *   within_30_days: boolean,
+ *   within_60_days: boolean,
+ *   deterioration_rate: number
+ * }>}
+ */
+export async function predictRiskForCategory({
+  weekHistory   = [],
+  buildingAge   = 20,
+  weatherZone   = 'Dry',
+  category      = '',
+  isGirlsSchool = false,
+  numStudents   = 0,
+  flags         = {},
+  config        = null,
+} = {}) {
+
+  if (!weekHistory || weekHistory.length === 0) {
     return {
       riskScore: 0,
       failureWindow: 60,
       riskLevel: 'low',
       reason: 'No condition reports available',
+      evidence: ['No condition records available — score defaulted to 0'],
+      estimated_days_to_failure: 90,
+      within_30_days: false,
+      within_60_days: false,
+      deterioration_rate: 0,
     };
   }
 
-  // Use at most last 3 entries (per spec)
-  const history = conditionHistory.slice(0, 3);
-  const values = history.map(h => CONDITION_MAP[h.condition] ?? 1);
+  // Load runtime config (DB-cached; falls back to defaults)
+  const cfg = config ?? (await getActiveConfig());
+  const girlsMultiplier   = cfg.multipliers?.girlsSchool   ?? DEFAULT_CONFIG.multipliers.girlsSchool;
+  const studentMultiplier = cfg.multipliers?.studentImpact ?? DEFAULT_CONFIG.multipliers.studentImpact;
 
-  // ── Condition base (0–50) ──────────────────────────────────────────────
-  const avgCondition = values.reduce((a, b) => a + b, 0) / values.length;
-  const conditionBase = ((avgCondition - 1) / 2) * 50;
+  const evidence = [];
 
-  // ── Poor count bonus (0–20) ───────────────────────────────────────────
-  const poorCount = history.filter(h => h.condition === 'poor').length;
+  // Sort newest first for scoring, ascending for slope
+  const newestFirst = [...weekHistory].sort((a, b) => b.weekNumber - a.weekNumber);
+  const history3    = newestFirst.slice(0, 3); // at most 3 recent entries for base score
+
+  // ── 1. Condition base (0–50) ───────────────────────────────────────────────
+  const avgCondition = history3.reduce((s, r) => s + r.conditionScore, 0) / history3.length;
+  const conditionBase = ((avgCondition - 1) / 4) * 50;
+  evidence.push(
+    `condition_score avg = ${avgCondition.toFixed(1)}/5 across last ${history3.length} week(s)` +
+    ` (week ${history3[history3.length - 1].weekNumber}` +
+    ` → week ${history3[0].weekNumber})` +
+    ` → base score ${conditionBase.toFixed(1)}/50`
+  );
+
+  // ── 2. Poor-reading bonus (0–20) ──────────────────────────────────────────
+  const poorCount = history3.filter(r => r.conditionScore >= 4).length;
   const poorBonus = (poorCount / 3) * 20;
-
-  // ── Trend bonus (0–15) ────────────────────────────────────────────────
-  // values[0] = newest; if it's worse than the oldest, trend is worsening
-  let trendBonus = 0;
-  let trendLabel = 'stable';
-  if (values.length >= 2) {
-    const newest = values[0];
-    const oldest = values[values.length - 1];
-    if (newest > oldest) {
-      trendBonus = 15;
-      trendLabel = 'worsening';
-    } else if (newest < oldest) {
-      trendLabel = 'improving';
-    }
+  if (poorCount > 0) {
+    evidence.push(
+      `condition_score ≥ 4 (poor/critical) in ${poorCount}/3 recent week(s)` +
+      ` → +${poorBonus.toFixed(1)} poor-count bonus`
+    );
   }
 
-  // ── Multipliers ────────────────────────────────────────────────────────
-  const ageFactor     = ageFactorForRisk(buildingAge);
+  // ── 3. Trend bonus (0–15) ─────────────────────────────────────────────────
+  const latestScore = newestFirst[0].conditionScore;
+  const oldestScore = newestFirst[newestFirst.length - 1].conditionScore;
+  let trendBonus = 0;
+  let trendLabel = 'stable';
+
+  if (latestScore > oldestScore) {
+    trendBonus = 15;
+    trendLabel = 'worsening';
+    evidence.push(
+      `trend: condition_score rose from ${oldestScore}` +
+      ` (week ${newestFirst[newestFirst.length - 1].weekNumber})` +
+      ` to ${latestScore} (week ${newestFirst[0].weekNumber})` +
+      ` → worsening trend +15 penalty`
+    );
+  } else if (latestScore < oldestScore) {
+    trendLabel = 'improving';
+    evidence.push(
+      `trend: condition_score fell from ${oldestScore}` +
+      ` (week ${newestFirst[newestFirst.length - 1].weekNumber})` +
+      ` to ${latestScore} (week ${newestFirst[0].weekNumber})` +
+      ` → improving trend (no penalty)`
+    );
+  } else {
+    evidence.push(
+      `trend: condition_score stable at ${latestScore}` +
+      ` across ${newestFirst.length} week(s)`
+    );
+  }
+
+  // ── 4. Building-age multiplier ────────────────────────────────────────────
+  const ageFactor = ageFactorForRisk(buildingAge);
+  evidence.push(
+    `building_age = ${buildingAge} years → age multiplier ×${ageFactor.toFixed(2)}`
+  );
+
+  // ── 5. Weather-zone multiplier ────────────────────────────────────────────
   const weatherFactor = WEATHER_FACTORS[weatherZone] ?? 1.0;
+  evidence.push(
+    `weather_zone = ${weatherZone || 'unknown'} → zone multiplier ×${weatherFactor.toFixed(2)}`
+  );
 
-  // ── Final score ────────────────────────────────────────────────────────
+  // ── 6. Issue flags (named, from CSV schema) ───────────────────────────────
+  const {
+    waterLeak            = false,
+    wiringExposed        = false,
+    roofLeakFlag         = false,
+    issueFlag            = false,
+    crackWidthMM         = 0,
+    toiletFunctionalRatio = null,
+    powerOutageHours     = 0,
+  } = flags;
+
+  if (waterLeak) {
+    evidence.push('water_leak = true → active water leak detected');
+  }
+  if (wiringExposed) {
+    evidence.push('wiring_exposed = true → exposed electrical hazard present');
+  }
+  if (roofLeakFlag) {
+    evidence.push('roof_leak_flag = true → roof integrity compromised');
+  }
+  if (issueFlag && !waterLeak && !wiringExposed && !roofLeakFlag) {
+    evidence.push('issue_flag = true → general infrastructure issue logged');
+  }
+  if (crackWidthMM > 0) {
+    evidence.push(`crack_width_mm = ${crackWidthMM} mm → structural crack recorded`);
+  }
+  if (toiletFunctionalRatio !== null && toiletFunctionalRatio < 0.7) {
+    evidence.push(
+      `toilet_functional_ratio = ${(toiletFunctionalRatio * 100).toFixed(0)}%` +
+      ` (below 70% threshold) → sanitation concern flagged`
+    );
+  }
+  if (powerOutageHours > 10) {
+    evidence.push(
+      `power_outage_hours_weekly = ${powerOutageHours}h` +
+      ` → significant recurring power disruption`
+    );
+  }
+
+  // ── 7. Girls' school + category multiplier (PS-03 rule) ──────────────────
+  // Plumbing failure in a girls' school gets a 1.5× priority multiplier per spec.
+  let girlsMult = 1.0;
+  if (isGirlsSchool && category === 'plumbing') {
+    girlsMult = girlsMultiplier;
+    evidence.push(
+      `girls_school = true + category = plumbing` +
+      ` → PS-03 priority multiplier ×${girlsMult.toFixed(2)}` +
+      ` (sanitation access for female students)`
+    );
+  } else if (isGirlsSchool) {
+    evidence.push(
+      `girls_school = true` +
+      ` (×${girlsMultiplier.toFixed(2)} multiplier applies to plumbing only;` +
+      ` current category = ${category || 'unspecified'})`
+    );
+  }
+
+  // ── 8. Student-count impact multiplier (capped at 1.3×) ──────────────────
+  let studentMult = 1.0;
+  if (numStudents > 0) {
+    // 0 students → ×1.0, 1000+ students → capped at ×1.30
+    const rawMult = 1.0 + (numStudents / 1000) * (studentMultiplier - 1.0);
+    studentMult = Math.min(1.3, rawMult);
+    evidence.push(
+      `num_students = ${numStudents}` +
+      ` → impact multiplier ×${studentMult.toFixed(2)} (capped at ×1.30)`
+    );
+  }
+
+  // ── Final risk score ───────────────────────────────────────────────────────
   const rawScore  = conditionBase + poorBonus + trendBonus; // 0–85
-  const riskScore = Math.min(100, Math.round(rawScore * ageFactor * weatherFactor));
+  const riskScore = Math.min(100, Math.round(
+    rawScore * ageFactor * weatherFactor * girlsMult * studentMult
+  ));
 
-  // ── Failure window & level ─────────────────────────────────────────────
+  // ── Deterioration rate & projected failure window ─────────────────────────
+  const slope = deteriorationSlope(weekHistory);
+  const estimated_days_to_failure = weekHistory.length >= 2
+    ? projectDaysToFailure(latestScore, slope)
+    : (riskScore > 66 ? 30 : riskScore > 33 ? 45 : 60);
+
+  const within_30_days = estimated_days_to_failure <= 30;
+  const within_60_days = estimated_days_to_failure <= 60;
+
+  evidence.push(
+    slope > 0
+      ? `deterioration_rate = ${slope.toFixed(3)} score/week` +
+        ` → estimated failure in ${estimated_days_to_failure} days` +
+        (within_30_days ? ' [WITHIN 30 DAYS]' : within_60_days ? ' [WITHIN 60 DAYS]' : '')
+      : `deterioration_rate = ${slope.toFixed(3)} score/week (stable or improving)` +
+        ` → no imminent failure projected (≥90 days)`
+  );
+
+  // ── Risk level & legacy failure window ────────────────────────────────────
   let failureWindow, riskLevel;
   if (riskScore > 66) {
     failureWindow = 30;
@@ -137,23 +351,25 @@ export function predictRiskForCategory(
     riskLevel = 'low';
   }
 
-  // ── Explainable reason ─────────────────────────────────────────────────
-  const parts = [];
-  if (poorCount > 0) {
-    parts.push(`${poorCount} consecutive poor report${poorCount > 1 ? 's' : ''}`);
-  }
-  if (trendLabel !== 'stable') parts.push(`${trendLabel} trend`);
-  if (buildingAge >= 20) parts.push(`building age > ${buildingAge} years`);
-  if (weatherZone && weatherZone !== 'Dry') {
-    parts.push(`${weatherZone.toLowerCase()} zone`);
-  }
-  if (parts.length === 0) parts.push('condition is within acceptable range');
+  // ── Legacy reason string (kept for backward compatibility) ────────────────
+  const legacyParts = [];
+  if (poorCount > 0) legacyParts.push(`${poorCount} poor report(s)`);
+  if (trendLabel !== 'stable') legacyParts.push(`${trendLabel} trend`);
+  if (buildingAge >= 20) legacyParts.push(`building age ${buildingAge}y`);
+  if (weatherZone && weatherZone !== 'Dry') legacyParts.push(`${weatherZone} zone`);
+  if (isGirlsSchool && category === 'plumbing') legacyParts.push("girls' school plumbing boost");
+  if (legacyParts.length === 0) legacyParts.push('within acceptable range');
 
   return {
     riskScore,
     failureWindow,
     riskLevel,
-    reason: parts.join(' + '),
+    reason: legacyParts.join(' + '),
+    evidence,
+    estimated_days_to_failure,
+    within_30_days,
+    within_60_days,
+    deterioration_rate: Math.round(slope * 1000) / 1000,
   };
 }
 
@@ -215,7 +431,7 @@ export function analyseSchool(reports, buildingAge = 20) {
   const ageMultiplier = buildingAgeMultiplier(buildingAge);
 
   const reportScores = reports.map((r, i) => ({
-    score: scoreReportItems(r.items),
+    score:  scoreReportItems(r.items),
     weight: timeWeight(i, reports.length),
     weekOf: r.weekOf,
   }));
@@ -242,8 +458,8 @@ export function analyseSchool(reports, buildingAge = 20) {
         level: riskLevel(catScore),
         items: catItems.map(i => ({
           subCategory: i.subCategory || cat,
-          condition: i.condition,
-          notes: i.notes || '',
+          condition:   i.condition,
+          notes:       i.notes || '',
         })),
       };
     }
@@ -281,18 +497,18 @@ export function prioritiseQueue(schoolAnalyses) {
       const priority     = Math.min(100, Math.round(analysis.score * 0.6 + trendBonus + studentBonus));
 
       return {
-        schoolId: school._id,
-        schoolName: school.name,
-        district: school.district,
-        studentCount: school.studentCount,
-        riskScore: analysis.score,
-        riskLevel: analysis.level,
-        priorityScore: priority,
+        schoolId:          school._id,
+        schoolName:        school.name,
+        district:          school.district,
+        studentCount:      school.studentCount,
+        riskScore:         analysis.score,
+        riskLevel:         analysis.level,
+        priorityScore:     priority,
         timeToFailureDays: analysis.timeToFailureDays,
-        worstCategory: analysis.worstCategory,
-        trend: analysis.trend,
-        explanation: analysis.explanation,
-        breakdown: analysis.breakdown,
+        worstCategory:     analysis.worstCategory,
+        trend:             analysis.trend,
+        explanation:       analysis.explanation,
+        breakdown:         analysis.breakdown,
       };
     })
     .sort((a, b) => b.priorityScore - a.priorityScore);

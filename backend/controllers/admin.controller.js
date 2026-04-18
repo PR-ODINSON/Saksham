@@ -2,7 +2,8 @@ import { exec } from 'child_process';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import User from '../models/user.model.js';
-import { SchoolConditionRecord, MaintenanceDecision, WorkOrder, Alert, DistrictAnalytics } from '../models/index.js';
+import { SchoolConditionRecord, MaintenanceDecision, WorkOrder, Alert, DistrictAnalytics, PriorityConfig } from '../models/index.js';
+import { invalidateConfigCache } from '../services/predictionEngine.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -51,6 +52,64 @@ export const deleteUser = async (req, res) => {
     res.json({ success: true, message: 'User deleted' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ─── Priority Config endpoints ────────────────────────────────────────────────
+
+/**
+ * GET /api/admin/priority-config
+ * Return the currently active PriorityConfig document.
+ */
+export const getPriorityConfig = async (_req, res) => {
+  try {
+    const config = await PriorityConfig.findOne({ isActive: true }).lean();
+    if (!config) {
+      return res.status(404).json({ success: false, message: 'No active config found' });
+    }
+    res.json({ success: true, config });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+/**
+ * PUT /api/admin/priority-config
+ * Create or replace the active PriorityConfig.
+ * Invalidates the engine's in-memory cache so the next prediction picks up the new values.
+ *
+ * Body: { version, conditionWeights?, multipliers?, maxPriorityScore? }
+ */
+export const updatePriorityConfig = async (req, res) => {
+  try {
+    const { version, conditionWeights, multipliers, maxPriorityScore } = req.body;
+
+    if (!version) {
+      return res.status(400).json({ success: false, message: 'version is required' });
+    }
+
+    // Deactivate any existing active config
+    await PriorityConfig.updateMany({ isActive: true }, { $set: { isActive: false } });
+
+    const config = await PriorityConfig.create({
+      version,
+      conditionWeights: conditionWeights ?? undefined,
+      multipliers:      multipliers      ?? undefined,
+      maxPriorityScore: maxPriorityScore ?? undefined,
+      isActive: true,
+      updatedBy: req.user?._id,
+    });
+
+    // Flush the prediction engine cache so it reads the new config
+    invalidateConfigCache();
+
+    res.status(201).json({
+      success: true,
+      message: `PriorityConfig v${version} activated. Engine cache cleared.`,
+      config,
+    });
+  } catch (err) {
+    res.status(400).json({ success: false, message: err.message });
   }
 };
 

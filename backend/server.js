@@ -73,7 +73,10 @@ app.get('/health', (_req, res) => {
       'GET  /api/alerts':                'Unresolved alerts',
       'GET  /api/analytics':             'District analytics',
       'GET  /api/schools':               'List all schools',
-      'GET  /api/admin/load-csv':        'Load TS-PS3.csv (admin)',
+      'GET  /api/admin/load-csv':           'Load TS-PS3.csv (admin)',
+      'GET  /api/admin/priority-config':    'Read active scoring weights',
+      'PUT  /api/admin/priority-config':    'Update scoring weights (admin)',
+      'GET  /api/analytics/model-accuracy': 'Prediction error per category/district',
     },
   });
 });

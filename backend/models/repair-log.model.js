@@ -59,7 +59,38 @@ const repairLogSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  photoUrl: String
+  photoUrl: String,
+
+  /**
+   * Prediction feedback — stored when the repair log is created.
+   * Enables the model-accuracy endpoint to measure prediction error over time.
+   */
+  predictionSnapshot: {
+    // What the engine predicted BEFORE the repair was made
+    riskScore:          { type: Number },   // 0-100 engine risk score
+    riskLevel:          { type: String },   // 'low'|'medium'|'high'
+    estimatedDaysToFailure: { type: Number },
+    within30Days:       { type: Boolean },
+    within60Days:       { type: Boolean },
+    deteriorationRate:  { type: Number },
+    evidence:           { type: [String], default: [] },
+  },
+
+  predictionError: {
+    // beforeScore: condition score the engine saw (= before.conditionScore)
+    beforeConditionScore: { type: Number },
+    // afterScore: actual condition after repair (= after.conditionScore)
+    afterConditionScore:  { type: Number },
+    // delta > 0 means improvement; delta < 0 means repair made things worse
+    conditionDelta:       { type: Number },
+    // How far off the engine's risk score was from what the post-repair state implies
+    // A large positive delta means the engine over-estimated risk (too pessimistic).
+    riskScoreDelta:       { type: Number },
+    accuracy:             {
+      type: String,
+      enum: ['overestimated', 'accurate', 'underestimated'],
+    },
+  },
 }, {
   timestamps: true,
   collection: 'repair_logs'
