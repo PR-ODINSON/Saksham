@@ -1,208 +1,375 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
-import { get, postFile } from "../services/api";
+import { get, post } from "../services/api";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { id: "structural", label: "Structural", icon: "🏗️", subs: ["Roof", "Wall cracks", "Floor", "Ceiling", "Doors & windows"] },
-  { id: "electrical", label: "Electrical", icon: "⚡", subs: ["Main wiring", "Switchboard", "Lights & fans", "Earthing", "Circuit breaker"] },
-  { id: "plumbing", label: "Plumbing", icon: "🔧", subs: ["Water supply", "Drainage", "Taps & faucets", "Overhead tank", "Leakage"] },
-  { id: "sanitation", label: "Sanitation", icon: "🚿", subs: ["Boys toilet", "Girls toilet", "Washroom floor", "Water in toilets", "Hygiene"] },
-  { id: "furniture", label: "Furniture", icon: "🪑", subs: ["Student desks", "Chairs", "Blackboard", "Teacher desk", "Storage"] },
+  {
+    id: "plumbing", label: "Plumbing", icon: "🔧",
+    flags: [
+      { key: "waterLeak",            label: "Active water leak" },
+      { key: "roofLeakFlag",         label: "Roof leak present" },
+      { key: "issueFlag",            label: "General issue flagged" },
+    ],
+    numeric: [
+      { key: "toiletFunctionalRatio", label: "Toilet functional ratio (0–1)", min: 0, max: 1, step: 0.05, placeholder: "e.g. 0.85" },
+    ],
+  },
+  {
+    id: "electrical", label: "Electrical", icon: "⚡",
+    flags: [
+      { key: "wiringExposed", label: "Wiring exposed / electrical hazard" },
+      { key: "issueFlag",     label: "General issue flagged" },
+    ],
+    numeric: [
+      { key: "powerOutageHours", label: "Power outage hours this week", min: 0, max: 168, step: 1, placeholder: "e.g. 5" },
+    ],
+  },
+  {
+    id: "structural", label: "Structural", icon: "🏗️",
+    flags: [
+      { key: "roofLeakFlag", label: "Roof leak / ceiling damage" },
+      { key: "issueFlag",    label: "General issue flagged" },
+    ],
+    numeric: [
+      { key: "crackWidthMM", label: "Crack width (mm)", min: 0, max: 200, step: 0.5, placeholder: "e.g. 5.5" },
+    ],
+  },
 ];
 
-const CONDITIONS = [
-  { id: "good", label: "Good", color: "bg-emerald-500/20 border-emerald-500 text-emerald-300", dot: "bg-emerald-400" },
-  { id: "moderate", label: "Moderate", color: "bg-amber-500/20 border-amber-500 text-amber-300", dot: "bg-amber-400" },
-  { id: "poor", label: "Poor", color: "bg-red-500/20 border-red-500 text-red-300", dot: "bg-red-400" },
+// 1-5 condition score labels shown to users
+const CONDITION_LEVELS = [
+  { score: 1, label: "Excellent", color: "bg-emerald-500/20 border-emerald-500 text-emerald-300" },
+  { score: 2, label: "Good",      color: "bg-teal-500/20 border-teal-500 text-teal-300" },
+  { score: 3, label: "Fair",      color: "bg-amber-500/20 border-amber-500 text-amber-300" },
+  { score: 4, label: "Poor",      color: "bg-orange-500/20 border-orange-500 text-orange-300" },
+  { score: 5, label: "Critical",  color: "bg-red-500/20 border-red-500 text-red-300" },
 ];
 
-function defaultItem(category) {
-  return { category, subCategory: CATEGORIES.find(c => c.id === category).subs[0], condition: "good", notes: "", imageUrl: "" };
+// Auto-compute ISO week number for today
+function getISOWeek() {
+  const now  = new Date();
+  const jan1 = new Date(now.getFullYear(), 0, 1);
+  return Math.ceil(((now - jan1) / 86400000 + jan1.getDay() + 1) / 7);
 }
+
+// ─── Default per-category state ───────────────────────────────────────────────
+function defaultCategoryState() {
+  const s = {};
+  for (const cat of CATEGORIES) {
+    s[cat.id] = {
+      conditionScore: 2,
+      issueFlag:            false,
+      waterLeak:            false,
+      wiringExposed:        false,
+      roofLeakFlag:         false,
+      crackWidthMM:         "",
+      toiletFunctionalRatio: "",
+      powerOutageHours:     "",
+    };
+  }
+  return s;
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function WeeklyInputForm() {
   const { user } = useAuth();
-  const [school, setSchool] = useState(null);
-  const [items, setItems] = useState(CATEGORIES.slice(0, 3).map(c => defaultItem(c.id)));
-  const [overallNotes, setOverallNotes] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState("");
 
-  const isSchoolStaff = user?.role === 'peon' || user?.role === 'principal' || user?.role === 'school';
+  const [school,      setSchool]      = useState(null);
+  const [weekNumber,  setWeekNumber]  = useState(getISOWeek());
+  const [catStates,   setCatStates]   = useState(defaultCategoryState());
+  const [activeTab,   setActiveTab]   = useState("plumbing");
+  const [submitting,  setSubmitting]  = useState(false);
+  const [results,     setResults]     = useState(null); // [{category, success, message}]
+  const [error,       setError]       = useState("");
 
+  const isSchoolStaff = user?.role === "peon" || user?.role === "principal";
+  const schoolId = typeof user?.schoolId === "object" ? user?.schoolId?._id : user?.schoolId;
+
+  // Load school metadata to display context and prefill submission
   useEffect(() => {
-    if (user?.schoolId && isSchoolStaff) {
-      get(`/api/schools/${typeof user.schoolId === "object" ? user.schoolId._id : user.schoolId}`)
-        .then(d => d.success && setSchool(d.school));
+    if (schoolId && isSchoolStaff) {
+      get(`/api/schools/${schoolId}`).then(d => {
+        if (d.success) setSchool(d.school);
+      });
     }
-  }, [user, isSchoolStaff]);
+  }, [schoolId, isSchoolStaff]);
 
+  // Access guard
   if (!isSchoolStaff) {
     return (
       <div className="p-12 text-center text-slate-400">
-        <p className="text-lg">Permission Denied.</p>
+        <p className="text-lg font-semibold">Permission Denied</p>
         <p className="text-sm mt-2">Only School Peon/Watchman or Principal accounts can submit weekly reports.</p>
       </div>
     );
   }
 
-  const addCategory = (catId) => {
-    if (!items.find(i => i.category === catId)) {
-      setItems([...items, defaultItem(catId)]);
-    }
-  };
+  if (!schoolId) {
+    return (
+      <div className="p-12 text-center text-slate-400">
+        <p className="text-lg font-semibold">No school linked to your account</p>
+        <p className="text-sm mt-2">Contact an admin to assign a School ID to your account.</p>
+      </div>
+    );
+  }
 
-  const removeItem = (idx) => setItems(items.filter((_, i) => i !== idx));
+  // ── State helpers ────────────────────────────────────────────────────────────
+  const setField = (cat, key, value) =>
+    setCatStates(prev => ({ ...prev, [cat]: { ...prev[cat], [key]: value } }));
 
-  const updateItem = (idx, field, value) => {
-    setItems(items.map((item, i) => i === idx ? { ...item, [field]: value } : item));
-  };
-
+  // ── Submit ───────────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!school && !user?.schoolId) {
-      return setError("No school linked to your account. Contact admin.");
-    }
     setSubmitting(true);
     setError("");
 
-    const fd = new FormData();
-    const schoolId = school?._id || (typeof user.schoolId === "object" ? user.schoolId._id : user.schoolId);
-    fd.append("schoolId", schoolId);
-    fd.append("items", JSON.stringify(items));
-    fd.append("overallNotes", overallNotes);
+    const schoolMeta = {
+      district:     school?.district      || "",
+      block:        school?.block         || "",
+      schoolType:   school?.schoolType    || "",
+      isGirlsSchool: school?.isGirlsSchool ?? false,
+      numStudents:  school?.numStudents   || 0,
+      buildingAge:  school?.buildingAge   || 0,
+      materialType: school?.materialType  || "",
+      weatherZone:  school?.weatherZone   || "Dry",
+    };
 
-    const res = await postFile("/api/condition-report", fd);
-    setSubmitting(false);
+    const categoryResults = [];
 
-    if (res.success) {
-      setSubmitted(true);
-    } else {
-      setError(res.message || "Submission failed");
+    for (const cat of CATEGORIES) {
+      const s = catStates[cat.id];
+      const payload = {
+        schoolId,
+        ...schoolMeta,
+        category:     cat.id,
+        weekNumber:   Number(weekNumber),
+        conditionScore: Number(s.conditionScore),
+        issueFlag:    s.issueFlag,
+        waterLeak:    s.waterLeak,
+        wiringExposed: s.wiringExposed,
+        roofLeakFlag:  s.roofLeakFlag,
+        crackWidthMM:          s.crackWidthMM         !== "" ? Number(s.crackWidthMM)         : 0,
+        toiletFunctionalRatio: s.toiletFunctionalRatio !== "" ? Number(s.toiletFunctionalRatio) : 0,
+        powerOutageHours:      s.powerOutageHours      !== "" ? Number(s.powerOutageHours)      : 0,
+      };
+
+      const res = await post("/api/condition-report", payload);
+      categoryResults.push({
+        category: cat.id,
+        label:    cat.label,
+        icon:     cat.icon,
+        success:  res.success,
+        message:  res.message || (res.success ? "Recorded" : "Failed"),
+      });
     }
+
+    setSubmitting(false);
+    setResults(categoryResults);
   };
 
-  if (submitted) {
+  // ── Success screen ────────────────────────────────────────────────────────────
+  if (results) {
+    const allOk = results.every(r => r.success);
     return (
-      <div className="flex flex-col items-center justify-center min-h-96 text-center gap-4 p-8">
-        <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center">
-          <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+      <div className="max-w-2xl mx-auto p-6 space-y-6">
+        <div className={`rounded-2xl border p-6 text-center ${allOk ? "bg-emerald-500/10 border-emerald-500/40" : "bg-amber-500/10 border-amber-500/40"}`}>
+          <div className="text-4xl mb-3">{allOk ? "✅" : "⚠️"}</div>
+          <h2 className="text-xl font-bold text-white mb-1">
+            {allOk ? "Report Submitted!" : "Partially Submitted"}
+          </h2>
+          <p className="text-slate-400 text-sm">Week {weekNumber} report for {school?.district ?? `School #${schoolId}`}</p>
         </div>
-        <h2 className="text-xl font-bold text-white">Report Submitted!</h2>
-        <p className="text-slate-400">Your weekly condition report has been recorded and the risk engine has updated scores.</p>
-        <button onClick={() => { setSubmitted(false); setItems(CATEGORIES.slice(0, 3).map(c => defaultItem(c.id))); }} className="px-6 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-500">
-          Submit Another
+
+        <div className="space-y-2">
+          {results.map(r => (
+            <div key={r.category} className={`flex items-center gap-3 p-3 rounded-xl border ${r.success ? "bg-emerald-500/10 border-emerald-500/30" : "bg-red-500/10 border-red-500/30"}`}>
+              <span className="text-xl">{r.icon}</span>
+              <span className="text-white font-medium capitalize">{r.label}</span>
+              <span className={`ml-auto text-sm font-semibold ${r.success ? "text-emerald-400" : "text-red-400"}`}>
+                {r.success ? "✓ Saved" : `✗ ${r.message}`}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        <button
+          onClick={() => { setResults(null); setCatStates(defaultCategoryState()); setWeekNumber(getISOWeek()); }}
+          className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-colors"
+        >
+          Submit Another Report
         </button>
       </div>
     );
   }
 
+  // ── Form ──────────────────────────────────────────────────────────────────────
+  const activeCat = CATEGORIES.find(c => c.id === activeTab);
+  const activeState = catStates[activeTab];
+
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6">
+      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-white">Weekly Condition Report</h1>
-        {school && (
-          <p className="text-slate-400 mt-1">
-            {school.name} · {school.district} · Building age: {school.buildingAge}y · {school.studentCount} students
+        {school ? (
+          <p className="text-slate-400 mt-1 text-sm">
+            {school.district}{school.block ? ` · ${school.block}` : ""} · Age {school.buildingAge}y · {school.numStudents} students · {school.weatherZone}
           </p>
+        ) : (
+          <p className="text-slate-500 mt-1 text-sm">School #{schoolId}</p>
         )}
       </div>
 
-      {error && (
-        <div className="px-4 py-3 rounded-lg bg-red-500/20 border border-red-500/40 text-red-300 text-sm">{error}</div>
-      )}
+      {/* Week number */}
+      <div className="flex items-center gap-4 bg-slate-800/60 border border-slate-700 rounded-xl p-4">
+        <label className="text-slate-300 text-sm font-medium whitespace-nowrap">Reporting Week</label>
+        <input
+          type="number"
+          min={1}
+          max={53}
+          value={weekNumber}
+          onChange={e => setWeekNumber(e.target.value)}
+          className="w-24 px-3 py-2 rounded-lg bg-slate-900 border border-slate-600 text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold"
+        />
+        <span className="text-slate-500 text-xs">(ISO week of year · auto-filled to current week)</span>
+      </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {items.map((item, idx) => {
-          const cat = CATEGORIES.find(c => c.id === item.category);
-          return (
-            <div key={idx} className="bg-slate-800/60 border border-slate-700 rounded-xl p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{cat.icon}</span>
-                  <span className="font-semibold text-white">{cat.label}</span>
-                </div>
-                {items.length > 1 && (
-                  <button type="button" onClick={() => removeItem(idx)} className="text-slate-500 hover:text-red-400 text-sm">Remove</button>
-                )}
-              </div>
+      {/* Category tabs */}
+      <div className="flex gap-2">
+        {CATEGORIES.map(cat => (
+          <button
+            key={cat.id}
+            type="button"
+            onClick={() => setActiveTab(cat.id)}
+            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 transition-all border ${
+              activeTab === cat.id
+                ? "bg-blue-600 border-blue-500 text-white shadow-lg"
+                : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white"
+            }`}
+          >
+            <span>{cat.icon}</span>
+            <span className="hidden sm:inline">{cat.label}</span>
+          </button>
+        ))}
+      </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-xs text-slate-400 mb-1 block">Sub-category</label>
-                  <select
-                    value={item.subCategory}
-                    onChange={e => updateItem(idx, "subCategory", e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                    {cat.subs.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs text-slate-400 mb-1 block">Condition</label>
-                  <div className="flex gap-2">
-                    {CONDITIONS.map(c => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => updateItem(idx, "condition", c.id)}
-                        className={`flex-1 py-2 rounded-lg border text-xs font-medium transition-all ${item.condition === c.id ? c.color : "bg-slate-700 border-slate-600 text-slate-400 hover:border-slate-500"}`}
-                      >
-                        {c.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
+      {/* Active category panel */}
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-5 space-y-5">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">{activeCat.icon}</span>
+            <h2 className="text-lg font-bold text-white">{activeCat.label}</h2>
+          </div>
 
-              <div>
-                <label className="text-xs text-slate-400 mb-1 block">Notes (optional)</label>
-                <input
-                  type="text"
-                  value={item.notes}
-                  onChange={e => updateItem(idx, "notes", e.target.value)}
-                  placeholder="Describe the issue briefly..."
-                  className="w-full px-3 py-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
+          {/* Condition Score */}
+          <div className="space-y-2">
+            <label className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Condition Score</label>
+            <div className="grid grid-cols-5 gap-2">
+              {CONDITION_LEVELS.map(({ score, label, color }) => (
+                <button
+                  key={score}
+                  type="button"
+                  onClick={() => setField(activeTab, "conditionScore", score)}
+                  className={`py-3 rounded-xl border-2 text-xs font-bold flex flex-col items-center gap-1 transition-all ${
+                    activeState.conditionScore === score
+                      ? color + " shadow-[2px_2px_0_#0f172a]"
+                      : "bg-slate-900 border-slate-700 text-slate-500 hover:border-slate-500"
+                  }`}
+                >
+                  <span className="text-base font-black">{score}</span>
+                  <span>{label}</span>
+                </button>
+              ))}
             </div>
-          );
-        })}
+          </div>
 
-        {/* Add more categories */}
-        <div className="flex flex-wrap gap-2">
-          {CATEGORIES.filter(c => !items.find(i => i.category === c.id)).map(cat => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => addCategory(cat.id)}
-              className="px-3 py-1.5 rounded-lg border border-dashed border-slate-600 text-slate-400 hover:border-blue-500 hover:text-blue-400 text-sm flex items-center gap-1.5 transition-colors"
-            >
-              <span>{cat.icon}</span> Add {cat.label}
-            </button>
+          {/* Issue flags */}
+          <div className="space-y-2">
+            <label className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Issue Flags</label>
+            <div className="space-y-2">
+              {activeCat.flags.map(({ key, label }) => (
+                <label key={key} className="flex items-center gap-3 cursor-pointer group">
+                  <div
+                    onClick={() => setField(activeTab, key, !activeState[key])}
+                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${
+                      activeState[key]
+                        ? "bg-blue-600 border-blue-500"
+                        : "bg-slate-800 border-slate-600 group-hover:border-slate-400"
+                    }`}
+                  >
+                    {activeState[key] && (
+                      <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </div>
+                  <span className="text-slate-300 text-sm group-hover:text-white transition-colors">{label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Numeric fields */}
+          {activeCat.numeric.map(({ key, label, min, max, step, placeholder }) => (
+            <div key={key} className="space-y-1">
+              <label className="text-xs text-slate-400 font-semibold uppercase tracking-wider">{label}</label>
+              <input
+                type="number"
+                min={min}
+                max={max}
+                step={step}
+                value={activeState[key]}
+                onChange={e => setField(activeTab, key, e.target.value)}
+                placeholder={placeholder}
+                className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-600 text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-600"
+              />
+            </div>
           ))}
         </div>
 
-        <div>
-          <label className="text-xs text-slate-400 mb-1 block">Overall Notes / Additional Observations</label>
-          <textarea
-            value={overallNotes}
-            onChange={e => setOverallNotes(e.target.value)}
-            rows={3}
-            placeholder="Any general observations about the school building this week..."
-            className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-          />
+        {/* Per-category summary strip */}
+        <div className="grid grid-cols-3 gap-2">
+          {CATEGORIES.map(cat => {
+            const cs = catStates[cat.id].conditionScore;
+            const cl = CONDITION_LEVELS.find(l => l.score === cs);
+            return (
+              <div
+                key={cat.id}
+                onClick={() => setActiveTab(cat.id)}
+                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border cursor-pointer transition-all text-xs font-semibold ${
+                  activeTab === cat.id
+                    ? "border-blue-500/60 bg-blue-500/10 text-blue-300"
+                    : "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-slate-500"
+                }`}
+              >
+                <span>{cat.icon}</span>
+                <span className="hidden sm:inline">{cat.label}</span>
+                <span className={`ml-auto font-black ${cl?.color.split(" ").pop() || "text-slate-400"}`}>{cs}/5</span>
+              </div>
+            );
+          })}
         </div>
+
+        {error && (
+          <div className="p-3 rounded-xl bg-red-500/20 border border-red-500/40 text-red-300 text-sm">{error}</div>
+        )}
 
         <button
           type="submit"
-          disabled={submitting}
-          className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold transition-colors shadow-lg"
+          disabled={submitting || !weekNumber}
+          className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-black text-sm transition-colors shadow-lg flex items-center justify-center gap-2"
         >
-          {submitting ? "Submitting…" : "Submit Weekly Report"}
+          {submitting ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Submitting 3 categories…
+            </>
+          ) : (
+            <>Submit Week {weekNumber} Report — All 3 Categories</>
+          )}
         </button>
       </form>
     </div>

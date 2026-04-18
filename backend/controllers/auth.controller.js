@@ -40,7 +40,14 @@ export const registerUser = async (req, res) => {
 
     res.status(201).json({
       success: true,
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      user: {
+        id:       user._id,
+        name:     user.name,
+        email:    user.email,
+        role:     user.role,
+        schoolId: user.schoolId,
+        district: user.district,
+      },
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

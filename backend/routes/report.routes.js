@@ -9,7 +9,7 @@ const router = express.Router();
 router.post(
   '/',
   protect,
-  authorize('school', 'deo', 'admin'),
+  authorize('peon', 'principal', 'deo', 'admin'),
   upload.array('images', 5),
   submitReport,
 );

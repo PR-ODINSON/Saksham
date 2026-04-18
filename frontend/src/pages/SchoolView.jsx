@@ -31,35 +31,44 @@ function priorityToLevel(ps) {
   return "low";
 }
 
-// Derive a SchoolView-compatible analysis object from the /api/risk/:id predictions array
+// Derive a SchoolView-compatible analysis object from the /api/risk/:id predictions array.
+// Field names reflect the updated risk controller (v2 engine output).
 function buildAnalysis(predictions) {
   if (!predictions || predictions.length === 0) return null;
 
-  const overallScore = Math.round(Math.max(...predictions.map(p => p.priorityScore || 0)));
-  const level = priorityToLevel(overallScore);
+  // Use live riskScore from the engine; fall back to storedPriorityScore for old records
+  const scoreOf  = (p) => p.riskScore ?? p.storedPriorityScore ?? 0;
+  const dtfOf    = (p) => p.estimated_days_to_failure ?? p.storedDaysToFailure ?? null;
+  const fail30Of = (p) => p.within_30_days ?? p.storedWithin30Days ?? false;
+  const fail60Of = (p) => p.within_60_days ?? p.storedWithin60Days ?? false;
 
-  const worst = predictions.reduce((a, b) => (b.priorityScore > a.priorityScore ? b : a));
+  const overallScore = Math.round(Math.max(...predictions.map(scoreOf)));
+  const level        = priorityToLevel(overallScore);
+  const worst        = predictions.reduce((a, b) => (scoreOf(b) > scoreOf(a) ? b : a));
 
   const dtfValues = predictions
-    .map(p => p.daysToFailure)
+    .map(dtfOf)
     .filter(d => d != null && !isNaN(d) && d > 0);
   const timeToFailureDays = dtfValues.length ? Math.round(Math.min(...dtfValues)) : null;
 
-  const hasFail30 = predictions.some(p => p.willFailWithin30Days);
-  const hasFail60 = predictions.some(p => p.willFailWithin60Days);
+  const hasFail30 = predictions.some(fail30Of);
+  const hasFail60 = predictions.some(fail60Of);
   const trend = hasFail30 ? "deteriorating" : overallScore >= 60 ? "deteriorating" : "stable";
 
   const breakdown = {};
   for (const p of predictions) {
+    const ps = Math.round(scoreOf(p));
     breakdown[p.category] = {
-      score: Math.round(p.priorityScore || 0),
-      level: priorityToLevel(p.priorityScore || 0),
-      conditionScore: p.conditionScore,
-      willFailWithin30Days: p.willFailWithin30Days,
+      score:               ps,
+      level:               priorityToLevel(ps),
+      conditionScore:      p.storedConditionScore ?? p.conditionScore,
+      willFailWithin30Days: fail30Of(p),
+      deteriorationRate:   p.deterioration_rate,
+      evidence:            p.evidence,
     };
   }
 
-  let explanation = `Overall priority score: ${overallScore}/100. `;
+  let explanation = `Overall risk score: ${overallScore}/100. `;
   if (hasFail30) explanation += "⚠ Failure predicted within 30 days. ";
   else if (hasFail60) explanation += "Failure predicted within 60 days. ";
   explanation += `Worst category: ${worst.category}.`;
@@ -152,7 +161,7 @@ export default function SchoolView() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">{school?.name || "My School"}</h1>
-          <p className="text-slate-400 text-sm">{school?.district} · Building age: {school?.buildingAge}y · {school?.numStudents} students</p>
+          <p className="text-slate-400 text-sm">{school?.district} · Building age: {school?.buildingAge ?? "?"}y · {school?.numStudents ?? "?"} students</p>
         </div>
         <button
           onClick={() => navigate("/dashboard/report")}
