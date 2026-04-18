@@ -242,36 +242,36 @@ export default function GeospatialMap() {
                );
             })}
                 
-                {/* User Location Marker */}
-                {userLocation && (
-                  <Marker 
-                    position={[userLocation.lat, userLocation.lng]}
-                    icon={L.divIcon({
-                      className: 'custom-user-marker',
-                      html: `
-                        <div style="
-                          background-color: #3b82f6; 
-                          width: 18px; 
-                          height: 18px; 
-                          border-radius: 50%; 
-                          border: 3px solid white;
-                          box-shadow: 0 0 15px #3b82f6, 2px 2px 0 #0f172a;
-                          transform: translate(-50%, -50%);
-                        "></div>
-                      `,
-                      iconSize: [18, 18],
-                      iconAnchor: [9, 9]
-                    })}
-                  >
-                    <Popup>
-                      <div className="p-3 bg-white min-w-[120px]">
-                        <h3 className="font-black text-[#0f172a] text-sm leading-tight uppercase">Your Location</h3>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-500 mt-1">Live GPS Tracking</p>
-                      </div>
-                    </Popup>
-                  </Marker>
-                )}
-              </MapContainer>
+            {/* User Location Marker */}
+            {userLocation && (
+              <Marker 
+                position={[userLocation.lat, userLocation.lng]}
+                icon={L.divIcon({
+                  className: 'custom-user-marker',
+                  html: `
+                    <div style="
+                      background-color: #3b82f6; 
+                      width: 18px; 
+                      height: 18px; 
+                      border-radius: 50%; 
+                      border: 3px solid white;
+                      box-shadow: 0 0 15px #3b82f6, 2px 2px 0 #0f172a;
+                      transform: translate(-50%, -50%);
+                    "></div>
+                  `,
+                  iconSize: [18, 18],
+                  iconAnchor: [9, 9]
+                })}
+              >
+                <Popup>
+                  <div className="p-3 bg-white min-w-[120px]">
+                    <h3 className="font-black text-[#0f172a] text-sm leading-tight uppercase">Your Location</h3>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-blue-500 mt-1">Live GPS Tracking</p>
+                  </div>
+                </Popup>
+              </Marker>
+            )}
+          </MapContainer>
         )}
       </div>
     </div>
