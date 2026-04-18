@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { get, post } from "../services/api";
+import { Wrench, Zap, Building, CheckCircle2, AlertTriangle } from "lucide-react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
   {
-    id: "plumbing", label: "Plumbing", icon: "🔧",
+    id: "plumbing", label: "Plumbing", icon: <Wrench size={20} strokeWidth={2.5} />,
     flags: [
       { key: "waterLeak",            label: "Active water leak" },
       { key: "roofLeakFlag",         label: "Roof leak present" },
@@ -17,9 +18,9 @@ const CATEGORIES = [
     ],
   },
   {
-    id: "electrical", label: "Electrical", icon: "⚡",
+    id: "electrical", label: "Electrical", icon: <Zap size={20} strokeWidth={2.5} />,
     flags: [
-      { key: "wiringExposed", label: "Wiring exposed / electrical hazard" },
+      { key: "wiringExposed", label: "Wiring exposed / hazard" },
       { key: "issueFlag",     label: "General issue flagged" },
     ],
     numeric: [
@@ -27,7 +28,7 @@ const CATEGORIES = [
     ],
   },
   {
-    id: "structural", label: "Structural", icon: "🏗️",
+    id: "structural", label: "Structural", icon: <Building size={20} strokeWidth={2.5} />,
     flags: [
       { key: "roofLeakFlag", label: "Roof leak / ceiling damage" },
       { key: "issueFlag",    label: "General issue flagged" },
@@ -40,11 +41,11 @@ const CATEGORIES = [
 
 // 1-5 condition score labels shown to users
 const CONDITION_LEVELS = [
-  { score: 1, label: "Excellent", color: "bg-emerald-500/20 border-emerald-500 text-emerald-300" },
-  { score: 2, label: "Good",      color: "bg-teal-500/20 border-teal-500 text-teal-300" },
-  { score: 3, label: "Fair",      color: "bg-amber-500/20 border-amber-500 text-amber-300" },
-  { score: 4, label: "Poor",      color: "bg-orange-500/20 border-orange-500 text-orange-300" },
-  { score: 5, label: "Critical",  color: "bg-red-500/20 border-red-500 text-red-300" },
+  { score: 1, label: "Excellent", color: "bg-emerald-50 border-emerald-500 text-emerald-700 shadow-[2px_2px_0_#10b981]" },
+  { score: 2, label: "Good",      color: "bg-teal-50 border-teal-500 text-teal-700 shadow-[2px_2px_0_#14b8a6]" },
+  { score: 3, label: "Fair",      color: "bg-amber-50 border-amber-500 text-amber-700 shadow-[2px_2px_0_#f59e0b]" },
+  { score: 4, label: "Poor",      color: "bg-orange-50 border-orange-500 text-orange-700 shadow-[2px_2px_0_#f97316]" },
+  { score: 5, label: "Critical",  color: "bg-red-50 border-red-600 text-red-700 shadow-[2px_2px_0_#ef4444]" },
 ];
 
 // Auto-compute ISO week number for today
@@ -88,7 +89,6 @@ export default function WeeklyInputForm() {
   const isSchoolStaff = user?.role === "peon" || user?.role === "principal";
   const schoolId = typeof user?.schoolId === "object" ? user?.schoolId?._id : user?.schoolId;
 
-  // Load school metadata to display context and prefill submission
   useEffect(() => {
     if (schoolId && isSchoolStaff) {
       get(`/api/schools/${schoolId}`).then(d => {
@@ -97,11 +97,10 @@ export default function WeeklyInputForm() {
     }
   }, [schoolId, isSchoolStaff]);
 
-  // Access guard
   if (!isSchoolStaff) {
     return (
-      <div className="p-12 text-center text-slate-400">
-        <p className="text-lg font-semibold">Permission Denied</p>
+      <div className="p-12 text-center text-slate-500 font-bold bg-white border-2 border-slate-200 rounded-[2rem] max-w-xl mx-auto mt-12 font-body">
+        <p className="text-xl font-black text-[#0f172a]">Permission Denied</p>
         <p className="text-sm mt-2">Only School Peon/Watchman or Principal accounts can submit weekly reports.</p>
       </div>
     );
@@ -109,18 +108,16 @@ export default function WeeklyInputForm() {
 
   if (!schoolId) {
     return (
-      <div className="p-12 text-center text-slate-400">
-        <p className="text-lg font-semibold">No school linked to your account</p>
+      <div className="p-12 text-center text-slate-500 font-bold bg-white border-2 border-slate-200 rounded-[2rem] max-w-xl mx-auto mt-12 font-body">
+        <p className="text-xl font-black text-[#0f172a]">No school linked to your account</p>
         <p className="text-sm mt-2">Contact an admin to assign a School ID to your account.</p>
       </div>
     );
   }
 
-  // ── State helpers ────────────────────────────────────────────────────────────
   const setField = (cat, key, value) =>
     setCatStates(prev => ({ ...prev, [cat]: { ...prev[cat], [key]: value } }));
 
-  // ── Submit ───────────────────────────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -170,25 +167,28 @@ export default function WeeklyInputForm() {
     setResults(categoryResults);
   };
 
-  // ── Success screen ────────────────────────────────────────────────────────────
   if (results) {
     const allOk = results.every(r => r.success);
     return (
-      <div className="max-w-2xl mx-auto p-6 space-y-6">
-        <div className={`rounded-2xl border p-6 text-center ${allOk ? "bg-emerald-500/10 border-emerald-500/40" : "bg-amber-500/10 border-amber-500/40"}`}>
-          <div className="text-4xl mb-3">{allOk ? "✅" : "⚠️"}</div>
-          <h2 className="text-xl font-bold text-white mb-1">
+      <div className="max-w-2xl mx-auto p-6 space-y-6 font-body text-[#0f172a]">
+        <div className={`rounded-[2rem] border-2 p-8 text-center shadow-[6px_6px_0_#0f172a] ${allOk ? "bg-emerald-50 border-[#0f172a]" : "bg-amber-50 border-[#0f172a]"}`}>
+          <div className="flex justify-center mb-4">
+             {allOk ? <CheckCircle2 size={48} className="text-emerald-600" /> : <AlertTriangle size={48} className="text-amber-600" />}
+          </div>
+          <h2 className="text-3xl font-black text-[#0f172a] mb-2 tracking-tight">
             {allOk ? "Report Submitted!" : "Partially Submitted"}
           </h2>
-          <p className="text-slate-400 text-sm">Week {weekNumber} report for {school?.district ?? `School #${schoolId}`}</p>
+          <p className="text-slate-500 font-bold text-sm">Week {weekNumber} report for {school?.district ?? `School #${schoolId}`}</p>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-3">
           {results.map(r => (
-            <div key={r.category} className={`flex items-center gap-3 p-3 rounded-xl border ${r.success ? "bg-emerald-500/10 border-emerald-500/30" : "bg-red-500/10 border-red-500/30"}`}>
-              <span className="text-xl">{r.icon}</span>
-              <span className="text-white font-medium capitalize">{r.label}</span>
-              <span className={`ml-auto text-sm font-semibold ${r.success ? "text-emerald-400" : "text-red-400"}`}>
+            <div key={r.category} className={`flex items-center gap-4 p-5 rounded-2xl border-2 ${r.success ? "bg-emerald-50 border-emerald-200" : "bg-red-50 border-red-200"}`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center border-2 border-current shadow-sm ${r.success ? "text-emerald-600 bg-white" : "text-red-600 bg-white"}`}>
+                {r.icon}
+              </div>
+              <span className="text-[#0f172a] font-black uppercase tracking-widest text-sm">{r.label}</span>
+              <span className={`ml-auto text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border-2 ${r.success ? "text-emerald-700 border-emerald-200 bg-emerald-100" : "text-red-700 border-red-200 bg-red-100"}`}>
                 {r.success ? "✓ Saved" : `✗ ${r.message}`}
               </span>
             </div>
@@ -197,7 +197,7 @@ export default function WeeklyInputForm() {
 
         <button
           onClick={() => { setResults(null); setCatStates(defaultCategoryState()); setWeekNumber(getISOWeek()); }}
-          className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold transition-colors"
+          className="w-full py-4 mt-6 rounded-2xl bg-[#0f172a] hover:bg-blue-600 text-white font-black text-sm transition-all border-2 border-[#0f172a] shadow-[4px_4px_0_#2563eb] active:translate-y-1 active:translate-x-1 active:shadow-none uppercase tracking-widest"
         >
           Submit Another Report
         </button>
@@ -205,81 +205,86 @@ export default function WeeklyInputForm() {
     );
   }
 
-  // ── Form ──────────────────────────────────────────────────────────────────────
   const activeCat = CATEGORIES.find(c => c.id === activeTab);
   const activeState = catStates[activeTab];
 
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
+    <div className="max-w-3xl mx-auto p-6 space-y-8 font-body text-[#0f172a]">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">Weekly Condition Report</h1>
+        <h1 className="text-4xl font-black text-[#0f172a] tracking-tight" style={{ fontFamily: 'var(--font-display)' }}>Weekly Condition Report</h1>
         {school ? (
-          <p className="text-slate-400 mt-1 text-sm">
+          <p className="text-slate-500 mt-2 text-sm font-bold bg-slate-50 border-2 border-slate-200 px-4 py-2 rounded-xl inline-block shadow-sm">
             {school.district}{school.block ? ` · ${school.block}` : ""} · Age {school.buildingAge}y · {school.numStudents} students · {school.weatherZone}
           </p>
         ) : (
-          <p className="text-slate-500 mt-1 text-sm">School #{schoolId}</p>
+          <p className="text-slate-500 mt-2 text-sm font-bold bg-slate-50 border-2 border-slate-200 px-4 py-2 rounded-xl inline-block">
+            School #{schoolId}
+          </p>
         )}
       </div>
 
       {/* Week number */}
-      <div className="flex items-center gap-4 bg-slate-800/60 border border-slate-700 rounded-xl p-4">
-        <label className="text-slate-300 text-sm font-medium whitespace-nowrap">Reporting Week</label>
-        <input
-          type="number"
-          min={1}
-          max={53}
-          value={weekNumber}
-          onChange={e => setWeekNumber(e.target.value)}
-          className="w-24 px-3 py-2 rounded-lg bg-slate-900 border border-slate-600 text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none text-center font-bold"
-        />
-        <span className="text-slate-500 text-xs">(ISO week of year · auto-filled to current week)</span>
+      <div className="flex flex-col md:flex-row md:items-center gap-4 bg-white border-2 border-[#0f172a] rounded-[1.5rem] p-5 shadow-[4px_4px_0_#0f172a]">
+        <label className="text-[#0f172a] text-xs font-black uppercase tracking-widest whitespace-nowrap">Reporting Week</label>
+        <div className="flex items-center gap-4">
+          <input
+            type="number"
+            min={1}
+            max={53}
+            value={weekNumber}
+            onChange={e => setWeekNumber(e.target.value)}
+            className="w-24 px-4 py-2.5 rounded-xl bg-slate-50 border-2 border-slate-200 text-[#0f172a] text-sm focus:border-[#0f172a] focus:shadow-[2px_2px_0_#0f172a] outline-none text-center font-black transition-all"
+          />
+          <span className="text-slate-400 text-xs font-bold">(Auto-filled to current ISO week)</span>
+        </div>
       </div>
 
       {/* Category tabs */}
-      <div className="flex gap-2">
+      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
         {CATEGORIES.map(cat => (
           <button
             key={cat.id}
             type="button"
             onClick={() => setActiveTab(cat.id)}
-            className={`flex-1 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-1.5 transition-all border ${
+            className={`flex-1 min-w-[120px] py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all border-2 ${
               activeTab === cat.id
-                ? "bg-blue-600 border-blue-500 text-white shadow-lg"
-                : "bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white"
+                ? "bg-[#0f172a] border-[#0f172a] text-white shadow-[4px_4px_0_#2563eb]"
+                : "bg-white border-slate-200 text-slate-500 hover:border-[#0f172a] hover:text-[#0f172a] hover:shadow-[2px_2px_0_#0f172a]"
             }`}
           >
-            <span>{cat.icon}</span>
-            <span className="hidden sm:inline">{cat.label}</span>
+            <span className={activeTab === cat.id ? "text-blue-400" : "text-slate-400"}>{cat.icon}</span>
+            <span>{cat.label}</span>
           </button>
         ))}
       </div>
 
       {/* Active category panel */}
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-5 space-y-5">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{activeCat.icon}</span>
-            <h2 className="text-lg font-bold text-white">{activeCat.label}</h2>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="bg-white border-2 border-[#0f172a] rounded-[2rem] p-8 space-y-8 shadow-[6px_6px_0_#0f172a]">
+          <div className="flex items-center gap-3 border-b-2 border-slate-100 pb-4">
+            <div className="w-12 h-12 rounded-xl bg-blue-50 border-2 border-blue-200 text-blue-600 flex items-center justify-center">
+              {activeCat.icon}
+            </div>
+            <h2 className="text-2xl font-black text-[#0f172a] uppercase tracking-tight">{activeCat.label} Inspection</h2>
           </div>
 
           {/* Condition Score */}
-          <div className="space-y-2">
-            <label className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Condition Score</label>
-            <div className="grid grid-cols-5 gap-2">
+          <div className="space-y-3">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Condition Score</label>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {CONDITION_LEVELS.map(({ score, label, color }) => (
                 <button
                   key={score}
                   type="button"
                   onClick={() => setField(activeTab, "conditionScore", score)}
-                  className={`py-3 rounded-xl border-2 text-xs font-bold flex flex-col items-center gap-1 transition-all ${
+                  className={`py-4 rounded-2xl border-2 text-[10px] font-black uppercase tracking-widest flex flex-col items-center gap-1.5 transition-all ${
                     activeState.conditionScore === score
-                      ? color + " shadow-[2px_2px_0_#0f172a]"
-                      : "bg-slate-900 border-slate-700 text-slate-500 hover:border-slate-500"
+                      ? color
+                      : "bg-slate-50 border-slate-200 text-slate-400 hover:border-[#0f172a] hover:text-[#0f172a]"
                   }`}
                 >
-                  <span className="text-base font-black">{score}</span>
+                  <span className="text-2xl font-black">{score}</span>
                   <span>{label}</span>
                 </button>
               ))}
@@ -287,26 +292,26 @@ export default function WeeklyInputForm() {
           </div>
 
           {/* Issue flags */}
-          <div className="space-y-2">
-            <label className="text-xs text-slate-400 font-semibold uppercase tracking-wider">Issue Flags</label>
-            <div className="space-y-2">
+          <div className="space-y-3 pt-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-500">Critical Flags</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {activeCat.flags.map(({ key, label }) => (
-                <label key={key} className="flex items-center gap-3 cursor-pointer group">
+                <label key={key} className={`flex items-center gap-4 cursor-pointer group p-4 rounded-2xl border-2 transition-all ${
+                  activeState[key] ? "bg-red-50 border-red-500 shadow-[2px_2px_0_#ef4444]" : "bg-white border-slate-200 hover:border-[#0f172a]"
+                }`}>
                   <div
                     onClick={() => setField(activeTab, key, !activeState[key])}
-                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all cursor-pointer ${
+                    className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all cursor-pointer ${
                       activeState[key]
-                        ? "bg-blue-600 border-blue-500"
-                        : "bg-slate-800 border-slate-600 group-hover:border-slate-400"
+                        ? "bg-red-500 border-red-600 text-white"
+                        : "bg-slate-100 border-slate-300 group-hover:border-[#0f172a]"
                     }`}
                   >
-                    {activeState[key] && (
-                      <svg className="w-3 h-3 text-white" viewBox="0 0 12 12" fill="none">
-                        <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    )}
+                    {activeState[key] && <CheckCircle2 size={14} strokeWidth={4} />}
                   </div>
-                  <span className="text-slate-300 text-sm group-hover:text-white transition-colors">{label}</span>
+                  <span className={`text-xs font-black uppercase tracking-widest ${activeState[key] ? "text-red-700" : "text-slate-500 group-hover:text-[#0f172a]"}`}>
+                    {label}
+                  </span>
                 </label>
               ))}
             </div>
@@ -314,8 +319,8 @@ export default function WeeklyInputForm() {
 
           {/* Numeric fields */}
           {activeCat.numeric.map(({ key, label, min, max, step, placeholder }) => (
-            <div key={key} className="space-y-1">
-              <label className="text-xs text-slate-400 font-semibold uppercase tracking-wider">{label}</label>
+            <div key={key} className="space-y-2 pt-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 block">{label}</label>
               <input
                 type="number"
                 min={min}
@@ -324,51 +329,59 @@ export default function WeeklyInputForm() {
                 value={activeState[key]}
                 onChange={e => setField(activeTab, key, e.target.value)}
                 placeholder={placeholder}
-                className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-600 text-white text-sm focus:ring-2 focus:ring-blue-500 outline-none placeholder-slate-600"
+                className="w-full px-4 py-3.5 rounded-xl bg-slate-50 border-2 border-slate-200 text-[#0f172a] text-sm font-bold focus:border-[#0f172a] focus:shadow-[4px_4px_0_#0f172a] outline-none placeholder-slate-400 transition-all"
               />
             </div>
           ))}
         </div>
 
         {/* Per-category summary strip */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {CATEGORIES.map(cat => {
             const cs = catStates[cat.id].conditionScore;
-            const cl = CONDITION_LEVELS.find(l => l.score === cs);
             return (
               <div
                 key={cat.id}
                 onClick={() => setActiveTab(cat.id)}
-                className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border cursor-pointer transition-all text-xs font-semibold ${
+                className={`flex items-center gap-3 px-4 py-3.5 rounded-2xl border-2 cursor-pointer transition-all text-[10px] font-black uppercase tracking-widest ${
                   activeTab === cat.id
-                    ? "border-blue-500/60 bg-blue-500/10 text-blue-300"
-                    : "border-slate-700 bg-slate-800/40 text-slate-400 hover:border-slate-500"
+                    ? "border-[#0f172a] bg-slate-50 text-[#0f172a] shadow-[2px_2px_0_#0f172a]"
+                    : "border-slate-200 bg-white text-slate-400 hover:border-slate-400"
                 }`}
               >
-                <span>{cat.icon}</span>
-                <span className="hidden sm:inline">{cat.label}</span>
-                <span className={`ml-auto font-black ${cl?.color.split(" ").pop() || "text-slate-400"}`}>{cs}/5</span>
+                <div className={activeTab === cat.id ? "text-blue-500" : "text-slate-300"}>
+                  {cat.icon}
+                </div>
+                <span>{cat.label}</span>
+                <span className={`ml-auto px-2 py-1 rounded-md text-[10px] border-2 bg-white ${
+                   cs === 1 ? 'border-emerald-500 text-emerald-600' : 
+                   cs <= 3 ? 'border-amber-500 text-amber-600' : 'border-red-500 text-red-600'
+                }`}>
+                  {cs}/5
+                </span>
               </div>
             );
           })}
         </div>
 
         {error && (
-          <div className="p-3 rounded-xl bg-red-500/20 border border-red-500/40 text-red-300 text-sm">{error}</div>
+          <div className="p-4 rounded-xl bg-red-50 border-2 border-red-200 text-red-600 font-bold text-sm shadow-[2px_2px_0_#ef4444]">
+            {error}
+          </div>
         )}
 
         <button
           type="submit"
           disabled={submitting || !weekNumber}
-          className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-black text-sm transition-colors shadow-lg flex items-center justify-center gap-2"
+          className="w-full py-5 rounded-2xl bg-[#0f172a] hover:bg-blue-600 disabled:opacity-50 text-white font-black text-xs transition-all border-2 border-[#0f172a] shadow-[6px_6px_0_#2563eb] active:translate-y-1 active:translate-x-1 active:shadow-none uppercase tracking-widest flex items-center justify-center gap-3"
         >
           {submitting ? (
             <>
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Submitting 3 categories…
+              <div className="w-5 h-5 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+              Submitting Report...
             </>
           ) : (
-            <>Submit Week {weekNumber} Report — All 3 Categories</>
+            <>Submit Week {weekNumber} Report — All Categories</>
           )}
         </button>
       </form>
