@@ -29,12 +29,23 @@ export default function WeeklyInputForm() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
+  const isSchoolStaff = user?.role === 'peon' || user?.role === 'principal' || user?.role === 'school';
+
   useEffect(() => {
-    if (user?.schoolId) {
+    if (user?.schoolId && isSchoolStaff) {
       get(`/api/schools/${typeof user.schoolId === "object" ? user.schoolId._id : user.schoolId}`)
         .then(d => d.success && setSchool(d.school));
     }
-  }, [user]);
+  }, [user, isSchoolStaff]);
+
+  if (!isSchoolStaff) {
+    return (
+      <div className="p-12 text-center text-slate-400">
+        <p className="text-lg">Permission Denied.</p>
+        <p className="text-sm mt-2">Only School Peon/Watchman or Principal accounts can submit weekly reports.</p>
+      </div>
+    );
+  }
 
   const addCategory = (catId) => {
     if (!items.find(i => i.category === catId)) {

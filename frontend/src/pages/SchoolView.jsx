@@ -132,11 +132,13 @@ export default function SchoolView() {
 
   if (loading) return <div className="flex items-center justify-center h-64 text-slate-400">Loading...</div>;
 
-  if (!user?.schoolId) {
+  const isSchoolStaff = user?.role === 'peon' || user?.role === 'principal' || user?.role === 'school';
+
+  if (!user?.schoolId || !isSchoolStaff) {
     return (
       <div className="p-6 text-center text-slate-400">
-        <p className="text-lg">No school linked to your account.</p>
-        <p className="text-sm mt-2">Contact your District Education Officer to link your account.</p>
+        <p className="text-lg">Access Denied or No school linked.</p>
+        <p className="text-sm mt-2">Only School Peon/Watchman or Principal accounts can access this view for their school.</p>
       </div>
     );
   }
