@@ -61,7 +61,7 @@ const AppPreview = () => {
   }, []);
 
   return (
-    <section id="preview" ref={containerRef} style={{ padding: '120px 0', background: '#fff', position: 'relative', overflow: 'hidden', fontFamily: 'var(--font-body)' }}>
+    <section id="preview" ref={containerRef} style={{ padding: 'var(--section-padding)', background: '#fff', position: 'relative', overflow: 'hidden', fontFamily: 'var(--font-body)' }}>
       <div className="grid-lines" style={{ position: 'absolute', inset: 0, opacity: 0.6 }} />
       
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px', position: 'relative', zIndex: 10 }}>

@@ -3,8 +3,9 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Building2, LogOut, Menu, X, ChevronDown, Activity, LayoutDashboard, FileText, School, Zap, Crosshair, Hammer, Shield, Globe, ClipboardList } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
-import { dashboardPathFor } from '../../utils/roleRoutes.js';
 import { useLanguage } from '../../context/LanguageContext';
+import Footer from '../landing/Footer';
+import { dashboardPathFor } from '../../utils/roleRoutes.js';
 
 // Each role's nav uses its own URL prefix (/peon/dashboard, /principal/dashboard, ...)
 const ROLE_NAV = {
@@ -273,7 +274,11 @@ export default function AppLayout({ children }) {
                 </AnimatePresence>
               </div>
 
-              <button className="md:hidden p-2 text-[#003366]" onClick={() => setMobileOpen(!mobileOpen)}>
+              <button 
+                className="md:hidden p-2 text-[#003366] hover:bg-slate-100 rounded-lg transition-colors" 
+                onClick={() => setMobileOpen(!mobileOpen)}
+                aria-label="Toggle Menu"
+              >
                 {mobileOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
             </div>
@@ -342,78 +347,14 @@ export default function AppLayout({ children }) {
 
       {/* Main Content Area */}
       <main id="main-content" className={`flex-1 transition-all duration-300 relative z-20 ${
-        location.pathname === '/dashboard/map' 
+        location.pathname.includes('/map') 
           ? (isScrolled ? 'pt-[120px] sm:pt-[136px]' : 'pt-[120px] sm:pt-[168px]') 
           : (isScrolled ? 'pt-[120px] sm:pt-[136px] pb-16' : 'pt-[120px] sm:pt-[168px] pb-16')
       }`}>
         {children}
       </main>
 
-      {/* 5. Comprehensive Official Footer */}
-      {location.pathname !== '/dashboard/map' && (
-      <footer className="bg-[#1a1a1a] text-white pt-12 pb-6 px-6 relative z-10">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12 border-b border-slate-800 pb-12">
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center p-1">
-                   <Building2 size={24} className="text-[#003366]" />
-                </div>
-                <span className="font-bold text-lg tracking-tight">Saksham Portal</span>
-              </div>
-              <p className="text-slate-400 text-xs leading-relaxed">
-                National infrastructure monitoring and predictive maintenance system for government schools and medical centers.
-              </p>
-            </div>
-            
-            <div>
-              <h4 className="text-[11px] font-black uppercase tracking-widest text-blue-400 mb-5">Department Links</h4>
-              <ul className="space-y-3 text-xs font-medium text-slate-300">
-                <li><Link to="#" className="hover:text-white transition-colors">Ministry of Education</Link></li>
-                <li><Link to="#" className="hover:text-white transition-colors">Digital India Initiative</Link></li>
-                <li><Link to="#" className="hover:text-white transition-colors">NIC Department</Link></li>
-                <li><Link to="#" className="hover:text-white transition-colors">State Data Center</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-[11px] font-black uppercase tracking-widest text-blue-400 mb-5">Support & Help</h4>
-              <ul className="space-y-3 text-xs font-medium text-slate-300">
-                <li><Link to="#" className="hover:text-white transition-colors">User Manual (PDF)</Link></li>
-                <li><Link to="#" className="hover:text-white transition-colors">Contact Nodal Officer</Link></li>
-                <li><Link to="#" className="hover:text-white transition-colors">Report Technical Issue</Link></li>
-                <li><Link to="#" className="hover:text-white transition-colors">FAQ</Link></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-[11px] font-black uppercase tracking-widest text-blue-400 mb-5">Contact Us</h4>
-              <p className="text-xs text-slate-400 leading-relaxed mb-4">
-                District Administration Building, Kutch Bypass Road, Bhuj, Gujarat - 370001
-              </p>
-              <p className="text-xs font-bold text-white">Helpline: 1800-425-XXXX</p>
-            </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-8 opacity-60">
-              <span className="text-[10px] font-bold">Privacy Policy</span>
-              <span className="text-[10px] font-bold">Terms of Service</span>
-              <span className="text-[10px] font-bold">Sitemap</span>
-            </div>
-            
-            <div className="text-center md:text-right">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
-                Managed by National Informatics Centre (NIC)
-              </p>
-              <p className="text-[10px] text-slate-600 font-medium">
-                Saksham © 2026 · Ministry of Electronics & Information Technology · Government of India
-              </p>
-            </div>
-          </div>
-        </div>
-      </footer>
-      )}
+      <Footer />
     </div>
   );
 }

@@ -75,52 +75,48 @@ const Navbar = () => {
           position: 'relative', overflow: 'hidden'
         }}
       >
-        <motion.div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: '#2563eb', scaleX, transformOrigin: '0%' }} />
+        <motion.div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, background: '#2563eb', scaleX, transformOrigin: '0%' }} />
 
-        <motion.div variants={itemVariants} style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
+        <motion.div variants={itemVariants} style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <a href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
             <motion.div 
               whileHover={{ rotate: [0, -5, 5, 0] }}
               style={{
-                width: 40, height: 40, borderRadius: 12, background: '#0f172a',
+                width: 36, height: 36, borderRadius: 10, background: '#0f172a',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                border: '2px solid #0f172a', boxShadow: '3px 3px 0 #2563eb'
+                border: '2px solid #0f172a', boxShadow: '2px 2px 0 #2563eb'
               }}>
-              <Building2 size={20} color="#fff" />
+              <Building2 size={18} color="#fff" />
             </motion.div>
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.04em' }}>Saksham</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.04em' }}>Saksham</span>
           </a>
 
-         
-
-          <div className="hidden-mobile" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderLeft: '1px solid #e2e8f0' }}>
+          <div className="hidden-mobile" style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '4px 8px', background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', marginLeft: 8 }}>
             <button 
               onClick={() => setLanguage('en')}
-              style={{ fontSize: 10, fontWeight: 900, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 4, color: language === 'en' ? '#2563eb' : '#64748b', textTransform: 'uppercase' }}
+              style={{ fontSize: 9, fontWeight: 900, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', borderRadius: 4, color: language === 'en' ? '#2563eb' : '#64748b', transition: 'all 0.2s' }}
             >EN</button>
-            <span style={{ color: '#cbd5e1', fontSize: 10 }}>|</span>
             <button 
               onClick={() => setLanguage('hi')}
-              style={{ fontSize: 10, fontWeight: 900, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 4, color: language === 'hi' ? '#2563eb' : '#64748b', textTransform: 'uppercase' }}
+              style={{ fontSize: 9, fontWeight: 900, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', borderRadius: 4, color: language === 'hi' ? '#2563eb' : '#64748b', transition: 'all 0.2s' }}
             >HI</button>
-            <span style={{ color: '#cbd5e1', fontSize: 10 }}>|</span>
             <button 
               onClick={() => setLanguage('gu')}
-              style={{ fontSize: 10, fontWeight: 900, background: 'none', border: 'none', cursor: 'pointer', padding: '4px 6px', borderRadius: 4, color: language === 'gu' ? '#2563eb' : '#64748b', textTransform: 'uppercase' }}
+              style={{ fontSize: 9, fontWeight: 900, background: 'none', border: 'none', cursor: 'pointer', padding: '2px 6px', borderRadius: 4, color: language === 'gu' ? '#2563eb' : '#64748b', transition: 'all 0.2s' }}
             >GU</button>
           </div>
         </motion.div>
 
-        <nav style={{ display: 'flex', alignItems: 'center', gap: 12 }} className="hidden-mobile" onMouseLeave={() => setHoveredLink(null)}>
-          <div style={{ display: 'flex', gap: 4, position: 'relative' }}>
+        <nav style={{ display: 'flex', alignItems: 'center', gap: 8 }} className="hidden-mobile" onMouseLeave={() => setHoveredLink(null)}>
+          <div style={{ display: 'flex', gap: 2, position: 'relative' }}>
             {navLinks.map((link) => (
               <a
                 key={link.name}
                 href={link.href}
                 onMouseEnter={() => setHoveredLink(link.name)}
                 style={{
-                  fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 800, color: hoveredLink === link.name ? '#2563eb' : '#0f172a',
-                  textDecoration: 'none', position: 'relative', padding: '10px 18px', zIndex: 1, transition: 'color 0.2s'
+                  fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 800, color: hoveredLink === link.name ? '#2563eb' : '#0f172a',
+                  textDecoration: 'none', position: 'relative', padding: '8px 14px', zIndex: 1, transition: 'color 0.2s'
                 }}
               >
                 {link.name}
@@ -128,33 +124,48 @@ const Navbar = () => {
                   <motion.div
                     layoutId="nav-pill"
                     transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                    style={{ position: 'absolute', inset: 0, background: '#eff6ff', borderRadius: 12, border: '1px solid #dbeafe', zIndex: -1 }}
+                    style={{ position: 'absolute', inset: 0, background: '#f1f5f9', borderRadius: 10, zIndex: -1 }}
                   />
                 )}
               </a>
             ))}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginLeft: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginLeft: 16 }}>
             <motion.button
               variants={itemVariants}
-              whileHover={{ y: -2, boxShadow: '8px 8px 0 #2563eb' }}
+              whileHover={{ y: -1, boxShadow: '6px 6px 0 #2563eb' }}
               whileTap={{ scale: 0.98 }}
-              onClick={handleDashboardRedirect} // Added Click Handler
+              onClick={handleDashboardRedirect}
               style={{
-                fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: 900, color: '#fff',
+                fontFamily: 'var(--font-body)', fontSize: 12, fontWeight: 900, color: '#fff',
                 background: '#0f172a', border: '2px solid #0f172a', cursor: 'pointer',
-                padding: '10px 22px', borderRadius: 12, boxShadow: '4px 4px 0 #2563eb',
-                transition: 'box-shadow 0.2s', display: 'flex', alignItems: 'center', gap: 8, textTransform: 'uppercase', letterSpacing: '0.05em'
+                padding: '8px 18px', borderRadius: 10, boxShadow: '3px 3px 0 #2563eb',
+                transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 6, textTransform: 'uppercase', letterSpacing: '0.05em'
               }}
             >
-              {t('nav.dashboard')} <motion.span whileHover={{ x: 3 }} transition={{ type: 'spring' }}><ChevronRight size={14} /></motion.span>
+              {isLoggedIn ? t("nav.dashboard") : t("nav.login")} <ChevronRight size={12} />
             </motion.button>
           </div>
         </nav>
 
-        <motion.button variants={itemVariants} onClick={() => setMobileMenuOpen(!mobileMenuOpen)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0f172a', padding: 4 }} className="show-mobile">
-          {mobileMenuOpen ? <X size={28} /> : <Menu size={28} />}
+        <motion.button 
+          variants={itemVariants} 
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)} 
+          style={{ 
+            background: mobileMenuOpen ? '#f1f5f9' : 'none', 
+            border: mobileMenuOpen ? '1px solid #e2e8f0' : 'none', 
+            cursor: 'pointer', 
+            color: '#0f172a', 
+            padding: 8,
+            borderRadius: 12,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }} 
+          className="show-mobile"
+        >
+          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
         </motion.button>
       </motion.div>
 
@@ -180,7 +191,7 @@ const Navbar = () => {
                   onClick={handleDashboardRedirect} // Added Click Handler to Mobile Menu
                   style={{ width: '100%', padding: '16px', borderRadius: 16, border: '2px solid #0f172a', background: '#0f172a', fontFamily: 'var(--font-body)', fontWeight: 900, fontSize: 16, color: '#fff', cursor: 'pointer', boxShadow: '6px 6px 0 #2563eb', textTransform: 'uppercase' }}
                 >
-                  {t('nav.dashboard')}
+                  {isLoggedIn ? t("nav.dashboard") : t("nav.login")}
                 </button>
               </div>
             </div>

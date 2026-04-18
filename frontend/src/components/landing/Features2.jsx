@@ -31,7 +31,7 @@ const FeaturesSection = () => {
   };
 
   return (
-    <section id="features" style={{ padding: '140px 0', background: '#fff', position: 'relative', overflow: 'hidden', fontFamily: 'var(--font-body)' }}>
+    <section id="features" style={{ padding: 'var(--section-padding)', background: '#fff', position: 'relative', overflow: 'hidden', fontFamily: 'var(--font-body)' }}>
       <GrainOverlay />
       
       <div className="grid-lines" style={{ position: 'absolute', inset: 0, opacity: 0.6 }} />

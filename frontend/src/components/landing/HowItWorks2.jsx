@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
-import { LayoutList, Activity, Wrench, ShieldCheck, ClipboardList, BrainCircuit, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { ClipboardList, BrainCircuit, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
 /* ─────────────────────────────────────────────────────────
@@ -16,45 +16,32 @@ const StepTag = ({ text }) => (
    SINGLE STEP COMPONENT
    ───────────────────────────────────────────────────────── */
 const TimelineStep = ({ step, idx, isEven }) => (
-  <div style={{ 
-    gridColumn: isEven ? '1' : '2', 
-    display: 'flex', flexDirection: 'column', 
-    alignItems: isEven ? 'flex-end' : 'flex-start',
-    marginTop: isEven ? 0 : 160, 
-    textAlign: isEven ? 'right' : 'left',
+  <div className={`timeline-item ${isEven ? 'even' : 'odd'}`} style={{ 
+    width: '100%',
+    display: 'flex',
+    justifyContent: isEven ? 'flex-end' : 'flex-start',
+    paddingRight: isEven ? '50%' : 0,
+    paddingLeft: isEven ? 0 : '50%',
     position: 'relative',
-    paddingBottom: 80
+    marginBottom: 100,
   }}>
-    {/* Timeline Dot with Blue Breathing Glow */}
+    {/* Timeline Dot */}
     <div style={{ 
-      position: 'absolute', top: 44, 
-      [isEven ? 'right' : 'left']: -58, 
-      transform: isEven ? 'translateX(50%)' : 'translateX(-50%)',
+      position: 'absolute', 
+      left: '50%',
+      top: 40,
+      transform: 'translateX(-50%)',
       zIndex: 20
     }}>
       <motion.div 
         initial={{ scale: 0 }} 
         whileInView={{ scale: 1 }} 
         viewport={{ once: false, amount: 0.8 }}
-        style={{ width: 20, height: 20, borderRadius: '50%', background: '#fff', border: '4px solid #0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        style={{ width: 24, height: 24, borderRadius: '50%', background: '#fff', border: '4px solid #0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
         <motion.div animate={{ scale: [1, 1.5, 1], opacity: [0.5, 0, 0.5] }} transition={{ duration: 2, repeat: Infinity }} style={{ position: 'absolute', width: '100%', height: '100%', borderRadius: '50%', background: '#2563eb' }} />
       </motion.div>
     </div>
-
-    {/* Wireframe Number Background */}
-    <motion.div 
-      initial={{ opacity: 0, scale: 0.8 }}
-      whileInView={{ opacity: 0.15, scale: 1 }}
-      viewport={{ once: true }}
-      style={{ 
-        position: 'absolute', top: -30, [isEven ? 'right' : 'left']: isEven ? 40 : 40,
-        fontFamily: 'var(--font-display)', fontSize: '10rem', fontWeight: 900, color: 'transparent', 
-        WebkitTextStroke: '2px #0f172a', zIndex: 0, pointerEvents: 'none' 
-      }}
-    >
-      {step.num}
-    </motion.div>
 
     {/* Content Card */}
     <motion.div
@@ -62,15 +49,40 @@ const TimelineStep = ({ step, idx, isEven }) => (
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-      className="glass-card"
-      style={{ position: 'relative', zIndex: 10, padding: 40, borderRadius: 32, minWidth: 380, border: '3px solid #0f172a', boxShadow: '16px 16px 0 #0f172a', background: '#fff' }}
+      className="glass-card timeline-card"
+      style={{ 
+        position: 'relative', 
+        zIndex: 10, 
+        padding: 40, 
+        borderRadius: 32, 
+        maxWidth: 440,
+        width: 'calc(100% - 40px)',
+        border: '3px solid #0f172a', 
+        boxShadow: '16px 16px 0 #0f172a', 
+        background: '#fff',
+        margin: isEven ? '0 40px 0 0' : '0 0 0 40px',
+        textAlign: isEven ? 'right' : 'left'
+      }}
     >
+      {/* Wireframe Number Background */}
+      <div style={{ 
+        position: 'absolute', top: -30, [isEven ? 'left' : 'right']: 20,
+        fontFamily: 'var(--font-display)', fontSize: '8rem', fontWeight: 900, color: 'transparent', 
+        WebkitTextStroke: '1px #f1f5f9', zIndex: -1, pointerEvents: 'none', opacity: 0.8
+      }}>
+        {step.num}
+      </div>
+
       <StepTag text={step.tag} />
-      <div style={{ width: 56, height: 56, borderRadius: 16, background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24, alignSelf: isEven ? 'flex-end' : 'flex-start' }}>
+      <div style={{ 
+        width: 56, height: 56, borderRadius: 16, background: '#0f172a', 
+        display: 'flex', alignItems: 'center', justifyContent: 'center', 
+        marginBottom: 24, marginLeft: isEven ? 'auto' : 0, marginRight: isEven ? 0 : 'auto' 
+      }}>
         {step.icon}
       </div>
       <h4 style={{ fontFamily: 'var(--font-display)', fontSize: '2.2rem', fontWeight: 800, color: '#0f172a', margin: '0 0 16px 0', lineHeight: 1 }}>{step.title}</h4>
-      <p style={{ fontFamily: 'var(--font-body)', fontSize: '1.15rem', color: '#64748b', margin: 0, fontWeight: 600, lineHeight: 1.5 }}>{step.desc}</p>
+      <p style={{ fontFamily: 'var(--font-body)', fontSize: '1.1rem', color: '#64748b', margin: 0, fontWeight: 600, lineHeight: 1.5 }}>{step.desc}</p>
     </motion.div>
   </div>
 );
@@ -96,15 +108,13 @@ const HowItWorks = () => {
   ];
 
   return (
-    <section ref={targetRef} id="how-it-works" style={{ position: 'relative', padding: '160px 0', background: '#fff', overflow: 'hidden', fontFamily: 'var(--font-body)' }}>
+    <section ref={targetRef} id="how-it-works" style={{ position: 'relative', padding: 'var(--section-padding)', background: '#fff', overflow: 'hidden', fontFamily: 'var(--font-body)' }}>
       
       {/* Background Frame Architecture */}
       <div className="grid-lines" style={{ position: 'absolute', inset: 0, opacity: 0.6, pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', left: '8%', top: 0, bottom: 0, width: 1, background: '#e2e8f0', pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', left: '92%', top: 0, bottom: 0, width: 1, background: '#e2e8f0', pointerEvents: 'none' }} />
       
-      {/* Floating Parallax Background Text (Updated to School Maintenance Theme) */}
-      <motion.div style={{ y: parallaxY, position: 'absolute', top: '10%', right: '-4%', fontSize: '18vw', fontWeight: 900, fontFamily: 'var(--font-display)', color: '#f1f5f9', whiteSpace: 'nowrap', userSelect: 'none', pointerEvents: 'none', writingMode: 'vertical-rl', transform: 'rotate(180deg)', opacity: 0.6 }}>
+      {/* Floating Parallax Background Text */}
+      <motion.div style={{ y: parallaxY, position: 'absolute', top: '10%', right: '-4%', fontSize: '18vw', fontWeight: 900, fontFamily: 'var(--font-display)', color: '#f1f5f9', whiteSpace: 'nowrap', userSelect: 'none', pointerEvents: 'none', writingMode: 'vertical-rl', transform: 'rotate(180deg)', opacity: 0.4 }}>
         PREDICT_ENGINE
       </motion.div>
       <motion.div style={{ y: parallaxRev, position: 'absolute', bottom: '10%', left: '-2%', fontSize: '15vw', fontWeight: 900, fontFamily: 'var(--font-display)', color: '#f8fafc', whiteSpace: 'nowrap', userSelect: 'none', pointerEvents: 'none', zIndex: 0 }}>
@@ -118,17 +128,17 @@ const HowItWorks = () => {
           <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} style={{ display: 'inline-flex', padding: '8px 20px', borderRadius: 99, border: '2px solid #0f172a', background: '#fff', color: '#0f172a', fontSize: 11, fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: 32, boxShadow: '6px 6px 0 #2563eb' }}>
             {t('hiw.cycle')}
           </motion.div>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3rem, 7vw, 5.5rem)', fontWeight: 800, color: '#0f172a', lineHeight: 0.95, letterSpacing: '-0.04em', marginBottom: 32 }}>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(3rem, 7vw, 5rem)', fontWeight: 800, color: '#0f172a', lineHeight: 0.95, letterSpacing: '-0.04em', marginBottom: 32 }}>
             {t('hiw.predicting_to')} <br/>
             <span style={{ color: '#2563eb', WebkitTextStroke: '1px #0f172a' }}>{t('hiw.protect_safety')}</span>
           </h2>
-          <p style={{ fontSize: '1.35rem', color: '#64748b', fontWeight: 600, lineHeight: 1.4, maxWidth: 540, margin: '0 auto' }}>
+          <p style={{ fontSize: '1.25rem', color: '#64748b', fontWeight: 600, lineHeight: 1.4, maxWidth: 540, margin: '0 auto' }}>
             {t('hiw.desc')}
           </p>
         </div>
 
         {/* Cinematic Timeline */}
-        <div style={{ position: 'relative', maxWidth: 1000, margin: '0 auto' }}>
+        <div style={{ position: 'relative', maxWidth: 1100, margin: '0 auto' }}>
           
           {/* Main Structural Progress Line (Blue Glow) */}
           <div style={{ position: 'absolute', left: '50%', top: 0, bottom: 0, width: 4, background: '#f1f5f9', transform: 'translateX(-50%)', borderRadius: 4, overflow: 'hidden' }}>
@@ -136,7 +146,7 @@ const HowItWorks = () => {
             <motion.div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: lineHeight, background: '#2563eb', opacity: 0.4, filter: 'blur(8px)' }} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', width: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
             {steps.map((step, idx) => (
               <TimelineStep key={idx} step={step} idx={idx} isEven={idx % 2 === 0} />
             ))}
@@ -145,6 +155,30 @@ const HowItWorks = () => {
 
       </div>
 
+      <style>{`
+        @media (max-width: 768px) {
+          .timeline-item {
+            justify-content: flex-start !important;
+            padding-left: 60px !important;
+            padding-right: 0 !important;
+            margin-bottom: 40px !important;
+          }
+          .timeline-card {
+            max-width: 100% !important;
+            text-align: left !important;
+            margin: 0 !important;
+          }
+          .timeline-item > div:first-child {
+            left: 20px !important;
+            transform: none !important;
+          }
+          section[id="how-it-works"] > div:last-of-type > div > div:first-child {
+            left: 20px !important;
+            transform: none !important;
+          }
+        }
+      `}</style>
+      
       {/* Decorative End */}
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 160, background: 'linear-gradient(to top, #fff, transparent)', zIndex: 20 }} />
     </section>

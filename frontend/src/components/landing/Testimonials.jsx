@@ -38,8 +38,8 @@ function InteractiveBento() {
   ];
 
   return (
-    <section id="use-cases" className="py-32 px-6 bg-white overflow-hidden">
-      <div className="max-w-7xl mx-auto mb-[-120px] mt-[-140px]">
+    <section id="use-cases" style={{ padding: 'var(--section-padding)' }} className="px-6 bg-white overflow-hidden">
+      <div className="max-w-7xl mx-auto">
         
         {/* Header - Aligned with Saksham Branding */}
         <div className="mb-20">
