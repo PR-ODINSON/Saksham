@@ -293,13 +293,16 @@ export default function AppLayout({ children }) {
       </AnimatePresence>
 
       {/* Main Content Area */}
-      <main id="main-content" className={`flex-1 transition-all duration-300 pb-16 relative z-20 ${
-        isScrolled ? 'pt-[120px] sm:pt-[136px]' : 'pt-[120px] sm:pt-[168px]'
+      <main id="main-content" className={`flex-1 transition-all duration-300 relative z-20 ${
+        location.pathname === '/dashboard/map' 
+          ? (isScrolled ? 'pt-[120px] sm:pt-[136px]' : 'pt-[120px] sm:pt-[168px]') 
+          : (isScrolled ? 'pt-[120px] sm:pt-[136px] pb-16' : 'pt-[120px] sm:pt-[168px] pb-16')
       }`}>
         {children}
       </main>
 
       {/* 5. Comprehensive Official Footer */}
+      {location.pathname !== '/dashboard/map' && (
       <footer className="bg-[#1a1a1a] text-white pt-12 pb-6 px-6 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12 border-b border-slate-800 pb-12">
@@ -362,6 +365,7 @@ export default function AppLayout({ children }) {
           </div>
         </div>
       </footer>
+      )}
     </div>
   );
 }
