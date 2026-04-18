@@ -1,4 +1,20 @@
 import { DistrictAnalytics, RepairLog, SchoolConditionRecord } from '../models/index.js';
+import { recomputeAllDistricts } from '../services/districtAnalytics.js';
+
+/**
+ * POST /api/analytics/recompute
+ * Manual trigger that rebuilds the district_analytics collection from the
+ * current state of school_condition_records. Useful after seeding, after a
+ * data import, or any time the cached aggregates look stale.
+ */
+export const recomputeAnalytics = async (_req, res) => {
+  try {
+    const results = await recomputeAllDistricts();
+    res.json({ success: true, recomputed: results.length, districts: results });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
 
 export const getDistrictStats = async (req, res) => {
   try {

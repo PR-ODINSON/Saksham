@@ -8,6 +8,7 @@ import School from './school.model.js';
 import User from './user.model.js';
 import PriorityConfig from './priorityConfig.model.js';
 import AuditLog from './audit-log.model.js';
+import ReportImage from './report-image.model.js';
 
 export {
   SchoolConditionRecord,
@@ -20,4 +21,5 @@ export {
   User,
   PriorityConfig,
   AuditLog,
+  ReportImage,
 };

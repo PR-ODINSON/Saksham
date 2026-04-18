@@ -11,7 +11,7 @@ import PDFDocument from 'pdfkit';
 import fs          from 'fs';
 import path        from 'path';
 import { fileURLToPath } from 'url';
-import { SchoolConditionRecord, School, User } from '../models/index.js';
+import { SchoolConditionRecord, School, User, ReportImage } from '../models/index.js';
 import { predictRiskForCategory } from './predictionEngine.js';
 
 const __dirname   = path.dirname(fileURLToPath(import.meta.url));
@@ -26,8 +26,27 @@ const CATEGORIES = ['plumbing', 'electrical', 'structural'];
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
-function resolveImagePath(src) {
+/**
+ * Resolve an image source into something PDFKit can embed.
+ *  • `/api/images/<id>` → fetch Buffer from MongoDB.
+ *  • `/uploads/<file>` (legacy) → read from local disk if it still exists.
+ *  • absolute path → read from disk.
+ * Returns a Buffer | filesystem path | null.
+ */
+async function resolveImageSource(src) {
   if (!src) return null;
+  if (typeof src !== 'string') return null;
+
+  // New format: bytes live in MongoDB
+  if (src.startsWith('/api/images/')) {
+    const id = src.slice('/api/images/'.length);
+    try {
+      const doc = await ReportImage.findById(id).lean();
+      return doc?.data ?? null;
+    } catch (_) { return null; }
+  }
+
+  // Legacy disk-backed paths
   if (path.isAbsolute(src)) return fs.existsSync(src) ? src : null;
   const rel = src.startsWith('/uploads/') ? src.slice('/uploads/'.length) : src;
   const abs = path.join(UPLOADS_DIR, rel);
@@ -162,6 +181,15 @@ export async function generateAndSendPDF(reportId) {
 
   fs.mkdirSync(REPORTS_DIR, { recursive: true });
   const filePath = path.join(REPORTS_DIR, `school-${schoolId}-w${weekNumber}-report.pdf`);
+
+  // Pre-resolve evidence images BEFORE entering the (sync) PDF stream callback —
+  // images now live in MongoDB so the lookup is async.
+  const imagesByRecordId = {};
+  for (const r of weekRecords) {
+    imagesByRecordId[String(r._id)] = (
+      await Promise.all((r.images || []).map(resolveImageSource))
+    ).filter(Boolean);
+  }
 
   await new Promise((resolve, reject) => {
     const doc    = new PDFDocument({ margin: 50, size: 'A4', autoFirstPage: true });
@@ -342,9 +370,9 @@ export async function generateAndSendPDF(reportId) {
         body(doc, `Review note: ${r.reviewNote}`, { indent: 4, color: '#1d4ed8' });
       }
 
-      // Evidence photos — render in a wrapping grid that advances rowY on each new row
-      const imgPaths = (r.images || []).map(resolveImagePath).filter(Boolean);
-      if (imgPaths.length) {
+      // Evidence photos — pull from the pre-resolved Mongo (or legacy disk) sources
+      const imgSources = imagesByRecordId[String(r._id)] || [];
+      if (imgSources.length) {
         ensureSpace(doc, 140);
         body(doc, 'Evidence Photos:', { bold: true, indent: 4 });
         doc.y += 4;
@@ -352,19 +380,17 @@ export async function generateAndSendPDF(reportId) {
         const IMG_W = 120, IMG_H = 90, IMG_GAP = 10;
         let imgX = L + 4;
         let rowY = doc.y;
-        for (const imgPath of imgPaths) {
+        for (const imgSrc of imgSources) {
           if (imgX + IMG_W > R) {
-            // wrap to next row
             imgX  = L + 4;
             rowY += IMG_H + IMG_GAP;
-            // ensure new row fits, otherwise add a page
             if (rowY + IMG_H > 770) {
               doc.addPage();
               rowY = 60;
             }
           }
           try {
-            doc.image(imgPath, imgX, rowY, { fit: [IMG_W, IMG_H], align: 'center', valign: 'center' });
+            doc.image(imgSrc, imgX, rowY, { fit: [IMG_W, IMG_H], align: 'center', valign: 'center' });
           } catch (_) { /* skip unembeddable images */ }
           imgX += IMG_W + IMG_GAP;
         }
