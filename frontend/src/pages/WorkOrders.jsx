@@ -50,7 +50,7 @@ function NewWorkOrderPanel({ prefill, onCreated, onClose, schools }) {
     e.preventDefault();
     setSaving(true);
     setError("");
-    const res = await post("/api/work-orders/assign", { ...form, assignedTo: assignedTo || undefined });
+    const res = await post("/api/tasks/assign", { ...form, assignedTo: assignedTo || undefined });
     setSaving(false);
     if (res.success) {
       onCreated(res.workOrder);
@@ -137,7 +137,7 @@ function CompletePanel({ workOrder, onDone, onClose }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    const res = await post("/api/work-orders/complete", { workOrderId: workOrder._id, completionNotes: notes });
+    const res = await post("/api/tasks/complete", { workOrderId: workOrder._id, completionNotes: notes });
     setSaving(false);
     if (res.success) { onDone(res.workOrder); onClose(); }
   };
@@ -194,7 +194,7 @@ export default function WorkOrders() {
     setLoading(true);
     const params = new URLSearchParams();
     if (statusFilter !== "all") params.set("status", statusFilter);
-    const res = await get(`/api/work-orders?${params}`);
+    const res = await get(`/api/tasks?${params}`);
     if (res.success) setOrders(res.workOrders);
     setLoading(false);
   }, [statusFilter]);
@@ -295,7 +295,7 @@ export default function WorkOrders() {
                     )}
                     {canAssign && order.status === "pending" && (
                       <button
-                        onClick={() => patch(`/api/work-orders/${order._id}/status`, { status: "assigned" }).then(r => r.success && updateOrderInList(r.workOrder))}
+                        onClick={() => patch(`/api/tasks/${order._id}/status`, { status: "assigned" }).then(r => r.success && updateOrderInList(r.workOrder))}
                         className="px-3 py-1.5 rounded-lg bg-blue-600/20 hover:bg-blue-600/40 border border-blue-600/50 text-blue-300 text-xs font-medium"
                       >
                         Assign

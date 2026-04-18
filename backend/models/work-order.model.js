@@ -6,9 +6,9 @@ import mongoose from 'mongoose';
  */
 const workOrderSchema = new mongoose.Schema({
   decisionId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'MaintenanceDecision',
-    required: [true, 'Maintenance decision reference is required']
+    type:     mongoose.Schema.Types.ObjectId,
+    ref:      'MaintenanceDecision',
+    required: false,
   },
   schoolId: {
     type: Number,
@@ -41,10 +41,10 @@ const workOrderSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: {
-      values: ['assigned', 'in_progress', 'completed', 'delayed'],
-      message: '{VALUE} is not a valid status'
+      values: ['pending', 'assigned', 'in_progress', 'completed', 'delayed', 'cancelled'],
+      message: '{VALUE} is not a valid status',
     },
-    default: 'assigned',
+    default: 'pending',
     required: true
   },
   deadline: {

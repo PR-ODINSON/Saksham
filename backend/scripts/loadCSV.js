@@ -61,50 +61,97 @@ function enumOrUndef(value, allowed) {
 }
 
 // ─── Map one CSV row → SchoolConditionRecord document ───────────────────────
-function rowToRecord(row) {
-  return {
-    schoolId:             Number(row.school_id),
-    district:             row.district,
-    block:                row.block  || undefined,
-    schoolType:           enumOrUndef(row.school_type, ['Primary', 'Secondary']),
-    isGirlsSchool:        row.girls_school === '1',
-    numStudents:          Number(row.num_students)  || 0,
-    buildingAge:          Number(row.building_age)  || 0,
-    materialType:         enumOrUndef(row.material_type,  ['RCC', 'Brick', 'Mixed', 'Temporary']),
-    weatherZone:          enumOrUndef(row.weather_zone,   ['Dry', 'Heavy Rain', 'Coastal', 'Tribal']),
-    category:             enumOrUndef(row.category,       ['plumbing', 'electrical', 'structural']),
-    weekNumber:           Number(row.week_number),
-    conditionScore:       Number(row.condition_score),
-    issueFlag:            row.issue_flag             === '1',
-    waterLeak:            row.water_leak             === '1',
-    wiringExposed:        row.wiring_exposed         === '1',
-    crackWidthMM:         parseFloat(row.crack_width_mm)            || 0,
-    toiletFunctionalRatio:parseFloat(row.toilet_functional_ratio)   || 0,
-    powerOutageHours:     parseFloat(row.power_outage_hours_weekly) || 0,
-    roofLeakFlag:         row.roof_leak_flag  === '1',
-    photoUploaded:        row.photo_uploaded  === '1',
-    daysToFailure:        row.days_to_failure !== '' ? parseFloat(row.days_to_failure) : undefined,
-    willFailWithin30Days: row.failure_within_30_days === '1',
-    willFailWithin60Days: row.failure_within_60_days === '1',
-    priorityScore:        parseFloat(row.priority_score) || 0,
-    repairDone:           row.repair_done === '1',
-    daysSinceRepair:      row.days_since_repair !== '' ? Number(row.days_since_repair) : undefined,
-    contractorDelayDays:  Number(row.contractor_delay_days) || 0,
-    slaBreach:            row.sla_breach === '1',
-  };
+// Returns null (+ logs) for rows that are missing required anchor fields.
+function rowToRecord(row, rowIndex) {
+  try {
+    const schoolId   = Number(row.school_id);
+    const weekNumber = Number(row.week_number);
+    const category   = enumOrUndef(row.category, ['plumbing', 'electrical', 'structural']);
+
+    if (!schoolId || !weekNumber || !category) {
+      console.warn(`  [row ${rowIndex}] skip — missing required field(s): ` +
+        `school_id=${row.school_id}, week_number=${row.week_number}, category=${row.category}`);
+      return null;
+    }
+
+    const conditionScore = Number(row.condition_score);
+    if (conditionScore < 1 || conditionScore > 5) {
+      console.warn(`  [row ${rowIndex}] skip — condition_score out of range: ${row.condition_score}`);
+      return null;
+    }
+
+    // days_to_failure: blank means no prediction available (not an error)
+    const rawDtf          = (row.days_to_failure ?? '').trim();
+    const daysToFailure   = rawDtf !== '' && !isNaN(rawDtf) ? parseFloat(rawDtf) : undefined;
+
+    const rawDsr          = (row.days_since_repair ?? '').trim();
+    const daysSinceRepair = rawDsr !== '' && !isNaN(rawDsr) ? Number(rawDsr)  : undefined;
+
+    return {
+      schoolId,
+      district:              row.district,
+      block:                 row.block                                        || undefined,
+      schoolType:            enumOrUndef(row.school_type, ['Primary', 'Secondary']),
+      isGirlsSchool:         row.girls_school              === '1',
+      numStudents:           Number(row.num_students)                         || 0,
+      buildingAge:           Number(row.building_age)                         || 0,
+      materialType:          enumOrUndef(row.material_type,  ['RCC', 'Brick', 'Mixed', 'Temporary']),
+      weatherZone:           enumOrUndef(row.weather_zone,   ['Dry', 'Heavy Rain', 'Coastal', 'Tribal']),
+      category,
+      weekNumber,
+      conditionScore,
+      issueFlag:             row.issue_flag              === '1',
+      waterLeak:             row.water_leak              === '1',
+      wiringExposed:         row.wiring_exposed          === '1',
+      crackWidthMM:          parseFloat(row.crack_width_mm)             || 0,
+      toiletFunctionalRatio: parseFloat(row.toilet_functional_ratio)    || 0,
+      powerOutageHours:      parseFloat(row.power_outage_hours_weekly)  || 0,
+      roofLeakFlag:          row.roof_leak_flag          === '1',
+      photoUploaded:         row.photo_uploaded          === '1',
+      // ── Prediction ground-truth signals (TS-PS3 training labels) ──────────
+      daysToFailure,
+      willFailWithin30Days:  row.failure_within_30_days  === '1',
+      willFailWithin60Days:  row.failure_within_60_days  === '1',
+      priorityScore:         parseFloat(row.priority_score)             || 0,
+      // ── Repair / SLA ──────────────────────────────────────────────────────
+      repairDone:            row.repair_done             === '1',
+      daysSinceRepair,
+      contractorDelayDays:   Number(row.contractor_delay_days)          || 0,
+      slaBreach:             row.sla_breach              === '1',
+    };
+  } catch (err) {
+    console.warn(`  [row ${rowIndex}] skip — unexpected parse error: ${err.message}`);
+    return null;
+  }
 }
 
-// ─── Batch insert (ordered:false = skip dup-key errors, continue rest) ───────
+// ─── Batch insert ─────────────────────────────────────────────────────────────
+// ordered:false lets MongoDB skip duplicate-key violations and continue.
+// Bulk-write errors (validation, cast) are logged at batch level.
 async function batchInsert(Model, docs, batchSize = 500) {
   if (docs.length === 0) { console.log('  (nothing to insert)'); return; }
   let done = 0;
+  let skipped = 0;
   for (let i = 0; i < docs.length; i += batchSize) {
-    await Model.insertMany(docs.slice(i, i + batchSize), { ordered: false })
-      .catch(() => {}); // ignore duplicate key errors
+    const batch = docs.slice(i, i + batchSize);
+    try {
+      await Model.insertMany(batch, { ordered: false });
+    } catch (err) {
+      // BulkWriteError: some docs were inserted, some skipped (dup-key / validation)
+      const inserted = err.result?.nInserted ?? 0;
+      const failed   = batch.length - inserted;
+      skipped += failed;
+      if (process.env.CSV_VERBOSE === '1' && err.writeErrors?.length) {
+        err.writeErrors.slice(0, 5).forEach(we =>
+          console.warn(`    batch error [idx ${we.index}]: ${we.errmsg}`),
+        );
+      }
+    }
     done += Math.min(batchSize, docs.length - i);
     process.stdout.write(`\r  ${done.toLocaleString()} / ${docs.length.toLocaleString()}`);
   }
   process.stdout.write('\n');
+  if (skipped > 0) console.log(`  ⚠  ${skipped} documents skipped (dup-key or validation errors)`);
 }
 
 // ─── Priority level from numeric score ──────────────────────────────────────
@@ -149,7 +196,9 @@ async function main() {
 
   // ── 2. Load school_condition_records (1 row = 1 doc) ─────────────────────
   console.log('[2/5] Loading → school_condition_records');
-  const records = rows.map(rowToRecord).filter(r => r.schoolId && r.category && r.weekNumber);
+  const records = rows
+    .map((row, i) => rowToRecord(row, i + 2)) // +2 → 1-indexed + header row
+    .filter(Boolean);
   await batchInsert(SchoolConditionRecord, records);
   const totalRecords = await SchoolConditionRecord.countDocuments();
   console.log(`      ✓ ${totalRecords.toLocaleString()} documents\n`);

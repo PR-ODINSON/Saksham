@@ -4,10 +4,10 @@
  */
 import 'dotenv/config';
 import mongoose from 'mongoose';
-import School from './models/School.js';
-import ConditionReport from './models/ConditionReport.js';
+import School from './models/school.model.js';
+import ConditionReport from './models/conditionReport.model.js';
 import User from './models/user.model.js';
-import WorkOrder from './models/WorkOrder.js';
+import WorkOrder from './models/work-order.model.js';
 import { hashPassword } from './Methods/bcryptPassword.js';
 import { analyseSchool } from './services/predictionEngine.js';
 
@@ -38,11 +38,11 @@ const [deo, contractor1, contractor2, schoolUser1, schoolUser2, schoolUser3] = a
 
 // ─── Schools ─────────────────────────────────────────────────────────────────
 const schoolsData = [
-  { name: 'ZP Primary School, Hadapsar', district: 'Pune', block: 'Haveli', buildingAge: 42, studentCount: 320, teacherCount: 8, totalRooms: 6, udiseCode: 'MH27010001' },
-  { name: 'Vidya Mandir High School', district: 'Pune', block: 'Mulshi', buildingAge: 28, studentCount: 580, teacherCount: 22, totalRooms: 14, udiseCode: 'MH27010002' },
-  { name: 'Central Government School', district: 'Pune', block: 'Khed', buildingAge: 15, studentCount: 210, teacherCount: 9, totalRooms: 8, udiseCode: 'MH27010003' },
-  { name: 'Nagar Palika Shala No. 4', district: 'Pune', block: 'Haveli', buildingAge: 55, studentCount: 450, teacherCount: 14, totalRooms: 9, udiseCode: 'MH27010004' },
-  { name: 'St. Mary\'s Primary School', district: 'Pune', block: 'Shirur', buildingAge: 22, studentCount: 380, teacherCount: 16, totalRooms: 11, udiseCode: 'MH27010005' },
+  { schoolId: 9001, name: 'ZP Primary School, Hadapsar', district: 'Pune', block: 'Haveli', numStudents: 320, schoolType: 'Primary', infrastructure: { buildingAge: 42, materialType: 'Brick',  weatherZone: 'Heavy Rain' } },
+  { schoolId: 9002, name: 'Vidya Mandir High School',    district: 'Pune', block: 'Mulshi', numStudents: 580, schoolType: 'Secondary', infrastructure: { buildingAge: 28, materialType: 'RCC',   weatherZone: 'Dry' } },
+  { schoolId: 9003, name: 'Central Government School',   district: 'Pune', block: 'Khed',   numStudents: 210, schoolType: 'Primary', infrastructure: { buildingAge: 15, materialType: 'RCC',   weatherZone: 'Dry' } },
+  { schoolId: 9004, name: 'Nagar Palika Shala No. 4',    district: 'Pune', block: 'Haveli', numStudents: 450, schoolType: 'Primary', infrastructure: { buildingAge: 55, materialType: 'Mixed', weatherZone: 'Heavy Rain' } },
+  { schoolId: 9005, name: "St. Mary's Primary School",   district: 'Pune', block: 'Shirur', numStudents: 380, schoolType: 'Primary', infrastructure: { buildingAge: 22, materialType: 'Brick', weatherZone: 'Dry' } },
 ];
 const schools = await School.insertMany(schoolsData);
 
@@ -155,80 +155,60 @@ for (const report of reports) {
   await ConditionReport.findByIdAndUpdate(report._id, { riskScore: score, riskLevel: level });
 }
 
+// Compute risk for each demo school (scores logged for visibility; not persisted — schema does not carry these fields)
 for (const school of schools) {
   const recentReports = await ConditionReport.find({ schoolId: school._id }).sort({ weekOf: -1 }).limit(4);
-  const analysis = analyseSchool(recentReports, school.buildingAge);
-  await School.findByIdAndUpdate(school._id, {
-    lastRiskScore: analysis.score,
-    lastRiskCategory: analysis.level,
-    lastAssessedAt: new Date(),
-  });
+  const analysis = analyseSchool(recentReports, school.infrastructure?.buildingAge ?? 0);
+  console.log(`  ${school.name}: risk=${analysis.level} (${analysis.score})`);
 }
 
 // ─── Work Orders ─────────────────────────────────────────────────────────────
 const workOrdersData = [
   {
-    schoolId: schools[0]._id,
-    category: 'structural',
-    subCategory: 'roof',
-    description: 'Roof leaking in 3 classrooms — urgent repair required before monsoon',
-    priority: 'critical',
-    riskScore: 88,
-    estimatedDays: 5,
-    assignedTo: contractor1._id,
-    assignedBy: deo._id,
-    assignedAt: new Date(),
-    status: 'assigned',
-    dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+    schoolId:      schools[0].schoolId,
+    district:      schools[0].district,
+    category:      'structural',
+    priorityScore: 88,
+    assignment:    { assignedTo: contractor1._id, assignedBy: deo._id },
+    status:        'assigned',
+    deadline:      new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
   },
   {
-    schoolId: schools[3]._id,
-    category: 'electrical',
-    subCategory: 'main wiring',
-    description: 'Faulty wiring in lab — potential fire hazard',
-    priority: 'critical',
-    riskScore: 92,
-    estimatedDays: 3,
-    assignedTo: contractor2._id,
-    assignedBy: deo._id,
-    assignedAt: new Date(),
-    status: 'in_progress',
-    dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+    schoolId:      schools[3].schoolId,
+    district:      schools[3].district,
+    category:      'electrical',
+    priorityScore: 92,
+    assignment:    { assignedTo: contractor2._id, assignedBy: deo._id },
+    status:        'in_progress',
+    deadline:      new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+    startedAt:     new Date(),
   },
   {
-    schoolId: schools[1]._id,
-    category: 'sanitation',
-    subCategory: 'girls toilet',
-    description: 'Girls toilet not functional — needs plumbing repair',
-    priority: 'high',
-    riskScore: 71,
-    estimatedDays: 7,
-    status: 'pending',
+    schoolId:      schools[1].schoolId,
+    district:      schools[1].district,
+    category:      'plumbing',
+    priorityScore: 71,
+    status:        'pending',
+    deadline:      new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   },
   {
-    schoolId: schools[0]._id,
-    category: 'plumbing',
-    subCategory: 'water supply pipe',
-    description: 'Main water supply pipe cracked near entry gate',
-    priority: 'high',
-    riskScore: 76,
-    estimatedDays: 4,
-    assignedTo: contractor1._id,
-    assignedBy: deo._id,
-    assignedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-    status: 'completed',
-    completedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    completionNotes: 'Pipe replaced successfully. Water supply restored.',
+    schoolId:      schools[0].schoolId,
+    district:      schools[0].district,
+    category:      'plumbing',
+    priorityScore: 76,
+    assignment:    { assignedTo: contractor1._id, assignedBy: deo._id },
+    status:        'completed',
+    deadline:      new Date(Date.now() + 4 * 24 * 60 * 60 * 1000),
+    completedAt:   new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    completionProof: { photoUrl: null },
   },
   {
-    schoolId: schools[4]._id,
-    category: 'plumbing',
-    subCategory: 'drainage',
-    description: 'Blocked drainage causing waterlogging in playground',
-    priority: 'medium',
-    riskScore: 48,
-    estimatedDays: 10,
-    status: 'pending',
+    schoolId:      schools[4].schoolId,
+    district:      schools[4].district,
+    category:      'plumbing',
+    priorityScore: 48,
+    status:        'pending',
+    deadline:      new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
   },
 ];
 

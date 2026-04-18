@@ -20,8 +20,8 @@ import adminRoutes            from './routes/admin.routes.js';
 import schoolRoutes           from './routes/school.routes.js';
 import reportRoutes           from './routes/report.routes.js';
 import riskRoutes             from './routes/risk.routes.js';
-import workOrderRoutes        from './routes/workorder.routes.js';
 import taskRoutes             from './routes/task.routes.js';
+// workorder.routes.js is retired — /api/work-orders delegates to taskRoutes below
 // New routes from git pull
 import alertRoutes            from './routes/alert.routes.js';
 import analyticsRoutes        from './routes/analytics.routes.js';
@@ -106,7 +106,8 @@ app.use('/api/schools', schoolRoutes);
 // ─── Legacy aliases (backwards compat) ───────────────────────────────────────
 app.use('/api/condition-report', reportRoutes);
 app.use('/api/risk-scores',      riskRoutes);
-app.use('/api/work-orders',      workOrderRoutes);
+// /api/work-orders is retired — delegated to the canonical /api/tasks router
+app.use('/api/work-orders',      taskRoutes);
 
 // ─── Error handling ───────────────────────────────────────────────────────────
 app.use((_req, res) => {
