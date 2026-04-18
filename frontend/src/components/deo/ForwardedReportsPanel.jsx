@@ -4,8 +4,9 @@ import { get, API_BASE } from "../../services/api";
 import Card from "../common/Card";
 import Button from "../common/Button";
 import Badge from "../common/Badge";
+import AssignContractorModal from "./AssignContractorModal";
 import {
-  FileText, Download, Cpu, AlertTriangle, ChevronRight, RefreshCw,
+  FileText, Download, Cpu, AlertTriangle, ChevronRight, RefreshCw, UserPlus,
 } from "lucide-react";
 
 const URGENCY = {
@@ -23,6 +24,7 @@ const URGENCY = {
 export default function ForwardedReportsPanel({ district, className = "" }) {
   const [bundles, setBundles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [assignBundle, setAssignBundle] = useState(null);
   const navigate = useNavigate();
 
   const load = async () => {
@@ -113,7 +115,7 @@ export default function ForwardedReportsPanel({ district, className = "" }) {
                     </div>
                   </div>
                   <Button
-                    variant="primary"
+                    variant="outline"
                     size="sm"
                     onClick={() =>
                       window.open(`${API_BASE}/api/reports/${b.anchorRecordId}/pdf`, "_blank")
@@ -121,10 +123,25 @@ export default function ForwardedReportsPanel({ district, className = "" }) {
                   >
                     <Download size={14} className="mr-1.5" /> PDF
                   </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setAssignBundle(b)}
+                  >
+                    <UserPlus size={14} className="mr-1.5" /> Assign
+                  </Button>
                 </div>
               </div>
             );
           })}
+          {assignBundle && (
+            <AssignContractorModal
+              bundle={assignBundle}
+              onClose={() => setAssignBundle(null)}
+              onAssigned={load}
+            />
+          )}
+
           {bundles.length > 5 && (
             <button
               onClick={() => navigate("/deo/dashboard/reports")}

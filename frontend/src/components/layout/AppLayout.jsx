@@ -21,8 +21,8 @@ const ROLE_NAV = {
     { path: '/deo/dashboard/work-orders',  label: 'Command Center',      icon: <Crosshair size={18} strokeWidth={2.5} /> },
   ],
   contractor: [
-    { path: '/contractor/dashboard',              label: 'My Tasks',  icon: <Hammer size={18} strokeWidth={2.5} />, exact: true },
-    { path: '/contractor/dashboard/work-orders',  label: 'All Orders', icon: <FileText size={18} strokeWidth={2.5} /> },
+    { path: '/contractor/dashboard',              label: 'Field Console', icon: <Hammer size={18} strokeWidth={2.5} />, exact: true },
+    { path: '/contractor/dashboard/work-orders',  label: 'All Orders',    icon: <FileText size={18} strokeWidth={2.5} /> },
   ],
   admin: [
     { path: '/admin/dashboard',              label: 'Admin Panel', icon: <Shield size={18} strokeWidth={2.5} />, exact: true },

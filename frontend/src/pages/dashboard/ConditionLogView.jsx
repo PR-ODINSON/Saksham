@@ -6,10 +6,11 @@ import Button from "../../components/common/Button";
 import Badge from "../../components/common/Badge";
 import PageHeader from "../../components/common/PageHeader";
 import MetricCard from "../../components/common/MetricCard";
+import AssignContractorModal from "../../components/deo/AssignContractorModal";
 import {
   AlertTriangle, FileText, Camera, Clock, Filter,
   Send, CheckCircle2, ChevronDown, ChevronUp,
-  Download, Wrench, Zap, Building, Cpu, ShieldAlert, Activity,
+  Download, Wrench, Zap, Building, Cpu, ShieldAlert, Activity, UserPlus,
 } from "lucide-react";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -84,7 +85,7 @@ function CategoryRow({ rec }) {
 }
 
 // ─── A weekly bundle (1 row per week, all 3 categories inside) ───────────────
-function WeeklyBundleCard({ bundle, isPrincipal, onForward, onView }) {
+function WeeklyBundleCard({ bundle, isPrincipal, isDEO, onForward, onView, onAssign }) {
   const [expanded, setExpanded] = useState(false);
   const u = URGENCY_CONFIG[bundle.urgencyLabel] || URGENCY_CONFIG.low;
   const submittedAt = bundle.categories[0]?.createdAt ? new Date(bundle.categories[0].createdAt) : null;
@@ -143,6 +144,12 @@ function WeeklyBundleCard({ bundle, isPrincipal, onForward, onView }) {
             )
           )}
 
+          {isDEO && bundle.forwarded && (
+            <Button variant="primary" size="sm" onClick={() => onAssign(bundle)}>
+              <UserPlus size={14} className="mr-1.5" /> Assign Contractor
+            </Button>
+          )}
+
           <Button variant="ghost" size="sm" onClick={() => setExpanded(!expanded)} className="w-9 h-9 p-0">
             {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </Button>
@@ -183,6 +190,7 @@ export default function ConditionLogView() {
   const [toast, setToast]         = useState(null);
   const [urgencyFilter, setUrgencyFilter] = useState("all");
   const [statusFilter, setStatusFilter]   = useState("all"); // all | pending | sent
+  const [assignBundle, setAssignBundle]   = useState(null);
 
   const isPrincipal = user?.role === "principal" || user?.role === "school";
   const isDEO       = user?.role === "deo" || user?.role === "admin";
@@ -373,11 +381,13 @@ export default function ConditionLogView() {
               <div className="space-y-4">
                 {sorted.map(b => (
                   <WeeklyBundleCard
-                    key={b.weekNumber}
+                    key={`${b.schoolId}-${b.weekNumber}`}
                     bundle={b}
                     isPrincipal={isPrincipal}
+                    isDEO={isDEO}
                     onForward={handleForward}
                     onView={handleView}
+                    onAssign={setAssignBundle}
                   />
                 ))}
               </div>
@@ -389,6 +399,18 @@ export default function ConditionLogView() {
             )}
           </div>
         </Card>
+
+        {assignBundle && (
+          <AssignContractorModal
+            bundle={assignBundle}
+            onClose={() => setAssignBundle(null)}
+            onAssigned={() => {
+              setToast({ ok: true, msg: `Contractor assigned for Week ${assignBundle.weekNumber} bundle.` });
+              setTimeout(() => setToast(null), 4000);
+              loadBundles();
+            }}
+          />
+        )}
       </div>
     </div>
   );

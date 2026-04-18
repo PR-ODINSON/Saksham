@@ -8,6 +8,7 @@ import SchoolView from './pages/dashboard/SchoolView.jsx';
 import DEODashboard from './pages/dashboard/DEODashboard.jsx';
 import WeeklyInputForm from './pages/dashboard/WeeklyInputForm.jsx';
 import WorkOrders from './pages/dashboard/WorkOrders.jsx';
+import ContractorDashboard from './pages/dashboard/ContractorDashboard.jsx';
 import Signup from './pages/auth/Signup.jsx';
 import ConditionLogView from './pages/dashboard/ConditionLogView.jsx';
 import GeospatialMap from './pages/dashboard/GeospatialMap.jsx';
@@ -63,7 +64,7 @@ function App() {
           <Route path="/deo/dashboard/reports"          element={dash(ConditionLogView)} />
 
           {/* ── Contractor ──────────────────────────────────────────────────── */}
-          <Route path="/contractor/dashboard"               element={dash(WorkOrders)} />
+          <Route path="/contractor/dashboard"               element={dash(ContractorDashboard)} />
           <Route path="/contractor/dashboard/work-orders"   element={dash(WorkOrders)} />
 
           {/* ── Admin ───────────────────────────────────────────────────────── */}

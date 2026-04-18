@@ -277,6 +277,88 @@ export const updateTaskStatus = async (req, res) => {
   }
 };
 
+// GET /api/work-orders/:id/details  |  GET /api/tasks/:id/details
+// Returns the work order joined with the source SchoolConditionRecord
+// (issues + LR + photos uploaded by the peon) and the School metadata.
+// Contractors only see their own; DEO/admin/principal can see any.
+export const getWorkOrderDetails = async (req, res) => {
+  try {
+    const wo = await WorkOrder.findById(req.params.id)
+      .populate('assignment.assignedTo', 'name phone email')
+      .populate('assignment.assignedBy', 'name role')
+      .lean();
+
+    if (!wo) return res.status(404).json({ success: false, message: 'Work order not found' });
+
+    if (req.user?.role === 'contractor' &&
+        wo.assignment?.assignedTo?._id?.toString() !== req.user.id) {
+      return res.status(403).json({ success: false, message: 'Not authorised' });
+    }
+
+    // Load the source condition record. If decisionId is set use it, otherwise
+    // fall back to the latest record matching school + category + week.
+    let conditionRecord = null;
+    if (wo.decisionId) {
+      const decision = await MaintenanceDecision.findById(wo.decisionId).lean();
+      if (decision?.recordId) {
+        conditionRecord = await SchoolConditionRecord.findById(decision.recordId).lean();
+      }
+    }
+    if (!conditionRecord) {
+      conditionRecord = await SchoolConditionRecord.findOne({
+        schoolId: wo.schoolId,
+        category: wo.category,
+      }).sort({ weekNumber: -1 }).lean();
+    }
+
+    const school = await School.findOne({ schoolId: wo.schoolId }).lean();
+
+    // Build a human-readable list of "what is wrong" from the record's flags.
+    const issues = [];
+    if (conditionRecord) {
+      const r = conditionRecord;
+      if (r.waterLeak)       issues.push({ key: 'waterLeak',       label: 'Active water leak',                    severity: 'high'     });
+      if (r.wiringExposed)   issues.push({ key: 'wiringExposed',   label: 'Exposed live wiring',                  severity: 'critical' });
+      if (r.roofLeakFlag)    issues.push({ key: 'roofLeakFlag',    label: 'Roof leakage detected',                severity: 'high'     });
+      if (r.brokenTap)       issues.push({ key: 'brokenTap',       label: 'Broken tap(s)',                        severity: 'medium'   });
+      if (r.cloggedDrain)    issues.push({ key: 'cloggedDrain',    label: 'Drain clogged',                        severity: 'medium'   });
+      if (r.tankOverflow)    issues.push({ key: 'tankOverflow',    label: 'Water tank overflow',                  severity: 'high'     });
+      if (r.lowWaterPressure)issues.push({ key: 'lowWaterPressure',label: 'Low water pressure',                   severity: 'medium'   });
+      if (r.wallSeepage)     issues.push({ key: 'wallSeepage',     label: 'Wall seepage / dampness',              severity: 'high'     });
+      if (r.brokenDoor)      issues.push({ key: 'brokenDoor',      label: 'Broken door',                          severity: 'low'      });
+      if (r.brokenWindow)    issues.push({ key: 'brokenWindow',    label: 'Broken window',                        severity: 'medium'   });
+      if (r.pestInfestation) issues.push({ key: 'pestInfestation', label: 'Pest / rodent infestation',            severity: 'high'     });
+      if (r.crackWidthMM > 5)issues.push({ key: 'crack',           label: `Wall crack ${r.crackWidthMM}mm wide`,  severity: r.crackWidthMM > 10 ? 'critical' : 'high' });
+      if (r.toiletFunctionalRatio !== undefined && r.toiletFunctionalRatio < 0.5)
+        issues.push({ key: 'toilets', label: `Only ${Math.round((r.toiletFunctionalRatio||0)*100)}% toilets functional`, severity: 'high' });
+      if (r.powerOutageHours > 8)
+        issues.push({ key: 'power', label: `${r.powerOutageHours} h power outage / week`, severity: r.powerOutageHours > 16 ? 'critical' : 'high' });
+    }
+
+    res.json({
+      success: true,
+      workOrder: wo,
+      school,
+      conditionRecord,
+      issues,
+      photos: conditionRecord?.images || [],
+      lr: conditionRecord ? {
+        urgencyFactor:        conditionRecord.lrUrgencyFactor ?? null,
+        urgencyLabel:         conditionRecord.lrUrgencyLabel ?? null,
+        priorityScore:        conditionRecord.lrPriorityScore ?? conditionRecord.priorityScore ?? null,
+        daysToFailure:        conditionRecord.lrDaysToFailure ?? conditionRecord.daysToFailure ?? null,
+        fail30Probability:    conditionRecord.lrFail30Probability ?? null,
+        fail60Probability:    conditionRecord.lrFail60Probability ?? null,
+        willFailWithin30Days: conditionRecord.willFailWithin30Days ?? false,
+        willFailWithin60Days: conditionRecord.willFailWithin60Days ?? false,
+        modelVersion:         conditionRecord.lrModelVersion ?? null,
+      } : null,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 // PATCH /api/tasks/:id/respond  (contractor accept/reject)
 export const respondToTask = async (req, res) => {
   try {
