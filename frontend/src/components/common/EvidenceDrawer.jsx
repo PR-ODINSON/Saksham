@@ -1,28 +1,37 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import Button from './Button';
 import Badge from './Badge';
 import { X, Database } from 'lucide-react';
 
-export default function EvidenceDrawer({ isOpen, onClose, schoolName, evidence = [], categories = [] }) {
+export default function EvidenceDrawer({ isOpen, onClose, schoolName, evidence = [], categories = [], coverImage }) {
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+  return createPortal(
+    <div className="fixed inset-0 z-[99999] overflow-hidden flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={onClose} />
       
-      <div className="absolute inset-y-0 right-0 max-w-full flex">
-        <div className="w-screen max-w-md transform transition ease-in-out duration-500">
-          <div className="h-full flex flex-col bg-white shadow-2xl border-l border-slate-200">
-            {/* Header */}
-            <div className="px-8 py-6 border-b border-slate-200 bg-slate-50 relative">
-              <h2 className="text-xl font-bold text-slate-900">Infrastructure Insights</h2>
-              <p className="mt-1 text-sm text-slate-500 font-medium tracking-tight">
-                Predictive data for <span className="text-blue-900 font-bold">{schoolName}</span>
-              </p>
-              <div className="absolute top-6 right-6">
-                <Button variant="ghost" size="sm" onClick={onClose} className="w-8 h-8 p-0">
+      <div className="relative w-full max-w-xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Banner Image Area */}
+            <div className="relative h-64 w-full bg-slate-200 shrink-0">
+              {coverImage ? (
+                <img src={coverImage} alt="School" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-slate-400">No Image Available</div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent" />
+              
+              <div className="absolute top-4 right-4 z-10">
+                <Button variant="secondary" size="sm" onClick={onClose} className="w-8 h-8 p-0 bg-white/20 hover:bg-white/40 backdrop-blur-md border-white/30 text-white shadow-xl">
                   <X size={16} />
                 </Button>
+              </div>
+
+              <div className="absolute bottom-6 left-6 right-6">
+                <h2 className="text-2xl font-black text-white leading-tight drop-shadow-md">{schoolName}</h2>
+                <p className="mt-1 text-xs text-slate-300 font-bold tracking-widest uppercase">
+                  Infrastructure Insights
+                </p>
               </div>
             </div>
 
@@ -79,10 +88,9 @@ export default function EvidenceDrawer({ isOpen, onClose, schoolName, evidence =
               >
                 Close Insights
               </Button>
-            </div>
-          </div>
-        </div>
       </div>
-    </div>
+      </div>
+    </div>,
+    document.body
   );
 }
