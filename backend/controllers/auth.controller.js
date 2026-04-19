@@ -12,9 +12,9 @@ const signToken = (user) =>
 const setCookie = (res, token) =>
   res.cookie('token', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production', // True in production
+    secure: true, // True in production
     // 'none' is required for cross-site cookies when secure is true
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', 
+    sameSite: 'none', 
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 
