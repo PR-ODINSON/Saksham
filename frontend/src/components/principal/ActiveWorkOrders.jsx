@@ -24,14 +24,14 @@ export default function ActiveWorkOrders({ schoolId, className }) {
   if (loading) return <div className={`h-48 flex items-center justify-center bg-white rounded-lg animate-pulse border border-slate-200 ${className}`}>Retrieving Work Stream...</div>;
 
   return (
-    <Card variant="gov" className={className} title="Contractor Work Logs" icon={Wrench} subtitle="Real-time monitoring of assigned on-site repairs">
-      <div className="mt-4 -mx-6">
+    <Card variant="gov" className={className} title="Contractor Work Logs" icon={Wrench} subtitle="Real-time monitoring of assigned on-site repairs" noPadding>
+      <div>
         {orders.length === 0 ? (
-          <div className="mx-6 py-12 text-center text-slate-400 font-medium text-sm italic bg-slate-50/50 rounded border border-dashed border-slate-200">
+          <div className="m-6 py-12 text-center text-slate-400 font-medium text-sm italic bg-slate-50/50 rounded border border-dashed border-slate-200">
             No active work orders currently in field operation.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto rounded-b-lg">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-y border-slate-200">

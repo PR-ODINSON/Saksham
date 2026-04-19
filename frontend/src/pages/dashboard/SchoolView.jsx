@@ -175,7 +175,7 @@ export default function SchoolView() {
         </div>
       </div>
 
-    <div className="max-w-7xl mx-auto pb-12 px-4 sm:px-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-8 pb-12 space-y-8">
         {/* REPORT METRICS - Floating Over Banner */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 -mt-16 relative z-10">
           <MetricCard

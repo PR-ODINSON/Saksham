@@ -189,12 +189,27 @@ export const completeTask = async (req, res) => {
     }
 
     // 1. GPS Validation
+    //
+    // We only run a real distance check when the school's lat/lng has been
+    // explicitly verified (`location.verified === true`). The seed script
+    // assigns synthetic district-centroid + random jitter coordinates to every
+    // school, so running the check unconditionally produces false positives
+    // for almost every legitimate completion. Threshold is configurable via
+    // GPS_MISMATCH_THRESHOLD_KM env (default 5 km).
+    const THRESHOLD_KM = Number(process.env.GPS_MISMATCH_THRESHOLD_KM) || 5;
     let locationMismatch = false;
+    let school = null;
     if (lat && lng) {
-      const school = await School.findOne({ schoolId: workOrder.schoolId });
-      if (school && school.location && school.location.lat) {
+      school = await School.findOne({ schoolId: workOrder.schoolId });
+      if (
+        school &&
+        school.location &&
+        school.location.verified === true &&
+        Number.isFinite(school.location.lat) &&
+        Number.isFinite(school.location.lng)
+      ) {
         const distance = getDistanceKM(lat, lng, school.location.lat, school.location.lng);
-        if (distance > 5) {
+        if (distance > THRESHOLD_KM) {
           locationMismatch = true;
         }
       }
@@ -212,13 +227,13 @@ export const completeTask = async (req, res) => {
 
     // 1.5 Create GPS Mismatch Alert if detected
     if (locationMismatch) {
-      const school = await School.findOne({ schoolId: workOrder.schoolId });
+      if (!school) school = await School.findOne({ schoolId: workOrder.schoolId });
       await Alert.create({
         schoolId: workOrder.schoolId,
         district: school?.district || workOrder.district || 'Unknown',
         category: workOrder.category,
         type: 'GPS_MISMATCH',
-        message: `🚩 GPS Mismatch: Contractor submitted completion for ${school?.name || 'School ' + workOrder.schoolId} from a distant location. Verify required.`,
+        message: `GPS Mismatch: Contractor submitted completion for ${school?.name || 'School ' + workOrder.schoolId} from a distant location. Verify required.`,
       });
     }
 

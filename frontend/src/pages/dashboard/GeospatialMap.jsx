@@ -6,14 +6,19 @@ import 'leaflet.heat';
 import { get } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import useSocket from '../../hooks/useSocket';
-import { Globe, RefreshCw, AlertTriangle, Building, ShieldCheck, ChevronDown, Navigation, ExternalLink, Crosshair, Filter, X } from 'lucide-react';
-import PageHeader from '../../components/common/PageHeader';
-import MetricCard from '../../components/common/MetricCard';
+import { RefreshCw, ChevronDown, Navigation, ExternalLink, Crosshair, Filter, X } from 'lucide-react';
 import Badge from '../../components/common/Badge';
-import Button from '../../components/common/Button';
 import { useNavigate } from 'react-router-dom';
 
 import { useLanguage } from '../../context/LanguageContext';
+
+// Gujarat State approximate bounding box. The map auto-fits this rectangle
+// whenever no specific district is selected, so the user always lands on
+// Gujarat instead of a single school somewhere on the coast. The bounds are
+// kept tight (excluding the open Arabian Sea / state border buffer) so the
+// state actually fills the viewport instead of zooming out to neighbours.
+const GUJARAT_BOUNDS = L.latLngBounds([20.6, 68.7], [24.5, 74.2]);
+const GUJARAT_CENTER = [22.6, 71.5];
 
 // Renders / maintains a leaflet.heat layer for live MaintenanceDecision urgency.
 // Each heat point is [lat, lng, intensity] with intensity = maxPriorityScore/100.
@@ -90,6 +95,38 @@ const createCustomIcon = (score) => {
     iconAnchor: [10, 10]
   });
 };
+
+// Auto-focuses the map on either the selected district's schools or the full
+// Gujarat State bounding box when "All districts" is chosen.
+function FocusController({ selectedDistrict, schools }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map) return;
+
+    if (selectedDistrict) {
+      const districtSchools = schools.filter(
+        s =>
+          s.district === selectedDistrict &&
+          s.location &&
+          Number.isFinite(s.location.lat) &&
+          Number.isFinite(s.location.lng),
+      );
+
+      if (districtSchools.length > 0) {
+        const bounds = L.latLngBounds(
+          districtSchools.map(s => [s.location.lat, s.location.lng]),
+        );
+        map.flyToBounds(bounds.pad(0.45), { duration: 1.0, maxZoom: 11 });
+        return;
+      }
+    }
+
+    map.flyToBounds(GUJARAT_BOUNDS, { duration: 1.0, maxZoom: 8, padding: [10, 10] });
+  }, [map, selectedDistrict, schools]);
+
+  return null;
+}
 
 // Component to handle map controls (Recenter, Filters)
 const MapController = ({ userLocation, activeFilter, setFilter, t }) => {
@@ -293,7 +330,7 @@ export default function GeospatialMap() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <div className="max-w-7xl mx-auto pt-10 sm:pt-16 pb-12 px-4 sm:px-8 flex flex-col space-y-8">
+      <div className="max-w-7xl mx-auto pt-8 sm:pt-12 pb-12 px-4 sm:px-8 flex flex-col space-y-5">
         {/* CSS overrides for Leaflet Popups to match Bento Box theme */}
         <style>{`
         .leaflet-popup-content-wrapper {
@@ -337,49 +374,62 @@ export default function GeospatialMap() {
         .marker-cluster-large div { background-color: #dc2626 !important; color: white !important; border-radius: 50% !important; }
       `}</style>
 
-        <PageHeader
-          title={t('gs.title')}
-          subtitle={t('gs.subtitle')}
-          icon={Globe}
-          className="mb-6"
-          actions={
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <select 
-                  value={selectedDistrict}
-                  onChange={(e) => setSelectedDistrict(e.target.value)}
-                  className="appearance-none bg-white border border-slate-200 text-[#003366] text-[10px] font-bold uppercase tracking-widest px-4 py-2.5 pr-10 rounded-lg outline-none focus:border-blue-500 transition-all shadow-sm cursor-pointer"
-                >
-                  <option value="">{t('gs.all_districts')}</option>
-                  {districts.map(d => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                  <ChevronDown size={14} />
-                </div>
-              </div>
-              
-              <Button
-                variant="outline"
-                isLoading={loading}
-                onClick={fetchMapData}
-                className="text-[10px] font-bold uppercase tracking-widest border-[#003366] text-[#003366] hover:bg-blue-50"
+        {/* Minimalist header */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl text-slate-900">{t('gs.title')}</h1>
+            <p className="text-sm text-slate-500 mt-1">
+              {selectedDistrict
+                ? `Showing schools in ${selectedDistrict} district.`
+                : "Showing schools across Gujarat."}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <div className="relative">
+              <select
+                value={selectedDistrict}
+                onChange={(e) => setSelectedDistrict(e.target.value)}
+                className="appearance-none h-9 bg-white border border-slate-200 text-sm text-slate-700 pl-3 pr-9 rounded-md outline-none focus:border-slate-400 transition-colors cursor-pointer"
               >
-                {t('gs.update')}
-              </Button>
+                <option value="">{t('gs.all_districts')}</option>
+                {districts.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+              <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                <ChevronDown size={14} />
+              </div>
             </div>
-          }
-        />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <MetricCard label={t('gs.id_nodes')} value={total} icon={Building} variant="info" />
-          <MetricCard label={t('gs.critical_desig')} value={critical} icon={AlertTriangle} variant="critical" />
-          <MetricCard label={t('gs.stable_baseline')} value={safe} icon={ShieldCheck} variant="success" />
+            <button
+              onClick={fetchMapData}
+              className="h-9 px-3 inline-flex items-center gap-1.5 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors text-sm"
+            >
+              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+              {t('gs.update')}
+            </button>
+          </div>
         </div>
 
-        {/* MAP CONTAINER */}
-        <div className="relative w-full h-[800px] border-2 border-slate-200 rounded-2xl overflow-hidden shadow-2xl bg-slate-100 mb-8 z-0">
+        {/* MAP CONTAINER — taller so Gujarat fills the frame */}
+        <div className="relative w-full h-[68vh] min-h-[460px] max-h-[680px] border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-slate-100 z-0">
+          {/* Floating stat panel — top-left over the map (shifted right so the
+              Leaflet zoom control stays visible) */}
+          <div className="absolute top-4 left-16 z-[1000] w-[200px] bg-white/95 backdrop-blur-md rounded-xl border border-slate-200 shadow-lg overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100">
+              <div className="text-xs text-slate-500">
+                {selectedDistrict || "Gujarat State"}
+              </div>
+              <div className="text-sm text-slate-900 mt-0.5">
+                {selectedDistrict ? "District overview" : "Statewide overview"}
+              </div>
+            </div>
+            <div className="divide-y divide-slate-100">
+              <StatRow label="Schools mapped"   value={total}    dot="bg-slate-400" />
+              <StatRow label="Critical (≥80)"  value={critical} dot="bg-red-500" />
+              <StatRow label="Stable (<40)"    value={safe}     dot="bg-emerald-500" />
+            </div>
+          </div>
           
           {/* Active Navigation HUD */}
           {activeRoute && routeDetails && (
@@ -417,8 +467,11 @@ export default function GeospatialMap() {
 
           {filteredSchools.length > 0 && (
             <MapContainer
-              center={[filteredSchools[0].location?.lat || 23.8, filteredSchools[0].location?.lng || 69.5]}
-              zoom={selectedDistrict ? 9 : 7}
+              bounds={GUJARAT_BOUNDS}
+              boundsOptions={{ padding: [10, 10], maxZoom: 8 }}
+              center={GUJARAT_CENTER}
+              zoom={8}
+              minZoom={6}
               style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 0 }}
             >
               {/* White-themed CartoDB Positron tiles */}
@@ -427,6 +480,7 @@ export default function GeospatialMap() {
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
               />
 
+              <FocusController selectedDistrict={selectedDistrict} schools={schools} />
               <MapController userLocation={userLocation} activeFilter={activeFilter} setFilter={setActiveFilter} t={t} />
 
               {/* Live MaintenanceDecision urgency heatmap (leaflet.heat) */}
@@ -556,6 +610,18 @@ export default function GeospatialMap() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function StatRow({ label, value, dot }) {
+  return (
+    <div className="flex items-center justify-between px-4 py-2.5">
+      <div className="flex items-center gap-2 min-w-0">
+        <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+        <span className="text-xs text-slate-600 truncate">{label}</span>
+      </div>
+      <span className="text-base font-semibold text-slate-900 leading-none">{value}</span>
     </div>
   );
 }

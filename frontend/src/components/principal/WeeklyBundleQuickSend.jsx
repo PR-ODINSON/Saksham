@@ -1,18 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { get, post, API_BASE } from "../../services/api";
-import Card from "../common/Card";
 import Button from "../common/Button";
-import Badge from "../common/Badge";
 import {
-  Send, Download, FileText, AlertTriangle, CheckCircle2, Cpu, Activity, ChevronRight,
+  Send, Download, AlertTriangle, CheckCircle2, ChevronRight,
 } from "lucide-react";
 
-const URGENCY_BADGE = {
-  critical: "critical",
-  high: "high",
-  medium: "warning",
-  low: "success",
+const RISK_STYLES = {
+  critical: { dot: "bg-red-500",     text: "text-red-600",     label: "Critical" },
+  high:     { dot: "bg-orange-500",  text: "text-orange-600",  label: "High"     },
+  medium:   { dot: "bg-amber-500",   text: "text-amber-600",   label: "Medium"   },
+  low:      { dot: "bg-emerald-500", text: "text-emerald-600", label: "Low"      },
 };
 
 /**
@@ -38,22 +36,22 @@ export default function WeeklyBundleQuickSend({ schoolId, className = "" }) {
 
   if (loading) {
     return (
-      <Card variant="gov" className={className} title="Latest Weekly Report" icon={FileText}>
-        <div className="py-8 text-center text-slate-400 text-sm">Loading…</div>
-      </Card>
+      <div className={`bg-white border border-slate-200 rounded-2xl ${className}`}>
+        <div className="px-8 py-10 text-center text-slate-400 text-base">Loading…</div>
+      </div>
     );
   }
 
   if (!bundles.length) {
     return (
-      <Card variant="gov" className={className} title="Latest Weekly Report" icon={FileText}>
-        <div className="py-8 text-center">
-          <p className="text-slate-400 font-medium text-sm">No weekly reports submitted yet.</p>
-          <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-2">
+      <div className={`bg-white border border-slate-200 rounded-2xl ${className}`}>
+        <div className="px-8 py-10 text-center">
+          <p className="text-slate-500 text-base">No weekly reports submitted yet.</p>
+          <p className="text-sm text-slate-400 mt-2">
             Have the peon submit this week's audit to enable LR scoring.
           </p>
         </div>
-      </Card>
+      </div>
     );
   }
 
@@ -86,118 +84,96 @@ export default function WeeklyBundleQuickSend({ schoolId, className = "" }) {
     window.open(`${API_BASE}/api/reports/${target.anchorRecordId}/pdf`, "_blank");
   };
 
+  const risk = RISK_STYLES[target.urgencyLabel] || RISK_STYLES.low;
+
   return (
-    <Card
-      className={`border border-slate-200 shadow-none ${className}`}
-      variant="default"
-    >
-      <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
-        <div>
-          <h3 className="text-base font-bold text-slate-900">Latest Weekly Analysis</h3>
-          <p className="text-sm text-slate-500">ML-driven report verification</p>
+    <div className={`bg-white border border-slate-200 rounded-2xl overflow-hidden ${className}`}>
+      {/* Header */}
+      <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
+        <h3 className="text-xl text-slate-900">Latest Weekly Analysis</h3>
+        <div className="flex items-center gap-2">
+          <span className={`w-2.5 h-2.5 rounded-full ${target.forwarded ? "bg-emerald-500" : "bg-amber-500"}`} />
+          <span className="text-base text-slate-500">
+            {target.forwarded ? "Synced with DEO" : "Awaiting Forward"}
+          </span>
         </div>
-        {!loading && target && (
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${target.forwarded ? 'bg-emerald-500' : 'bg-orange-500'}`} />
-            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">
-              {target.forwarded ? 'Synced with DEO' : 'Awaiting Forward'}
-            </span>
-          </div>
-        )}
       </div>
 
-      <div className="p-8">
+      {/* Body */}
+      <div className="px-8 py-8">
         {toast && (
-          <div className={`mb-6 p-4 rounded-lg text-sm font-medium flex items-center gap-3 border ${
+          <div className={`mb-6 px-4 py-3 rounded-lg text-base flex items-center gap-3 border ${
             toast.ok ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-red-50 text-red-700 border-red-100"
           }`}>
-            {toast.ok ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />} {toast.msg}
+            {toast.ok ? <CheckCircle2 size={20} /> : <AlertTriangle size={20} />} {toast.msg}
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Column 1: Time Window */}
-          <div className="space-y-1">
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Reporting Window</span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 items-center">
+          {/* Week */}
+          <div>
+            <p className="text-base text-slate-500 mb-2">Reporting Week</p>
             <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-black text-slate-900">W{target.weekNumber}</span>
-              <span className="text-lg font-bold text-slate-300">2026</span>
+              <span className="text-6xl text-slate-900 leading-none">W{target.weekNumber}</span>
+              <span className="text-2xl text-slate-300 leading-none">2026</span>
             </div>
           </div>
 
-          {/* Column 2: Risk Details */}
-          <div className="space-y-4">
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="info" className="px-3 py-1 text-xs font-bold">
-                {target.categories.length} CATEGORIES
-              </Badge>
-              <Badge 
-                variant={target.urgencyLabel === 'critical' ? 'critical' : target.urgencyLabel === 'high' ? 'high' : 'info'}
-                className="px-3 py-1 text-xs font-bold"
-              >
-                {target.urgencyLabel.toUpperCase()} RISK
-              </Badge>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm">
-                <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                <span className="text-slate-500">Primary Issue:</span>
-                <span className="font-bold text-slate-900 capitalize">{target.worstCategory}</span>
-              </div>
-              {target.willFailWithin30Days && (
-                <div className="flex items-center gap-2 text-[11px] font-bold text-red-600 uppercase tracking-wider bg-red-50 px-2 py-1 rounded w-fit">
-                  <AlertTriangle size={14} /> Critical Failure &lt; 30 Days
-                </div>
-              )}
+          {/* Primary Issue */}
+          <div>
+            <p className="text-base text-slate-500 mb-2">Primary Issue</p>
+            <p className="text-3xl text-slate-900 capitalize leading-tight">
+              {target.worstCategory}
+            </p>
+            <div className="mt-2 flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${risk.dot}`} />
+              <span className={`text-base ${risk.text}`}>{risk.label} Risk</span>
             </div>
           </div>
 
-          {/* Column 3: Scores & Actions */}
-          <div className="flex flex-col sm:flex-row md:flex-col lg:flex-row items-center gap-4">
-            <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100 w-full sm:w-auto">
-              <div className="text-3xl font-black text-slate-900">{target.maxUrgency}</div>
-              <div className="leading-tight">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Risk Index</div>
-                <div className="text-xs font-bold text-slate-700">AI Verified</div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2 w-full">
-              <button
-                onClick={handleViewPdf}
-                className="flex items-center justify-center gap-2 h-10 px-4 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-all font-bold text-xs uppercase tracking-wider"
-              >
-                <Download size={16} /> PDF
-              </button>
-
-              {target.forwarded ? (
-                <div className="flex items-center justify-center gap-2 h-10 px-4 rounded-lg bg-emerald-50 text-emerald-700 font-bold text-xs uppercase tracking-wider border border-emerald-100">
-                  <CheckCircle2 size={16} /> Synced
-                </div>
-              ) : (
-                <Button
-                  variant="primary"
-                  onClick={handleSend}
-                  isLoading={busy}
-                  className="h-10 rounded-lg text-xs font-bold uppercase tracking-wider w-full"
-                >
-                  <Send size={16} className="mr-2" /> Send to DEO
-                </Button>
-              )}
+          {/* Risk Index */}
+          <div>
+            <p className="text-base text-slate-500 mb-2">Risk Index</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-6xl text-slate-900 leading-none">{target.maxUrgency}</span>
+              <span className="text-2xl text-slate-300 leading-none">/100</span>
             </div>
           </div>
         </div>
+
+        {/* Actions */}
+        <div className="mt-10 flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={handleViewPdf}
+            className="flex items-center justify-center gap-2 h-12 px-6 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 transition-colors text-base"
+          >
+            <Download size={18} /> View PDF
+          </button>
+
+          {target.forwarded ? (
+            <div className="flex items-center justify-center gap-2 h-12 px-6 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 text-base flex-1 sm:flex-initial">
+              <CheckCircle2 size={18} /> Synced
+            </div>
+          ) : (
+            <Button
+              variant="primary"
+              onClick={handleSend}
+              isLoading={busy}
+              className="h-12 px-6 rounded-lg text-base flex-1 sm:flex-initial"
+            >
+              <Send size={18} className="mr-2" /> Send to DEO
+            </Button>
+          )}
+        </div>
       </div>
 
-      <div
+      {/* Footer */}
+      <button
         onClick={() => navigate("/principal/dashboard/reports")}
-        className="w-full h-11 bg-slate-50 hover:bg-slate-100 border-t border-slate-200 flex items-center justify-center text-xs font-bold text-slate-500 transition-all gap-2 cursor-pointer"
+        className="w-full h-12 bg-slate-50 hover:bg-slate-100 border-t border-slate-100 flex items-center justify-center text-base text-slate-600 transition-colors gap-2"
       >
-        Access Historical Registry <ChevronRight size={14} />
-      </div>
-    </Card>
-
-
+        View All Reports <ChevronRight size={16} />
+      </button>
+    </div>
   );
 }

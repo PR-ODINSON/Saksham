@@ -317,7 +317,7 @@ export default function AppLayout({ children }) {
       <main id="main-content" className={`flex-1 transition-all duration-300 ${
         location.pathname.includes('/map') 
           ? (isScrolled ? 'pt-[120px] sm:pt-[136px]' : 'pt-[120px] sm:pt-[168px]') 
-          : (isScrolled ? 'pt-[120px] sm:pt-[136px] pb-16' : 'pt-[120px] sm:pt-[168px] pb-16')
+          : (isScrolled ? 'pt-[120px] sm:pt-[136px]' : 'pt-[120px] sm:pt-[168px]')
       }`}>
         {children}
       </main>

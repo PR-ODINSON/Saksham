@@ -2,29 +2,24 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { get, API_BASE } from "../../services/api";
 import useSocket from "../../hooks/useSocket";
-import Card from "../common/Card";
-import Button from "../common/Button";
-import Badge from "../common/Badge";
-import { useLanguage } from "../../context/LanguageContext";
 import AssignContractorModal from "./AssignContractorModal";
 import {
-  FileText, Download, Cpu, AlertTriangle, ChevronRight, RefreshCw, UserPlus, CheckCircle2,
+  ChevronRight, RefreshCw, CheckCircle2, Clock,
 } from "lucide-react";
 
 const URGENCY = {
-  critical: { color: "text-red-700",     bg: "bg-red-50",     border: "border-red-300",     dot: "bg-red-600",     label: "CRITICAL" },
-  high:     { color: "text-orange-700",  bg: "bg-orange-50",  border: "border-orange-300",  dot: "bg-orange-500",  label: "HIGH"     },
-  medium:   { color: "text-amber-700",   bg: "bg-amber-50",   border: "border-amber-300",   dot: "bg-amber-500",   label: "MEDIUM"   },
-  low:      { color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200", dot: "bg-emerald-500", label: "LOW"      },
+  critical: { color: "text-red-600",     dot: "bg-red-500",     label: "Critical" },
+  high:     { color: "text-orange-600",  dot: "bg-orange-500",  label: "High"     },
+  medium:   { color: "text-amber-600",   dot: "bg-amber-500",   label: "Medium"   },
+  low:      { color: "text-emerald-600", dot: "bg-emerald-500", label: "Low"      },
 };
 
 /**
- * DEO-side panel that shows weekly bundles forwarded by principals,
- * sorted by LR urgency descending. Read-only — clicking a row opens the
- * bundled PDF, and the "View All" button jumps to /deo/dashboard/reports.
+ * DEO-side panel that lists weekly bundles forwarded by principals,
+ * sorted by LR urgency descending. Minimal layout: school name, week,
+ * urgency, and the primary action (Assign / Assigned).
  */
 export default function ForwardedReportsPanel({ district, className = "" }) {
-  const { t } = useLanguage();
   const socket = useSocket();
   const [bundles, setBundles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,145 +37,149 @@ export default function ForwardedReportsPanel({ district, className = "" }) {
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [district]);
 
-  // Live refresh whenever a principal forwards a new weekly bundle.
   useEffect(() => {
     if (!socket) return;
     const refresh = () => load();
-    socket.on('report:forwarded:bundle', refresh);
-    socket.on('report:forwarded',        refresh);
-    socket.on('maintenance:created',     refresh);
+    socket.on("report:forwarded:bundle", refresh);
+    socket.on("report:forwarded",        refresh);
+    socket.on("maintenance:created",     refresh);
+    socket.on("task:assigned",           refresh);
     return () => {
-      socket.off('report:forwarded:bundle', refresh);
-      socket.off('report:forwarded',        refresh);
-      socket.off('maintenance:created',     refresh);
+      socket.off("report:forwarded:bundle", refresh);
+      socket.off("report:forwarded",        refresh);
+      socket.off("maintenance:created",     refresh);
+      socket.off("task:assigned",           refresh);
     };
     // eslint-disable-next-line
   }, [socket, district]);
 
   return (
-    <Card
-      variant="gov"
-      className={className}
-      title={t('fr.title')}
-      subtitle={t('fr.subtitle')}
-      icon={FileText}
-    >
-      <div className="flex justify-between items-center mb-3">
-        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
-          {bundles.length} {bundles.length === 1 ? t('fr.bundle') : t('fr.bundles')}
-        </span>
+    <div className={`bg-white rounded-xl border border-slate-200 overflow-hidden ${className}`}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+        <div>
+          <h2 className="text-lg text-slate-900">School Reports</h2>
+          <p className="text-sm text-slate-500 mt-0.5">
+            {bundles.length} forwarded {bundles.length === 1 ? "bundle" : "bundles"}
+          </p>
+        </div>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={load} className="w-8 h-8 p-0">
-            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate("/deo/dashboard/reports")}
+          <button
+            onClick={load}
+            className="w-9 h-9 flex items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 transition-colors"
+            title="Refresh"
           >
-            {t('fr.view_all')} <ChevronRight size={14} className="ml-1" />
-          </Button>
+            <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
+          </button>
+          <button
+            onClick={() => navigate("/deo/dashboard/reports")}
+            className="h-9 px-3 rounded-md text-sm text-slate-700 hover:bg-slate-100 transition-colors flex items-center gap-1"
+          >
+            View all <ChevronRight size={14} />
+          </button>
         </div>
       </div>
 
+      {/* Body */}
       {loading ? (
-        <div className="py-12 text-center text-slate-400 text-sm">{t('fr.loading')}</div>
+        <div className="px-6 py-12 text-center text-slate-400 text-sm">Loading…</div>
       ) : bundles.length === 0 ? (
-        <div className="py-12 text-center text-slate-400 font-medium text-sm italic bg-slate-50/50 rounded border border-dashed border-slate-200">
-          {t('fr.no_reports')}
+        <div className="px-6 py-12 text-center text-slate-400 text-sm">
+          No forwarded reports yet.
         </div>
       ) : (
-        <div className="space-y-3">
+        <ul className="divide-y divide-slate-100">
           {bundles.slice(0, 5).map(b => {
             const u = URGENCY[b.urgencyLabel] || URGENCY.low;
             return (
-              <div
+              <li
                 key={`${b.schoolId}-${b.weekNumber}`}
-                className={`p-4 rounded-lg border-2 ${u.border} ${u.bg} flex flex-col md:flex-row items-start md:items-center justify-between gap-4`}
+                className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50/60 transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded ${u.dot} text-white flex flex-col items-center justify-center font-bold`}>
-                    <span className="text-[8px] uppercase opacity-70 leading-none">{t('fr.week_abbr')}</span>
-                    <span className="text-xs leading-none">{b.weekNumber}</span>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-slate-800 uppercase tracking-tight">
-                        {b.schoolName}
+                {/* Week pill */}
+                <div className="flex flex-col items-center justify-center w-12 h-12 rounded-lg bg-slate-50 border border-slate-100 flex-shrink-0">
+                  <span className="text-[10px] text-slate-400 leading-none">Wk</span>
+                  <span className="text-base font-semibold text-slate-900 leading-none mt-0.5">
+                    {b.weekNumber}
+                  </span>
+                </div>
+
+                {/* School & meta */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base text-slate-900 truncate">{b.schoolName}</span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${u.dot}`} />
+                      <span className={`text-xs ${u.color}`}>{u.label}</span>
+                    </span>
+                    {b.willFailWithin30Days && (
+                      <span className="text-[10px] font-medium text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
+                        30-day risk
                       </span>
-                      <Badge variant={b.urgencyLabel === "critical" ? "critical" : b.urgencyLabel === "high" ? "high" : "default"} size="sm">
-                        {u.label}
-                      </Badge>
-                      {b.willFailWithin30Days && (
-                        <Badge variant="critical" size="sm">
-                          <AlertTriangle size={10} className="mr-1" /> {t('fr.30_day_fail')}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                      {b.district} · {t('fr.worst')}: {b.worstCategory} · {t('fr.forwarded')} {b.forwardedAt ? new Date(b.forwardedAt).toLocaleString() : "—"}
-                    </p>
+                    )}
+                  </div>
+                  <div className="text-xs text-slate-500 mt-0.5 truncate">
+                    {b.district || "—"} · Worst: <span className="capitalize">{b.worstCategory}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <div className="text-right">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('fr.lr_urgency')}</p>
-                    <div className="flex items-center gap-1 justify-end">
-                      <Cpu size={11} className="text-violet-700" />
-                      <span className={`text-lg font-bold ${u.color} leading-none`}>
-                        {b.maxUrgency}<span className="text-[10px] opacity-50">/100</span>
-                      </span>
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
+                {/* Score */}
+                <div className="hidden sm:flex flex-col items-end pr-2">
+                  <span className="text-xl font-semibold text-slate-900 leading-none">{b.maxUrgency}</span>
+                  <span className="text-[10px] text-slate-400 mt-1">/100</span>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2">
+                  <button
                     onClick={() =>
                       window.open(`${API_BASE}/api/reports/${b.anchorRecordId}/pdf`, "_blank")
                     }
+                    className="h-9 px-3 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors text-sm"
                   >
-                    <Download size={14} className="mr-1.5" /> {t('fr.pdf')}
-                  </Button>
+                    PDF
+                  </button>
+
                   {b.assigned ? (
                     <span
-                      className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold uppercase tracking-widest"
-                      title={b.assignedAt ? `Assigned ${new Date(b.assignedAt).toLocaleString()}` : 'Assigned'}
+                      className="h-9 px-3 rounded-md bg-emerald-50 text-emerald-700 inline-flex items-center gap-1.5 text-sm"
+                      title={b.assignedAt ? `Assigned ${new Date(b.assignedAt).toLocaleString()}` : "Assigned"}
                     >
                       <CheckCircle2 size={14} /> Assigned
                     </span>
                   ) : (
-                    <Button
-                      variant="primary"
-                      size="sm"
+                    <button
                       onClick={() => setAssignBundle(b)}
+                      className="h-9 px-4 rounded-md bg-[#003366] text-white hover:bg-[#002244] transition-colors text-sm"
                     >
-                      <UserPlus size={14} className="mr-1.5" />
-                      {b.partiallyAssigned ? `${t('fr.assign')} (${b.assignedCount}/${b.categories.length})` : t('fr.assign')}
-                    </Button>
+                      {b.partiallyAssigned ? `Assign (${b.assignedCount}/${b.categories.length})` : "Assign"}
+                    </button>
                   )}
                 </div>
-              </div>
+              </li>
             );
           })}
-          {assignBundle && (
-            <AssignContractorModal
-              bundle={assignBundle}
-              onClose={() => setAssignBundle(null)}
-              onAssigned={load}
-            />
-          )}
 
           {bundles.length > 5 && (
-            <button
-              onClick={() => navigate("/deo/dashboard/reports")}
-              className="w-full text-center text-[11px] font-bold text-blue-700 uppercase tracking-widest py-2 hover:bg-blue-50 rounded transition-colors"
-            >
-              + {bundles.length - 5} {t('fr.more_bundles')}
-            </button>
+            <li>
+              <button
+                onClick={() => navigate("/deo/dashboard/reports")}
+                className="w-full text-center text-sm text-slate-600 py-3 hover:bg-slate-50 transition-colors flex items-center justify-center gap-1"
+              >
+                View {bundles.length - 5} more <ChevronRight size={14} />
+              </button>
+            </li>
           )}
-        </div>
+        </ul>
       )}
-    </Card>
+
+      {assignBundle && (
+        <AssignContractorModal
+          bundle={assignBundle}
+          onClose={() => setAssignBundle(null)}
+          onAssigned={load}
+        />
+      )}
+    </div>
   );
 }

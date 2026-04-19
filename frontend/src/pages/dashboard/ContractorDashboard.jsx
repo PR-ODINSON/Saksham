@@ -1,43 +1,48 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { get, post, patch, API_BASE } from "../../services/api";
+import { get, patch, API_BASE } from "../../services/api";
 import { useAuth } from "../../context/AuthContext";
-import Card from "../../components/common/Card";
 import Button from "../../components/common/Button";
 import Badge from "../../components/common/Badge";
-import MetricCard from "../../components/common/MetricCard";
-import PageHeader from "../../components/common/PageHeader";
 import CompletionModal from "../../components/common/CompletionModal";
 import ViewFeedbackModal from "../../components/common/ViewFeedbackModal";
 import {
-  Hammer, Wrench, Zap, Building, AlertTriangle, MapPin, Calendar,
+  Hammer, Wrench, Zap, Building, AlertTriangle, MapPin,
   Camera, Cpu, CheckCircle2, X, Clock, ChevronRight, RefreshCw,
-  FileText, Phone, User, ImageOff, Shield, Activity, ListChecks,
+  FileText, Phone, User, ImageOff, Shield, ListChecks,
 } from "lucide-react";
 
 const CATEGORY_META = {
-  plumbing:   { icon: Wrench,   color: "text-blue-700",    bg: "bg-blue-50",   border: "border-blue-200"   },
-  electrical: { icon: Zap,      color: "text-amber-700",   bg: "bg-amber-50",  border: "border-amber-200"  },
-  structural: { icon: Building, color: "text-slate-700",   bg: "bg-slate-50",  border: "border-slate-200"  },
-  sanitation: { icon: Wrench,   color: "text-emerald-700", bg: "bg-emerald-50",border: "border-emerald-200"},
-  furniture:  { icon: Hammer,   color: "text-violet-700",  bg: "bg-violet-50", border: "border-violet-200" },
+  plumbing:   { icon: Wrench,   color: "text-blue-700",    bg: "bg-blue-50",    border: "border-blue-200"    },
+  electrical: { icon: Zap,      color: "text-amber-700",   bg: "bg-amber-50",   border: "border-amber-200"   },
+  structural: { icon: Building, color: "text-slate-700",   bg: "bg-slate-100",  border: "border-slate-200"   },
+  sanitation: { icon: Wrench,   color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200" },
+  furniture:  { icon: Hammer,   color: "text-violet-700",  bg: "bg-violet-50",  border: "border-violet-200"  },
 };
 
 const URGENCY = {
-  critical: { color: "text-red-700",     bg: "bg-red-50",     border: "border-red-300",     dot: "bg-red-600",     label: "CRITICAL" },
-  high:     { color: "text-orange-700",  bg: "bg-orange-50",  border: "border-orange-300",  dot: "bg-orange-500",  label: "HIGH"     },
-  medium:   { color: "text-amber-700",   bg: "bg-amber-50",   border: "border-amber-300",   dot: "bg-amber-500",   label: "MEDIUM"   },
-  low:      { color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-200", dot: "bg-emerald-500", label: "LOW"      },
+  critical: { color: "text-red-600",     dot: "bg-red-500",     label: "Critical" },
+  high:     { color: "text-orange-600",  dot: "bg-orange-500",  label: "High"     },
+  medium:   { color: "text-amber-600",   dot: "bg-amber-500",   label: "Medium"   },
+  low:      { color: "text-emerald-600", dot: "bg-emerald-500", label: "Low"      },
 };
 
 const STATUS_META = {
-  pending:     { label: "Pending Acceptance", variant: "info"     },
-  assigned:    { label: "Assigned",            variant: "info"     },
-  accepted:    { label: "Accepted",            variant: "moderate" },
-  in_progress: { label: "In Progress",         variant: "moderate" },
-  completed:   { label: "Completed",           variant: "low"      },
-  delayed:     { label: "Delayed",             variant: "critical" },
-  cancelled:   { label: "Cancelled",           variant: "default"  },
+  pending:     { label: "Pending",     color: "text-slate-700",   bg: "bg-slate-100"  },
+  assigned:    { label: "Assigned",    color: "text-blue-700",    bg: "bg-blue-50"    },
+  accepted:    { label: "Accepted",    color: "text-blue-700",    bg: "bg-blue-50"    },
+  in_progress: { label: "In progress", color: "text-amber-700",   bg: "bg-amber-50"   },
+  completed:   { label: "Completed",   color: "text-emerald-700", bg: "bg-emerald-50" },
+  delayed:     { label: "Delayed",     color: "text-red-700",     bg: "bg-red-50"     },
+  cancelled:   { label: "Cancelled",   color: "text-slate-500",   bg: "bg-slate-100"  },
+};
+
+const DEADLINE_TONE = {
+  critical: "text-red-600",
+  high:     "text-orange-600",
+  moderate: "text-amber-600",
+  low:      "text-emerald-600",
+  default:  "text-slate-500",
 };
 
 function deadlineMeta(deadline) {
@@ -62,58 +67,59 @@ function urgencyLabelOf(score) {
 function TaskCard({ order, onOpen }) {
   const cm = CATEGORY_META[order.category] || CATEGORY_META.structural;
   const Icon = cm.icon;
-  const u = URGENCY[urgencyLabelOf(order.priorityScore || 0)];
+  const u  = URGENCY[urgencyLabelOf(order.priorityScore || 0)];
   const dl = deadlineMeta(order.deadline);
   const status = STATUS_META[order.status] || STATUS_META.pending;
   const school = order.school || {};
+  const dlTone = DEADLINE_TONE[dl.variant] || DEADLINE_TONE.default;
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 8 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2 }}
-      className={`bg-white rounded-xl border-2 ${u.border} shadow-sm hover:shadow-lg transition-all cursor-pointer overflow-hidden`}
+      className="bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-sm transition-all cursor-pointer p-4"
       onClick={() => onOpen(order)}
     >
-      {/* Header strip with urgency color */}
-      <div className={`${u.bg} px-5 py-3 flex items-center justify-between`}>
+      {/* Top row: urgency + score · deadline */}
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className={`text-[10px] font-bold ${u.color} uppercase tracking-widest`}>{u.label}</span>
-          <Cpu size={11} className="text-violet-700" />
-          <span className="text-[11px] font-bold text-slate-700">{Math.round(order.priorityScore || 0)}/100</span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className={`w-1.5 h-1.5 rounded-full ${u.dot}`} />
+            <span className={`text-xs ${u.color}`}>{u.label}</span>
+          </span>
+          <span className="text-xs text-slate-400">·</span>
+          <span className="text-xs text-slate-600">{Math.round(order.priorityScore || 0)}/100</span>
         </div>
-        <Badge variant={dl.variant} size="sm">
-          <Clock size={10} className="mr-1" /> {dl.text}
-        </Badge>
+        <span className={`text-xs inline-flex items-center gap-1 ${dlTone}`}>
+          <Clock size={11} /> {dl.text}
+        </span>
       </div>
 
-      <div className="p-5">
-        <div className="flex items-start gap-3 mb-4">
-          <div className={`w-12 h-12 rounded-lg ${cm.bg} ${cm.border} border flex items-center justify-center flex-shrink-0`}>
-            <Icon className={cm.color} size={22} strokeWidth={2.5} />
-          </div>
-          <div className="min-w-0">
-            <h3 className="text-sm font-bold uppercase tracking-tight text-slate-900 truncate">
-              {school.name || `School ${order.schoolId}`}
-            </h3>
-            <p className="text-[11px] text-slate-500 font-medium truncate">
-              <MapPin size={10} className="inline mr-1" />
-              {[school.block, order.district].filter(Boolean).join(" · ") || "Location pending"}
-            </p>
-          </div>
+      {/* School + category */}
+      <div className="flex items-start gap-3">
+        <div className={`w-10 h-10 rounded-lg ${cm.bg} flex items-center justify-center flex-shrink-0`}>
+          <Icon className={cm.color} size={18} />
         </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base text-slate-900 truncate">
+            {school.name || `School ${order.schoolId}`}
+          </h3>
+          <p className="text-xs text-slate-500 mt-0.5 truncate">
+            <MapPin size={10} className="inline mr-1 -mt-0.5 text-slate-400" />
+            {[school.block, order.district].filter(Boolean).join(" · ") || "Location pending"}
+          </p>
+        </div>
+      </div>
 
-        <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-          <div>
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Category</p>
-            <p className={`text-[12px] font-bold uppercase ${cm.color}`}>{order.category}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Status</p>
-            <Badge variant={status.variant} size="sm">{status.label}</Badge>
-          </div>
-          <ChevronRight size={18} className="text-slate-300 ml-2" />
+      {/* Bottom row: category · status */}
+      <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
+        <span className="text-xs text-slate-500 capitalize">{order.category}</span>
+        <div className="flex items-center gap-2">
+          <span className={`text-xs px-1.5 py-0.5 rounded ${status.bg} ${status.color}`}>
+            {status.label}
+          </span>
+          <ChevronRight size={14} className="text-slate-300" />
         </div>
       </div>
     </motion.div>
@@ -183,36 +189,39 @@ function TaskDetailDrawer({ taskId, onClose, onChanged, onComplete, onViewFeedba
           className="relative w-full max-w-3xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-y-auto flex flex-col"
         >
           {/* Header */}
-          <div className={`${u.bg} ${u.border} border-b-2 px-6 pt-6 pb-5 sticky top-0 z-10`}>
+          <div className="bg-white border-b border-slate-100 px-6 pt-5 pb-4 sticky top-0 z-10">
             <div className="flex justify-between items-start gap-4">
               <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant={status.variant} size="sm">{status.label}</Badge>
-                  <Badge variant="default" size="sm" className={u.color}>
-                    {u.label}
-                  </Badge>
-                  <Badge variant={dl.variant} size="sm">
-                    <Clock size={10} className="mr-1" /> {dl.text}
-                  </Badge>
+                <div className="flex items-center flex-wrap gap-2 mb-2">
+                  <span className={`text-xs px-1.5 py-0.5 rounded ${status.bg} ${status.color}`}>
+                    {status.label}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className={`w-1.5 h-1.5 rounded-full ${u.dot}`} />
+                    <span className={`text-xs ${u.color}`}>{u.label}</span>
+                  </span>
+                  <span className={`text-xs inline-flex items-center gap-1 ${DEADLINE_TONE[dl.variant] || DEADLINE_TONE.default}`}>
+                    <Clock size={11} /> {dl.text}
+                  </span>
                 </div>
-                <h2 className="text-xl font-bold text-slate-900 truncate">
+                <h2 className="text-xl text-slate-900 truncate">
                   {school?.name || `School ${wo?.schoolId}`}
                 </h2>
-                <p className="text-[12px] font-bold text-slate-600 mt-0.5 uppercase tracking-wide">
-                  <MapPin size={11} className="inline mr-1" />
-                  {[school?.block, wo?.district].filter(Boolean).join(" · ")}
+                <p className="text-xs text-slate-500 mt-1">
+                  <MapPin size={11} className="inline mr-1 text-slate-400" />
+                  {[school?.block, wo?.district].filter(Boolean).join(" · ") || "Location pending"}
                   {school?.location?.lat && (
                     <a
                       href={`https://www.google.com/maps?q=${school.location.lat},${school.location.lng}`}
                       target="_blank" rel="noreferrer"
-                      className="ml-2 text-blue-700 underline normal-case"
+                      className="ml-2 text-blue-700 hover:underline"
                     >
                       open in maps
                     </a>
                   )}
                 </p>
               </div>
-              <button onClick={onClose} className="p-2 rounded hover:bg-white/50">
+              <button onClick={onClose} className="p-2 rounded-md hover:bg-slate-100 text-slate-500">
                 <X size={18} />
               </button>
             </div>
@@ -459,84 +468,99 @@ export default function ContractorDashboard() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      <div className="max-w-7xl mx-auto pt-10 sm:pt-16 pb-12 px-4 sm:px-8 space-y-8">
-        <PageHeader
-          title="Field Operations Console"
-          subtitle={`Welcome, ${user?.name || "Contractor"} — your assigned maintenance tasks, ranked by urgency`}
-          icon={Hammer}
-          actions={
-            <Button variant="outline" size="sm" onClick={fetchOrders} className="border-[#003366] text-[#003366]">
-              <RefreshCw size={14} className={loading ? "animate-spin mr-1.5" : "mr-1.5"} /> Refresh
-            </Button>
-          }
-        />
+      <div className="max-w-7xl mx-auto pt-8 sm:pt-12 pb-12 px-4 sm:px-8 space-y-6">
+        {/* Minimalist header */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl text-slate-900">Field Operations Console</h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Welcome{user?.name ? `, ${user.name}` : ""} — your assigned maintenance tasks, ranked by urgency.
+            </p>
+          </div>
+          <button
+            onClick={fetchOrders}
+            className="h-9 px-3 inline-flex items-center gap-2 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors text-sm self-start sm:self-auto"
+          >
+            <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
+            Refresh
+          </button>
+        </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <MetricCard label="Active Tasks"   value={stats.active}    icon={Activity}      variant="info" />
-          <MetricCard label="Critical"       value={stats.critical}  icon={AlertTriangle} variant={stats.critical > 0 ? "critical" : "success"} />
-          <MetricCard label="Overdue"        value={stats.overdue}   icon={Clock}         variant={stats.overdue  > 0 ? "critical" : "success"} />
-          <MetricCard label="Completed"      value={stats.completed} icon={CheckCircle2}  variant="success" />
+        {/* Stat tiles */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <StatTile label="Active tasks" value={stats.active}    tone={stats.active    > 0 ? "amber" : "muted"} />
+          <StatTile label="Critical"     value={stats.critical}  tone={stats.critical  > 0 ? "red"   : "muted"} />
+          <StatTile label="Overdue"      value={stats.overdue}   tone={stats.overdue   > 0 ? "red"   : "muted"} />
+          <StatTile label="Completed"    value={stats.completed} tone={stats.completed > 0 ? "green" : "muted"} />
         </div>
 
         {/* Contractor profile snippet */}
         {user && (
-          <Card variant="default" className="bg-white">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-[#003366] text-white flex items-center justify-center text-base font-bold">
-                {(user.name || "C")[0].toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold text-slate-900 truncate">{user.name}</p>
-                <p className="text-[12px] text-slate-500">
-                  {user.district ? `${user.district} District` : "Contractor"}
-                  {user.phone && (
-                    <> · <Phone size={10} className="inline" /> {user.phone}</>
-                  )}
-                </p>
-              </div>
-              <Badge variant="info" size="sm">Contractor</Badge>
+          <div className="bg-white rounded-xl border border-slate-200 px-5 py-4 flex items-center gap-4">
+            <div className="w-11 h-11 rounded-full bg-[#003366] text-white flex items-center justify-center text-base font-medium flex-shrink-0">
+              {(user.name || "C")[0].toUpperCase()}
             </div>
-          </Card>
+            <div className="flex-1 min-w-0">
+              <p className="text-base text-slate-900 truncate">{user.name || "Contractor"}</p>
+              <p className="text-xs text-slate-500 mt-0.5 truncate">
+                {user.district ? `${user.district} District` : "Contractor"}
+                {user.phone && (
+                  <> · <Phone size={10} className="inline -mt-0.5" /> {user.phone}</>
+                )}
+              </p>
+            </div>
+            <span className="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-700">Contractor</span>
+          </div>
         )}
 
-        {/* Filter pills */}
-        <div className="flex items-center gap-2 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+        {/* Tabs */}
+        <div className="border-b border-slate-100 flex items-center gap-6 px-1">
           {[
-            { id: "active",    label: `Active (${stats.active})` },
-            { id: "completed", label: `Completed (${stats.completed})` },
-            { id: "all",       label: `All (${stats.total})` },
-          ].map(f => (
-            <Button
-              key={f.id}
-              size="sm"
-              variant={filter === f.id ? "primary" : "ghost"}
-              onClick={() => setFilter(f.id)}
-            >
-              {f.label}
-            </Button>
-          ))}
-          <span className="ml-auto text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-            Sorted by urgency descending
+            { id: "active",    label: "Active",    count: stats.active    },
+            { id: "completed", label: "Completed", count: stats.completed },
+            { id: "all",       label: "All",       count: stats.total     },
+          ].map(tab => {
+            const active = filter === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setFilter(tab.id)}
+                className={`relative py-3 text-sm transition-colors flex items-center gap-2 ${
+                  active ? "text-slate-900" : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {tab.label}
+                <span className={`text-xs px-1.5 py-0.5 rounded ${
+                  active ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-500"
+                }`}>
+                  {tab.count}
+                </span>
+                {active && <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-slate-900" />}
+              </button>
+            );
+          })}
+          <span className="ml-auto text-xs text-slate-400 hidden sm:inline">
+            Sorted by urgency
           </span>
         </div>
 
         {/* Task list */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-24 space-y-4">
-            <div className="w-12 h-12 border-4 border-slate-200 border-t-[#0f172a] rounded-full animate-spin" />
-            <p className="text-slate-400 font-bold tracking-[0.2em] text-[12px] uppercase animate-pulse">Loading Tasks…</p>
+          <div className="flex flex-col items-center justify-center py-20 space-y-3">
+            <div className="w-10 h-10 border-2 border-slate-200 border-t-slate-700 rounded-full animate-spin" />
+            <p className="text-sm text-slate-400">Loading tasks…</p>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded border border-slate-200 border-dashed">
-            <Hammer size={28} className="text-slate-300 mx-auto mb-3" />
-            <p className="text-slate-400 font-medium italic text-sm">
-              {filter === "active" ? "You have no active tasks. New work orders from the DEO will appear here."
-                                   : "No tasks in this view."}
+          <div className="bg-white rounded-xl border border-slate-200 px-6 py-16 text-center">
+            <Hammer size={24} className="text-slate-300 mx-auto mb-3" />
+            <p className="text-sm text-slate-500">
+              {filter === "active"
+                ? "You have no active tasks. New work orders from the DEO will appear here."
+                : "No tasks in this view."}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map(o => (
               <TaskCard key={o._id} order={o} onOpen={(t) => setOpenId(t._id)} />
             ))}
@@ -574,6 +598,22 @@ export default function ContractorDashboard() {
           onClose={() => setViewingFeedback(null)}
         />
       )}
+    </div>
+  );
+}
+
+// ─── Local stat tile ─────────────────────────────────────────────────────────
+function StatTile({ label, value, tone = "muted" }) {
+  const toneMap = {
+    red:   "text-red-600",
+    amber: "text-amber-600",
+    green: "text-emerald-600",
+    muted: "text-slate-900",
+  };
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 px-4 py-3">
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className={`text-2xl mt-1 ${toneMap[tone]}`}>{value}</p>
     </div>
   );
 }
