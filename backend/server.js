@@ -45,6 +45,7 @@ const httpServer = createServer(app);
 // Connect DB then initialise Socket.IO
 connectDB().then(() => initSocket(httpServer));
 
+app.set('trust proxy', 1); // <--- Yeh add karo
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(cookieParser());
 app.use(cors({
@@ -54,7 +55,8 @@ app.use(cors({
     process.env.FRONTEND_URL,
   ].filter(Boolean),
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  // 'Cookie' header ko allow karna zaroori hai
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'], 
   credentials: true,
 }));
 app.use(express.json());
