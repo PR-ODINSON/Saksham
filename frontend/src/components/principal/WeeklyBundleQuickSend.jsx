@@ -91,29 +91,25 @@ export default function WeeklyBundleQuickSend({ schoolId, className = "" }) {
       className={`border-none shadow-sm shadow-[#003366]/5 overflow-hidden ${className}`}
       variant="default"
     >
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-50 text-[#003366] rounded-lg">
-            <FileText size={20} />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-[#003366] leading-none mb-1">Latest Weekly Bundle</h3>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Model: LR Prediction Node</p>
-          </div>
+      {/* Tight Header */}
+      <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 bg-white">
+        <div className="flex items-center gap-2">
+          <FileText size={18} className="text-[#003366] opacity-70" />
+          <h3 className="text-xs font-bold text-[#003366] uppercase tracking-[0.15em]">Latest Weekly Bundle</h3>
         </div>
         {!loading && target && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
             <div className={`w-2 h-2 rounded-full ${target.forwarded ? 'bg-emerald-500' : 'bg-orange-500'} animate-pulse`} />
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
-              {target.forwarded ? 'Status: Processed' : 'Status: Pending Action'}
+            <span className="text-[10px] font-bold text-slate-600 uppercase tracking-widest whitespace-nowrap">
+              {target.forwarded ? 'Processed' : 'Action Required'}
             </span>
           </div>
         )}
       </div>
 
-      <div className="p-6">
+      <div className="px-6 py-5">
         {toast && (
-          <div className={`mb-4 p-3 rounded-xl text-[11px] font-bold uppercase tracking-wide flex items-center gap-2 ${
+          <div className={`mb-4 p-2.5 rounded-lg text-[10px] font-bold uppercase tracking-wide flex items-center gap-2 ${
             toast.ok ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
                      : "bg-red-50 text-red-700 border border-red-100"
           }`}>
@@ -121,96 +117,94 @@ export default function WeeklyBundleQuickSend({ schoolId, className = "" }) {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
-          {/* Main Reporting Info */}
-          <div className="md:col-span-8 flex flex-col sm:flex-row sm:items-center gap-6">
-            <div className="shrink-0">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 opacity-70">Reporting Period</p>
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-bold text-[#003366] tracking-tighter">Week {target.weekNumber}</span>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{new Date().getFullYear()}</span>
+        {/* High-Impact Info Grid */}
+        <div className="flex flex-col lg:flex-row lg:items-center gap-6 lg:gap-12">
+          
+          {/* Week & Stats */}
+          <div className="flex items-center gap-8 min-w-fit">
+            <div className="flex flex-col">
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-1">Reporting Period</span>
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-5xl font-bold text-[#003366] tracking-tighter">W{target.weekNumber}</span>
+                <span className="text-base font-semibold text-slate-300">2026</span>
               </div>
             </div>
 
-            <div className="h-10 w-px bg-slate-100 hidden sm:block" />
+            <div className="h-14 w-px bg-slate-100 hidden sm:block" />
 
-            <div className="flex-1 space-y-2">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest opacity-70">Infrastructure Analysis</p>
-              <div className="flex flex-wrap gap-2">
-                <div className="px-2.5 py-1 bg-white border border-slate-200 rounded-full text-[10px] font-bold text-slate-700 flex items-center gap-1.5 shadow-sm">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                  {target.categories.length} Categories Bundled
-                </div>
-                <div className="px-2.5 py-1 bg-white border border-slate-200 rounded-full text-[10px] font-bold text-slate-700 flex items-center gap-1.5 shadow-sm">
-                   <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                   Worst Dept: {target.worstCategory}
-                </div>
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2.5">
+                <Badge variant="info" size="sm" className="bg-blue-50 border-blue-100 text-[#003366] font-bold px-3 py-1 uppercase tracking-wider">
+                  {target.categories.length} CATEGORIES
+                </Badge>
+                <Badge variant={URGENCY_BADGE[target.urgencyLabel] || "default"} size="sm" className="px-3 py-1 uppercase tracking-wider font-bold shadow-sm">
+                  {target.urgencyLabel} RISK
+                </Badge>
               </div>
+              <p className="text-xs font-semibold text-slate-600 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-red-500" />
+                Worst: <span className="text-red-700 uppercase font-bold">{target.worstCategory}</span>
+              </p>
               {target.willFailWithin30Days && (
-                <p className="text-[10px] font-bold text-red-600 flex items-center gap-1.5 animate-pulse bg-red-50 w-fit px-2 py-0.5 rounded uppercase tracking-wider">
-                  <AlertTriangle size={12} /> Priority Alert: Failure Predicted Within 30 Days
-                </p>
+                <div className="flex items-center gap-1.5 text-xs font-bold text-red-600 uppercase tracking-tight bg-red-50 px-3 py-1 rounded border border-red-100 animate-pulse w-fit">
+                  <AlertTriangle size={14} /> FAILURE PREDICTED &lt; 30d
+                </div>
               )}
             </div>
           </div>
 
-          {/* LR Urgency Score */}
-          <div className="md:col-span-4 bg-slate-50 border border-slate-100 p-5 rounded-2xl flex items-center justify-between">
-            <div className="space-y-1">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-70">LR Priority Score</p>
-              <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold text-[#003366] leading-none">{target.maxUrgency}</span>
-                <span className="text-xs font-bold text-slate-400">/100</span>
+          <div className="h-14 w-px bg-slate-100 hidden lg:block" />
+
+          {/* Unified Score & Actions */}
+          <div className="flex-1 flex flex-col sm:flex-row items-center justify-between gap-6">
+            
+            {/* Score Branding */}
+            <div className="flex items-center gap-5 bg-slate-50 border border-slate-100 pr-6 pl-1.5 py-1.5 rounded-2xl group transition-all hover:bg-white hover:shadow-xl hover:shadow-[#003366]/5">
+              <div className="w-16 h-16 bg-white rounded-xl shadow-sm border border-slate-100 flex flex-col items-center justify-center">
+                 <span className="text-3xl font-bold text-[#003366] leading-none">{target.maxUrgency}</span>
+                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">INDEX</span>
               </div>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Student Impact Ranking</p>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">LR Urgency Score</span>
+                <span className="text-xs font-semibold text-slate-700 uppercase tracking-tighter">Student Impact Verified</span>
+              </div>
             </div>
-            <Badge variant={URGENCY_BADGE[target.urgencyLabel] || "default"} size="sm" className="h-8 shadow-sm">
-              {target.urgencyLabel?.toUpperCase()}
-            </Badge>
-          </div>
-        </div>
 
-        {/* Actions Row */}
-        <div className="mt-8 pt-6 border-t border-slate-50 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <span className="w-6 h-6 rounded-full bg-violet-50 text-violet-600 flex items-center justify-center">
-              <Cpu size={12} />
-            </span>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              Verified by Predictive Engine TS-PS3.csv
-            </p>
-          </div>
-
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <Button variant="outline" size="sm" onClick={handleViewPdf} className="flex-1 sm:flex-none h-11 border-slate-200 hover:bg-slate-50 rounded-xl px-6">
-              <Download size={16} className="mr-2" /> View PDF
-            </Button>
-
-            {target.forwarded ? (
-              <div className="flex-1 sm:flex-none h-11 flex items-center justify-center gap-2 px-6 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-widest shadow-sm">
-                <CheckCircle2 size={16} /> Processed
-              </div>
-            ) : (
-              <Button
-                variant="primary" size="sm"
-                onClick={handleSend}
-                isLoading={busy}
-                className="flex-1 sm:flex-none h-11 rounded-xl px-8 shadow-lg shadow-blue-500/10"
-              >
-                <Send size={16} className="mr-2" /> Forward to DEO
+            {/* Tight Action Buttons */}
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+            <Button variant="outline" size="sm" onClick={handleViewPdf} className="flex-1 sm:flex-none h-12 border-slate-200 hover:bg-slate-50 rounded-xl px-5 text-xs font-bold uppercase tracking-widest transition-all">
+                <Download size={16} className="mr-2 opacity-70" /> PDF
               </Button>
-            )}
+
+              {target.forwarded ? (
+                <div className="flex-1 sm:flex-none h-12 flex items-center justify-center gap-2 px-8 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-widest shadow-sm">
+                  <CheckCircle2 size={18} /> FORWARDED
+                </div>
+              ) : (
+                <Button
+                  variant="primary" size="sm"
+                  onClick={handleSend}
+                  isLoading={busy}
+                  className="flex-1 sm:flex-none h-12 rounded-xl px-12 shadow-lg shadow-blue-500/10 text-xs font-bold uppercase tracking-widest"
+                >
+                  <Send size={18} className="mr-2" /> SEND TO DEO
+                </Button>
+              )}
+            </div>
           </div>
+
         </div>
       </div>
 
-      <button
+      {/* Ultra-Minimal Footer */}
+      <div 
         onClick={() => navigate("/principal/dashboard/reports")}
-        className="w-full h-12 bg-slate-50/50 hover:bg-slate-100/80 border-t border-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 hover:text-[#003366] uppercase tracking-widest transition-all gap-2"
+        className="group cursor-pointer w-full h-10 bg-slate-50/50 hover:bg-[#003366]/5 border-t border-slate-50 flex items-center justify-center text-xs font-bold text-slate-500 hover:text-[#003366] uppercase tracking-[0.2em] transition-all gap-3"
       >
-        <Activity size={14} /> Access Historical Bundle Registry <ChevronRight size={14} />
-      </button>
+        <Activity size={12} className="group-hover:animate-bounce" /> ACCESS HISTORICAL REGISTRY <ChevronRight size={12} />
+      </div>
     </Card>
+
 
   );
 }

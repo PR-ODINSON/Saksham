@@ -10,7 +10,8 @@
     "load-csv": "node scripts/loadCSV.js",
     "train-lr": "node scripts/trainLR.js",
     "clear": "node scripts/clearAll.js",
-    "clear:hard": "node scripts/clearAll.js --hard"
+    "clear:hard": "node scripts/clearAll.js --hard",
+    "seed:schools": "node scripts/seedSchools.js"
   },
   "keywords": [
     "school",

@@ -77,9 +77,9 @@ async function augmentWithSchoolMetadata(payload, user) {
   merged.schoolType    = pick(payload.schoolType,    school?.schoolType);
   merged.isGirlsSchool = payload.isGirlsSchool ?? school?.isGirlsSchool ?? false;
   merged.numStudents   = payload.numStudents   || school?.numStudents || 0;
-  merged.buildingAge   = payload.buildingAge   || school?.infrastructure?.buildingAge || 0;
-  merged.materialType  = pick(payload.materialType,  school?.infrastructure?.materialType);
-  merged.weatherZone   = pick(payload.weatherZone,   school?.infrastructure?.weatherZone, 'Dry');
+  merged.buildingAge   = payload.buildingAge   || school?.buildingAge || 0;
+  merged.materialType  = pick(payload.materialType,  school?.materialType);
+  merged.weatherZone   = pick(payload.weatherZone,   school?.weatherZone, 'Dry');
 
   // CLEANUP: If an enum field is STILL empty string after merging, remove it so
   // Mongoose validation doesn't block the save.
@@ -183,7 +183,10 @@ export const submitReport = async (req, res) => {
     // are robust against duplicate key errors while allowing corrections.
     const record = await SchoolConditionRecord.findOneAndUpdate(
       { schoolId: finalPayload.schoolId, category: finalPayload.category, weekNumber: finalPayload.weekNumber },
-      finalPayload,
+      { 
+        $set: finalPayload,
+        $unset: { forwardedAt: "", forwardedBy: "", reviewNote: "", reviewedBy: "", reviewedAt: "" }
+      },
       { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
     );
 
@@ -424,7 +427,10 @@ export const submitWeeklyReport = async (req, res) => {
       // category is re-submitted for the same week.
       const record = await SchoolConditionRecord.findOneAndUpdate(
         { schoolId: updatePayload.schoolId, category: cat, weekNumber: updatePayload.weekNumber },
-        updatePayload,
+        {
+          $set: updatePayload,
+          $unset: { forwardedAt: "", forwardedBy: "", reviewNote: "", reviewedBy: "", reviewedAt: "" }
+        },
         { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
       );
 

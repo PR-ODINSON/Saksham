@@ -10,7 +10,7 @@ import MetricCard from '../../components/common/MetricCard';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import { useNavigate } from 'react-router-dom';
-import MarkerClusterGroup from 'react-leaflet-cluster';
+
 import { useLanguage } from '../../context/LanguageContext';
 
 // Global Leaflet fix for base markers, though we use custom ones
@@ -22,7 +22,7 @@ L.Icon.Default.mergeOptions({
 });
 
 function getMarkerColor(score) {
-  if (score == null) return '#64748b'; // No risk data (slate)
+  if (score == null) return '#10b981'; // No complaints (emerald green)
   if (score >= 80) return '#ef4444';   // Critical (red)
   if (score >= 60) return '#f97316';   // High (orange)
   if (score >= 40) return '#f59e0b';   // Moderate (amber)
@@ -30,7 +30,7 @@ function getMarkerColor(score) {
 }
 
 function getRiskLevel(score) {
-  if (score == null) return 'UNKNOWN';
+  if (score == null) return 'NO COMPLAINTS';
   if (score >= 80) return 'CRITICAL';
   if (score >= 60) return 'HIGH';
   if (score >= 40) return 'MODERATE';
@@ -39,6 +39,7 @@ function getRiskLevel(score) {
 
 const createCustomIcon = (score) => {
   const color = getMarkerColor(score);
+  const hasComplaint = score !== null;
   return L.divIcon({
     className: 'custom-map-marker',
     html: `
@@ -50,7 +51,7 @@ const createCustomIcon = (score) => {
         border: 2px solid white;
         box-shadow: 0 0 10px ${color}, 0 2px 4px rgba(0,0,0,0.2);
         transform: translate(-50%, -50%);
-        ${score >= 60 ? 'animation: marker-pulse 2s infinite;' : ''}
+        ${hasComplaint ? 'animation: heartbeat-pulse 1.5s ease-in-out infinite;' : ''}
       "></div>
     `,
     iconSize: [20, 20],
@@ -76,6 +77,12 @@ const MapController = ({ userLocation, activeFilter, setFilter, t }) => {
           className={`text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-lg border-2 transition-all text-left ${activeFilter === 'ALL' ? 'bg-[#003366] text-white border-[#003366]' : 'bg-slate-50 text-slate-500 border-transparent hover:border-slate-200'}`}
         >
           {t('gs.show_all_sites')}
+        </button>
+        <button 
+          onClick={() => setFilter('MODERATE')}
+          className={`text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-lg border-2 transition-all text-left ${activeFilter === 'MODERATE' ? 'bg-amber-50 text-amber-600 border-amber-500' : 'bg-slate-50 text-slate-500 border-transparent hover:border-slate-200'}`}
+        >
+          {t('gs.moderate_plus')}
         </button>
         <button 
           onClick={() => setFilter('CRITICAL')}
@@ -154,17 +161,17 @@ export default function GeospatialMap() {
       // Fetch both coordinates and risk data simultaneously
       const [schoolsRes, riskRes] = await Promise.all([
         get('/api/schools'),
-        get('/api/risk/queue')
+        get('/api/risk')
       ]);
 
       if (schoolsRes.success) {
         let mergedSchools = schoolsRes.schools;
 
         // Merge priority scores into the school data
-        if (riskRes.success && riskRes.queue) {
+        if (riskRes.success && riskRes.riskScores) {
           const riskMap = {};
-          riskRes.queue.forEach(r => {
-            riskMap[r.schoolId] = r.priorityScore;
+          riskRes.riskScores.forEach(r => {
+            riskMap[r._id] = r.maxPriority;
           });
 
           mergedSchools = mergedSchools.map(s => ({
@@ -172,6 +179,16 @@ export default function GeospatialMap() {
             priorityScore: riskMap[s.schoolId] ?? null
           }));
         }
+
+        // Keep all schools with complaints, but only keep ~14 safe schools
+        const riskySchools = mergedSchools.filter(s => s.priorityScore !== null);
+        const safeSchools = mergedSchools.filter(s => s.priorityScore === null);
+        
+        // Randomly select 14 safe schools to display
+        const shuffledSafe = safeSchools.sort(() => 0.5 - Math.random());
+        const selectedSafe = shuffledSafe.slice(0, 14);
+
+        mergedSchools = [...riskySchools, ...selectedSafe];
 
         setSchools(mergedSchools);
         
@@ -241,6 +258,14 @@ export default function GeospatialMap() {
           0% { transform: translate(-50%, -50%) scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
           50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.8; box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
           100% { transform: translate(-50%, -50%) scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        @keyframes heartbeat-pulse {
+          0% { transform: translate(-50%, -50%) scale(1); }
+          14% { transform: translate(-50%, -50%) scale(1.3); }
+          28% { transform: translate(-50%, -50%) scale(1); }
+          42% { transform: translate(-50%, -50%) scale(1.3); }
+          70% { transform: translate(-50%, -50%) scale(1); }
+          100% { transform: translate(-50%, -50%) scale(1); }
         }
         @keyframes route-flow {
           0% { stroke-dashoffset: 100; }
@@ -364,9 +389,9 @@ export default function GeospatialMap() {
                 />
               )}
 
-              <MarkerClusterGroup chunkedLoading maxClusterRadius={40}>
                 {filteredSchools.filter(s => {
                   if (activeFilter === 'CRITICAL') return s.priorityScore >= 80 || s.willFailWithin30Days;
+                  if (activeFilter === 'MODERATE') return s.priorityScore >= 40 || s.willFailWithin30Days;
                   return true; // ALL
                 }).map((school, idx) => {
                   if (!school.location || !school.location.lat) return null;
@@ -442,7 +467,6 @@ export default function GeospatialMap() {
                     </Marker>
                   );
                 })}
-              </MarkerClusterGroup>
 
               {/* User Location Marker */}
               {userLocation && (

@@ -25,67 +25,83 @@ export default function ActiveWorkOrders({ schoolId, className }) {
 
   return (
     <Card variant="gov" className={className} title="Contractor Work Logs" icon={Wrench} subtitle="Real-time monitoring of assigned on-site repairs">
-      <div className="space-y-4 mt-2">
+      <div className="mt-4 -mx-6">
         {orders.length === 0 ? (
-          <div className="py-12 text-center text-slate-400 font-medium text-sm italic bg-slate-50/50 rounded border border-dashed border-slate-200">
+          <div className="mx-6 py-12 text-center text-slate-400 font-medium text-sm italic bg-slate-50/50 rounded border border-dashed border-slate-200">
             No active work orders currently in field operation.
           </div>
         ) : (
-          orders.map(o => (
-            <div key={o._id} className="p-4 bg-white border border-slate-200 rounded-lg shadow-sm">
-              <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full animate-pulse ${o.status === 'in_progress' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                  <span className="text-xs font-bold uppercase tracking-widest text-slate-800">{o.category} REPAIR</span>
-                </div>
-                <Badge variant={o.status === 'in_progress' ? 'success' : 'info'} size="sm">
-                  {o.status.replace('_', ' ')}
-                </Badge>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-slate-600">
-                    <User size={16} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Assigned Agent</p>
-                    <p className="text-[13px] font-bold text-slate-800">{o.assignment?.assignedTo?.name || 'Awaiting acceptance'}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-slate-600">
-                    <Phone size={16} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Contact Channel</p>
-                    <p className="text-[13px] font-bold text-slate-800">{o.assignment?.assignedTo?.phone || 'N/A'}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-slate-600">
-                    <Calendar size={16} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Contractual Deadline</p>
-                    <p className="text-[13px] font-bold text-slate-800">{new Date(o.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded bg-slate-100 flex items-center justify-center text-slate-600">
-                    <Clock size={16} />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Time Elapsed</p>
-                    <p className="text-[13px] font-bold text-slate-800">{Math.round((new Date() - new Date(o.createdAt)) / (1000 * 60 * 60 * 24))} Days</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-y border-slate-200">
+                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Ref ID</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Repair Type</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Priority</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Assigned Agent</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Issued On</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Deadline</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">Elapsed</th>
+                  <th className="px-6 py-3 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {orders.map(o => {
+                  const priority = o.priorityScore >= 75 ? 'critical' : o.priorityScore >= 50 ? 'high' : 'medium';
+                  return (
+                    <tr key={o._id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="px-6 py-4">
+                        <span className="text-[11px] font-mono font-bold text-slate-400">#{o._id.slice(-6).toUpperCase()}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-2 h-2 rounded-full animate-pulse ${o.status === 'in_progress' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                          <span className="text-[12px] font-bold uppercase tracking-tight text-slate-800">{o.category} REPAIR</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <Badge variant={priority === 'critical' ? 'critical' : priority === 'high' ? 'high' : 'info'} size="sm" className="font-bold uppercase tracking-widest text-[8px]">
+                          {priority}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center border border-slate-200 shadow-sm">
+                            <User size={12} className="text-slate-500" />
+                          </div>
+                          <span className="text-[13px] font-bold text-slate-700">{o.assignment?.assignedTo?.name || 'Awaiting Acceptance'}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-slate-600 text-[12px] font-semibold">
+                        {new Date(o.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-slate-600">
+                          <Calendar size={12} />
+                          <span className="text-[12px] font-semibold">
+                            {new Date(o.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 text-slate-600">
+                          <Clock size={12} />
+                          <span className="text-[12px] font-bold text-slate-800">
+                            {Math.round((new Date() - new Date(o.createdAt)) / (1000 * 60 * 60 * 24))}d
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Badge variant={o.status === 'in_progress' ? 'success' : 'info'} size="sm" className="font-bold uppercase tracking-widest text-[9px]">
+                          {o.status.replace('_', ' ')}
+                        </Badge>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </Card>

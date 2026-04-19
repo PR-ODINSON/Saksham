@@ -37,23 +37,21 @@ const schoolSchema = new mongoose.Schema({
   numStudents: {
     type: Number
   },
-  infrastructure: {
-    buildingAge: {
-      type: Number
-    },
-    materialType: {
-      type: String,
-      enum: {
-        values: ['RCC', 'Brick', 'Mixed', 'Temporary'],
-        message: '{VALUE} is not a valid material type'
-      }
-    },
-    weatherZone: {
-      type: String,
-      enum: {
-        values: ['Dry', 'Heavy Rain', 'Coastal', 'Tribal'],
-        message: '{VALUE} is not a valid weather zone'
-      }
+  buildingAge: {
+    type: Number
+  },
+  materialType: {
+    type: String,
+    enum: {
+      values: ['RCC', 'Brick', 'Mixed', 'Temporary'],
+      message: '{VALUE} is not a valid material type'
+    }
+  },
+  weatherZone: {
+    type: String,
+    enum: {
+      values: ['Dry', 'Heavy Rain', 'Coastal', 'Tribal'],
+      message: '{VALUE} is not a valid weather zone'
     }
   },
   location: {
