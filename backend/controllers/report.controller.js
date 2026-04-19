@@ -183,7 +183,10 @@ export const submitReport = async (req, res) => {
     // are robust against duplicate key errors while allowing corrections.
     const record = await SchoolConditionRecord.findOneAndUpdate(
       { schoolId: finalPayload.schoolId, category: finalPayload.category, weekNumber: finalPayload.weekNumber },
-      finalPayload,
+      { 
+        $set: finalPayload,
+        $unset: { forwardedAt: "", forwardedBy: "", reviewNote: "", reviewedBy: "", reviewedAt: "" }
+      },
       { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
     );
 
@@ -424,7 +427,10 @@ export const submitWeeklyReport = async (req, res) => {
       // category is re-submitted for the same week.
       const record = await SchoolConditionRecord.findOneAndUpdate(
         { schoolId: updatePayload.schoolId, category: cat, weekNumber: updatePayload.weekNumber },
-        updatePayload,
+        {
+          $set: updatePayload,
+          $unset: { forwardedAt: "", forwardedBy: "", reviewNote: "", reviewedBy: "", reviewedAt: "" }
+        },
         { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
       );
 
