@@ -12,6 +12,9 @@ import PageHeader from "../../components/common/PageHeader";
 import { FileText, AlertTriangle, TrendingUp, ArrowRight, Building, MapPin, Users, Calendar, CheckCircle2, Clock, Shield } from "lucide-react";
 import ActiveWorkOrders from "../../components/principal/ActiveWorkOrders";
 import WeeklyBundleQuickSend from "../../components/principal/WeeklyBundleQuickSend";
+import ApprovalQueue from "../../components/principal/ApprovalQueue";
+import AuditCompliance from "../../components/principal/AuditCompliance";
+import HealthTimeline from "../../components/principal/HealthTimeline";
 
 const RISK_CONFIG = {
   critical: { color: "text-red-700", bg: "bg-red-50 border border-red-200 shadow-sm", label: "CRITICAL", fill: "#b91c1c" },
@@ -223,10 +226,17 @@ export default function SchoolView() {
         {/* WEEKLY BUNDLE — LR scoring + Send to DEO */}
         <WeeklyBundleQuickSend schoolId={schoolId} />
 
-        {/* ACTIONABLE ITEMS */}
+        {/* APPROVAL QUEUE — bundles awaiting principal sign-off */}
+        <ApprovalQueue schoolId={schoolId} />
+
+        {/* ACTIONABLE ITEMS — assigned/in-progress contractor work */}
         <ActiveWorkOrders schoolId={schoolId} />
 
+        {/* HEALTH TIMELINE — historic condition trend per category */}
+        <HealthTimeline schoolId={schoolId} reports={reports} />
 
+        {/* AUDIT COMPLIANCE — completion ratio & on-time submission summary */}
+        <AuditCompliance schoolId={schoolId} reports={reports} />
       </div>
     </div>
   );

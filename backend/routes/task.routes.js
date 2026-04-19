@@ -15,11 +15,25 @@ router.get('/', protect, getWorkOrders);
 // POST /api/tasks/assign — assign a work order to a contractor
 router.post('/assign', protect, authorize('deo', 'bmo', 'admin'), assignTask);
 
-// POST /api/tasks/complete — mark task complete, upload photo proof
+// POST /api/tasks/complete — mark task complete, upload photo proof.
+// File field name 'photo' matches the contractor CompletionModal multipart key.
+// Legacy field 'completionImage' is also accepted for backwards compatibility.
 router.post(
   '/complete',
   protect,
-  upload.single('completionImage'),
+  (req, res, next) => {
+    // Try the canonical 'photo' first; fall back to legacy 'completionImage'.
+    upload.fields([
+      { name: 'photo',           maxCount: 1 },
+      { name: 'completionImage', maxCount: 1 },
+    ])(req, res, (err) => {
+      if (err) return next(err);
+      // Normalise to req.file for the controller (it already handles req.file).
+      if (req.files?.photo?.[0])           req.file = req.files.photo[0];
+      else if (req.files?.completionImage?.[0]) req.file = req.files.completionImage[0];
+      next();
+    });
+  },
   completeTask,
 );
 

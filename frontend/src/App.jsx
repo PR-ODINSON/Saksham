@@ -73,7 +73,16 @@ function App() {
           <Route path="/admin/dashboard"                element={dash(DEODashboard)} />
           <Route path="/admin/dashboard/map"            element={dash(GeospatialMap)} />
           <Route path="/admin/dashboard/work-orders"    element={dash(WorkOrders)} />
-          <Route path="/admin/dashboard/audit"          element={dash(AuditLogView)} />
+          <Route
+            path="/admin/dashboard/audit"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AppLayout>
+                  <AuditLogView />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
 
           {/* ── Backward-compat redirector ──────────────────────────────────── */}
           <Route path="/dashboard"   element={<DashboardRedirect />} />

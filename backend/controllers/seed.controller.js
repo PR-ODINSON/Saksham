@@ -4,7 +4,7 @@
  * GET /api/wipe-data  — wipes condition data only; keeps Users + Schools
  */
 import User from '../models/user.model.js';
-import { SchoolConditionRecord, MaintenanceDecision, WorkOrder, Alert, DistrictAnalytics, School } from '../models/index.js';
+import { SchoolConditionRecord, MaintenanceDecision, WorkOrder, RepairLog, Alert, DistrictAnalytics, AuditLog, School } from '../models/index.js';
 import { hashPassword } from '../Methods/bcryptPassword.js';
 
 export const wipeData = async (_req, res) => {
@@ -13,10 +13,12 @@ export const wipeData = async (_req, res) => {
       SchoolConditionRecord.deleteMany({}),
       MaintenanceDecision.deleteMany({}),
       WorkOrder.deleteMany({}),
+      RepairLog.deleteMany({}),
       Alert.deleteMany({}),
       DistrictAnalytics.deleteMany({}),
+      AuditLog.deleteMany({}),
     ]);
-    res.json({ success: true, message: 'All condition records, decisions, work orders and alerts have been wiped. Users and schools retained.' });
+    res.json({ success: true, message: 'All condition records, decisions, work orders, repair logs, alerts, analytics and audit logs have been wiped. Users and schools retained.' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -30,8 +32,10 @@ export const seedDatabase = async (_req, res) => {
       SchoolConditionRecord.deleteMany({}),
       MaintenanceDecision.deleteMany({}),
       WorkOrder.deleteMany({}),
+      RepairLog.deleteMany({}),
       Alert.deleteMany({}),
       DistrictAnalytics.deleteMany({}),
+      AuditLog.deleteMany({}),
       School.deleteMany({}),
     ]);
 
@@ -49,7 +53,7 @@ export const seedDatabase = async (_req, res) => {
     // ── Schools metadata ─────────────────────────────────────────────────────
     const schools = await School.insertMany([
       { schoolId: 2126, name: 'Kutch Primary School', district: 'Kutch', location: { lat: 23.8, lng: 69.5 } },
-      { schoolId: 2459, name: 'Surat secondary School', district: 'Surat', location: { lat: 21.17, lng: 72.83 } },
+      { schoolId: 2459, name: 'Surat secondary School', district: 'Surat', isGirlsSchool: true, location: { lat: 21.17, lng: 72.83 } },
     ]);
 
     // ── School Condition Records (sample rows matching CSV structure) ─────────

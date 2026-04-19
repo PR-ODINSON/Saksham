@@ -66,6 +66,14 @@ export const AuthProvider = ({ children }) => {
     try {
       await post("/api/auth/logout", {});
       setUser(null);
+      // Tear down the singleton socket so a subsequent login doesn't reuse the
+      // previous user's authenticated rooms.
+      try {
+        if (typeof window !== 'undefined' && window.__sakshamSocket) {
+          window.__sakshamSocket.disconnect();
+          window.__sakshamSocket = null;
+        }
+      } catch { /* ignore */ }
     } catch (error) {
       console.error("Logout failed:", error);
     }

@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.heat';
 import { get } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import useSocket from '../../hooks/useSocket';
 import { Globe, RefreshCw, AlertTriangle, Building, ShieldCheck, ChevronDown, Navigation, ExternalLink, Crosshair, Filter, X } from 'lucide-react';
 import PageHeader from '../../components/common/PageHeader';
 import MetricCard from '../../components/common/MetricCard';
@@ -12,6 +14,36 @@ import Button from '../../components/common/Button';
 import { useNavigate } from 'react-router-dom';
 
 import { useLanguage } from '../../context/LanguageContext';
+
+// Renders / maintains a leaflet.heat layer for live MaintenanceDecision urgency.
+// Each heat point is [lat, lng, intensity] with intensity = maxPriorityScore/100.
+function HeatLayer({ points }) {
+  const map = useMap();
+  const layerRef = useRef(null);
+
+  useEffect(() => {
+    if (!map) return;
+    if (layerRef.current) {
+      map.removeLayer(layerRef.current);
+      layerRef.current = null;
+    }
+    if (!points.length) return;
+    layerRef.current = L.heatLayer(points, {
+      radius: 32,
+      blur: 22,
+      maxZoom: 11,
+      max: 1.0,
+    }).addTo(map);
+    return () => {
+      if (layerRef.current) {
+        map.removeLayer(layerRef.current);
+        layerRef.current = null;
+      }
+    };
+  }, [map, points]);
+
+  return null;
+}
 
 // Global Leaflet fix for base markers, though we use custom ones
 delete L.Icon.Default.prototype._getIconUrl;
@@ -112,7 +144,9 @@ export default function GeospatialMap() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const socket = useSocket();
   const [schools, setSchools] = useState([]);
+  const [heatmap, setHeatmap] = useState([]);
   const [loading, setLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
   const [selectedDistrict, setSelectedDistrict] = useState("");
@@ -158,11 +192,14 @@ export default function GeospatialMap() {
   const fetchMapData = async () => {
     setLoading(true);
     try {
-      // Fetch both coordinates and risk data simultaneously
-      const [schoolsRes, riskRes] = await Promise.all([
+      // Fetch coordinates, legacy risk aggregation, and live heatmap in parallel
+      const [schoolsRes, riskRes, heatRes] = await Promise.all([
         get('/api/schools'),
-        get('/api/risk')
+        get('/api/risk'),
+        get('/api/risk/heatmap'),
       ]);
+
+      if (heatRes?.success) setHeatmap(heatRes.heatmap || []);
 
       if (schoolsRes.success) {
         let mergedSchools = schoolsRes.schools;
@@ -204,7 +241,6 @@ export default function GeospatialMap() {
 
   useEffect(() => {
     fetchMapData();
-
     // Get user's current location
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -220,6 +256,22 @@ export default function GeospatialMap() {
       );
     }
   }, []);
+
+  // Live refresh whenever a new MaintenanceDecision is created in any district.
+  useEffect(() => {
+    if (!socket) return;
+    const handler = () => fetchMapData();
+    socket.on('maintenance:created', handler);
+    return () => socket.off('maintenance:created', handler);
+  }, [socket]);
+
+  // [lat, lng, intensity 0-1] for the heat layer
+  const heatPoints = useMemo(
+    () => heatmap
+      .filter(h => h.lat != null && h.lng != null)
+      .map(h => [h.lat, h.lng, Math.max(0, Math.min(1, (h.maxPriorityScore || 0) / 100))]),
+    [heatmap],
+  );
 
   if (!user || (user.role !== 'deo' && user.role !== 'admin')) {
     return (
@@ -376,6 +428,9 @@ export default function GeospatialMap() {
               />
 
               <MapController userLocation={userLocation} activeFilter={activeFilter} setFilter={setActiveFilter} t={t} />
+
+              {/* Live MaintenanceDecision urgency heatmap (leaflet.heat) */}
+              <HeatLayer points={heatPoints} />
 
               {/* Active Route Polyline */}
               {activeRoute && (

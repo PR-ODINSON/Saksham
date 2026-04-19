@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { get, API_BASE } from "../../services/api";
+import useSocket from "../../hooks/useSocket";
 import Card from "../common/Card";
 import Button from "../common/Button";
 import Badge from "../common/Badge";
@@ -24,6 +25,7 @@ const URGENCY = {
  */
 export default function ForwardedReportsPanel({ district, className = "" }) {
   const { t } = useLanguage();
+  const socket = useSocket();
   const [bundles, setBundles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [assignBundle, setAssignBundle] = useState(null);
@@ -39,6 +41,21 @@ export default function ForwardedReportsPanel({ district, className = "" }) {
   };
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [district]);
+
+  // Live refresh whenever a principal forwards a new weekly bundle.
+  useEffect(() => {
+    if (!socket) return;
+    const refresh = () => load();
+    socket.on('report:forwarded:bundle', refresh);
+    socket.on('report:forwarded',        refresh);
+    socket.on('maintenance:created',     refresh);
+    return () => {
+      socket.off('report:forwarded:bundle', refresh);
+      socket.off('report:forwarded',        refresh);
+      socket.off('maintenance:created',     refresh);
+    };
+    // eslint-disable-next-line
+  }, [socket, district]);
 
   return (
     <Card
