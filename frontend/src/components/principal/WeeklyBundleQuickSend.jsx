@@ -88,85 +88,129 @@ export default function WeeklyBundleQuickSend({ schoolId, className = "" }) {
 
   return (
     <Card
-      variant="gov"
-      className={className}
-      title="Latest Weekly Bundle"
-      subtitle="LR model output (trained on TS-PS3.csv)"
-      icon={FileText}
+      className={`border-none shadow-sm shadow-[#003366]/5 overflow-hidden ${className}`}
+      variant="default"
     >
-      {toast && (
-        <div className={`mb-3 p-3 rounded text-[11px] font-bold uppercase tracking-wide flex items-center gap-2 ${
-          toast.ok ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                   : "bg-red-50 text-red-700 border border-red-200"
-        }`}>
-          {toast.ok ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />} {toast.msg}
-        </div>
-      )}
-
-      <div className="space-y-4">
-        <div className="p-4 rounded-lg border-2 border-slate-200 bg-slate-50/50">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reporting Period</p>
-              <p className="text-base font-bold text-slate-900">Week {target.weekNumber}</p>
-              <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                {target.categories.length} categories · Worst: {target.worstCategory}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">LR Urgency</p>
-              <p className="text-2xl font-bold text-slate-900 leading-none">
-                {target.maxUrgency}<span className="text-xs opacity-50">/100</span>
-              </p>
-              <Badge variant={URGENCY_BADGE[target.urgencyLabel] || "default"} size="sm" className="mt-1">
-                {target.urgencyLabel?.toUpperCase()}
-              </Badge>
-            </div>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-50 text-[#003366] rounded-lg">
+            <FileText size={20} />
           </div>
-
-          <div className="flex flex-wrap gap-2 items-center text-[11px]">
-            {target.willFailWithin30Days && (
-              <Badge variant="critical" size="sm">
-                <AlertTriangle size={10} className="mr-1" /> Predicted fail &lt; 30d
-              </Badge>
-            )}
-            <span className="flex items-center gap-1.5 text-violet-700 font-bold uppercase tracking-wide">
-              <Cpu size={11} /> Linear Regression model
+          <div>
+            <h3 className="text-sm font-bold text-[#003366] leading-none mb-1">Latest Weekly Bundle</h3>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Model: LR Prediction Node</p>
+          </div>
+        </div>
+        {!loading && target && (
+          <div className="flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${target.forwarded ? 'bg-emerald-500' : 'bg-orange-500'} animate-pulse`} />
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+              {target.forwarded ? 'Status: Processed' : 'Status: Pending Action'}
             </span>
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Button variant="outline" size="md" onClick={handleViewPdf} className="w-full">
-            <Download size={14} className="mr-1.5" /> View Bundled PDF
-          </Button>
-
-          {target.forwarded ? (
-            <div className="flex items-center justify-center gap-2 px-3 py-2.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold uppercase tracking-widest">
-              <CheckCircle2 size={14} /> Sent to DEO
-            </div>
-          ) : (
-            <Button
-              variant="primary" size="md"
-              onClick={handleSend}
-              isLoading={busy}
-              className="w-full"
-            >
-              <Send size={14} className="mr-1.5" /> Send to DEO
-            </Button>
-          )}
-        </div>
-
-        <button
-          onClick={() => navigate("/principal/dashboard/reports")}
-          className="w-full flex items-center justify-between text-[11px] font-bold text-slate-500 hover:text-blue-700 uppercase tracking-widest pt-2 border-t border-slate-100 transition-colors"
-        >
-          <span className="flex items-center gap-2">
-            <Activity size={12} /> View all weekly bundles
-          </span>
-          <ChevronRight size={14} />
-        </button>
+        )}
       </div>
+
+      <div className="p-6">
+        {toast && (
+          <div className={`mb-4 p-3 rounded-xl text-[11px] font-bold uppercase tracking-wide flex items-center gap-2 ${
+            toast.ok ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                     : "bg-red-50 text-red-700 border border-red-100"
+          }`}>
+            {toast.ok ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />} {toast.msg}
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+          {/* Main Reporting Info */}
+          <div className="md:col-span-8 flex flex-col sm:flex-row sm:items-center gap-6">
+            <div className="shrink-0">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5 opacity-70">Reporting Period</p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-bold text-[#003366] tracking-tighter">Week {target.weekNumber}</span>
+                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{new Date().getFullYear()}</span>
+              </div>
+            </div>
+
+            <div className="h-10 w-px bg-slate-100 hidden sm:block" />
+
+            <div className="flex-1 space-y-2">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest opacity-70">Infrastructure Analysis</p>
+              <div className="flex flex-wrap gap-2">
+                <div className="px-2.5 py-1 bg-white border border-slate-200 rounded-full text-[10px] font-bold text-slate-700 flex items-center gap-1.5 shadow-sm">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                  {target.categories.length} Categories Bundled
+                </div>
+                <div className="px-2.5 py-1 bg-white border border-slate-200 rounded-full text-[10px] font-bold text-slate-700 flex items-center gap-1.5 shadow-sm">
+                   <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                   Worst Dept: {target.worstCategory}
+                </div>
+              </div>
+              {target.willFailWithin30Days && (
+                <p className="text-[10px] font-bold text-red-600 flex items-center gap-1.5 animate-pulse bg-red-50 w-fit px-2 py-0.5 rounded uppercase tracking-wider">
+                  <AlertTriangle size={12} /> Priority Alert: Failure Predicted Within 30 Days
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* LR Urgency Score */}
+          <div className="md:col-span-4 bg-slate-50 border border-slate-100 p-5 rounded-2xl flex items-center justify-between">
+            <div className="space-y-1">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest opacity-70">LR Priority Score</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-bold text-[#003366] leading-none">{target.maxUrgency}</span>
+                <span className="text-xs font-bold text-slate-400">/100</span>
+              </div>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Student Impact Ranking</p>
+            </div>
+            <Badge variant={URGENCY_BADGE[target.urgencyLabel] || "default"} size="sm" className="h-8 shadow-sm">
+              {target.urgencyLabel?.toUpperCase()}
+            </Badge>
+          </div>
+        </div>
+
+        {/* Actions Row */}
+        <div className="mt-8 pt-6 border-t border-slate-50 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <span className="w-6 h-6 rounded-full bg-violet-50 text-violet-600 flex items-center justify-center">
+              <Cpu size={12} />
+            </span>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+              Verified by Predictive Engine TS-PS3.csv
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <Button variant="outline" size="sm" onClick={handleViewPdf} className="flex-1 sm:flex-none h-11 border-slate-200 hover:bg-slate-50 rounded-xl px-6">
+              <Download size={16} className="mr-2" /> View PDF
+            </Button>
+
+            {target.forwarded ? (
+              <div className="flex-1 sm:flex-none h-11 flex items-center justify-center gap-2 px-6 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-widest shadow-sm">
+                <CheckCircle2 size={16} /> Processed
+              </div>
+            ) : (
+              <Button
+                variant="primary" size="sm"
+                onClick={handleSend}
+                isLoading={busy}
+                className="flex-1 sm:flex-none h-11 rounded-xl px-8 shadow-lg shadow-blue-500/10"
+              >
+                <Send size={16} className="mr-2" /> Forward to DEO
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <button
+        onClick={() => navigate("/principal/dashboard/reports")}
+        className="w-full h-12 bg-slate-50/50 hover:bg-slate-100/80 border-t border-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500 hover:text-[#003366] uppercase tracking-widest transition-all gap-2"
+      >
+        <Activity size={14} /> Access Historical Bundle Registry <ChevronRight size={14} />
+      </button>
     </Card>
+
   );
 }

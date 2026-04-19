@@ -9,11 +9,9 @@ import Button from "../../components/common/Button";
 import Badge from "../../components/common/Badge";
 import MetricCard from "../../components/common/MetricCard";
 import PageHeader from "../../components/common/PageHeader";
-import { FileText, AlertTriangle, TrendingUp, TrendingDown, ArrowRight, Building, MapPin, Users, Calendar, CheckCircle2, Clock, Shield, LayoutDashboard, History } from "lucide-react";
-import HealthTimeline from "../../components/principal/HealthTimeline";
+import { FileText, AlertTriangle, TrendingUp, ArrowRight, Building, MapPin, Users, Calendar, CheckCircle2, Clock, Shield } from "lucide-react";
 import ApprovalQueue from "../../components/principal/ApprovalQueue";
 import ActiveWorkOrders from "../../components/principal/ActiveWorkOrders";
-import AuditCompliance from "../../components/principal/AuditCompliance";
 import WeeklyBundleQuickSend from "../../components/principal/WeeklyBundleQuickSend";
 
 const RISK_CONFIG = {
@@ -177,17 +175,6 @@ export default function SchoolView() {
         <div className="absolute bottom-24 left-0 right-0">
           <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <div className="flex gap-2 mb-3">
-                <Badge variant="info" className="bg-white/10 text-white border-white/20 backdrop-blur-md">
-                  <MapPin size={12} className="mr-1.5" /> {school?.district || t('sv.unspecified_region')}
-                </Badge>
-                <Badge variant="default" className="bg-white/10 text-white border-white/20 backdrop-blur-md">
-                  <Calendar size={12} className="mr-1.5" /> {t('sv.age')}: {school?.buildingAge ?? "?"}Y
-                </Badge>
-                <Badge variant="default" className="bg-white/10 text-white border-white/20 backdrop-blur-md">
-                  <Users size={12} className="mr-1.5" /> {t('sv.registry')}: {school?.numStudents ?? "?"}
-                </Badge>
-              </div>
               <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight drop-shadow-md">
                 {school?.name || t('sv.generic_node')}
               </h1>
@@ -196,14 +183,7 @@ export default function SchoolView() {
               </p>
             </div>
 
-            <div className="flex gap-3">
-              <Button onClick={() => navigate("/peon/dashboard")} variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-md shadow-xl">
-                {t('sv.submit_audit')}
-              </Button>
-              <Button onClick={() => navigate(roleSubPath(user?.role, "reports"))} variant="secondary" className="bg-white/10 hover:bg-white/20 text-white border-white/30 backdrop-blur-md shadow-xl">
-                {t('sv.resource_registry')}
-              </Button>
-            </div>
+
           </div>
         </div>
       </div>
@@ -250,93 +230,10 @@ export default function SchoolView() {
           <ActiveWorkOrders schoolId={schoolId} className="h-full" />
         </div>
 
-        {/* ANALYTICS SECTION */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-          <div className="lg:col-span-2">
-            <HealthTimeline schoolId={schoolId} className="h-full" />
-          </div>
-          <div className="lg:col-span-1">
-            {analysis?.breakdown && Object.keys(analysis.breakdown).length > 0 && (
-              <Card variant="gov" className="h-full" title={t('sv.risk_spectrum')} subtitle={t('sv.domain_specific')} icon={LayoutDashboard}>
-                <div className="space-y-6">
-                  {Object.entries(analysis.breakdown).map(([cat, data]) => (
-                    <div key={cat} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{cat}</span>
-                        <Badge variant={data.level} size="xs">{data.level}</Badge>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="flex-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full transition-all duration-1000 ${data.level === "critical" ? "bg-red-600" : data.level === "high" ? "bg-orange-500" : data.level === "moderate" ? "bg-amber-500" : "bg-emerald-600"}`}
-                            style={{ width: `${data.score}%` }}
-                          />
-                        </div>
-                        <span className="text-[10px] font-bold text-slate-900 w-6 text-right">{data.score}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            )}
-          </div>
-        </div>
 
-        {/* SURVIVAL & PROOF SECTION */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-          <Card variant="gov" className="h-full border-none shadow-xl shadow-slate-200/50 relative overflow-hidden bg-gradient-to-br from-[#0f172a] to-slate-800 text-white" title="" icon={ActivityIcon}>
-            <div className="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
-              <ActivityIcon size={120} />
-            </div>
-            {analysis ? (
-              <div className="relative z-10 flex flex-col h-full">
-                <div className="mb-6">
-                  <h3 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
-                    <ActivityIcon size={20} className="text-blue-400" />
-                    {t('sv.infra_survival')}
-                  </h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">{t('sv.predictive_engine')}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t('sv.failure_horizon')}</p>
-                    <div className={`text-3xl font-bold ${analysis.timeToFailureDays <= 15 ? "text-red-400" : "text-white"}`}>
-                      {analysis.timeToFailureDays || "N/A"} <span className="text-xs font-bold opacity-60 uppercase">{t('deo.days')}</span>
-                    </div>
-                  </div>
-                  <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10 flex flex-col justify-center">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t('sv.trend_vector')}</p>
-                    <div className={`text-xs font-bold flex items-center gap-1.5 uppercase ${analysis.trend === "deteriorating" ? "text-red-400" : "text-emerald-400"}`}>
-                      {analysis.trend === "deteriorating" ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
-                      {analysis.trend}
-                    </div>
-                    <div className="text-[10px] font-bold text-white uppercase mt-1 opacity-80">{t('sv.critical_worst')}: {analysis.worstCategory || t('sv.none')}</div>
-                  </div>
-                </div>
-
-                <div className="mt-auto flex items-start gap-3 bg-blue-500/20 border border-blue-400/30 p-3 rounded-lg text-xs font-bold text-blue-100 backdrop-blur-sm shadow-inner">
-                  <AlertTriangle size={16} className="text-blue-400 shrink-0 mt-0.5" />
-                  <p className="leading-relaxed">{analysis.explanation.replace("⚠", "")}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="py-8 text-center text-slate-400 font-medium text-sm italic relative z-10">
-                {t('sv.insufficient_data')}
-              </div>
-            )}
-          </Card>
-          <AuditCompliance schoolId={schoolId} className="h-full" />
-        </div>
       </div>
     </div>
   );
 }
 
-function ActivityIcon(props) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="18" height="18" {...props}>
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-    </svg>
-  );
-}
+

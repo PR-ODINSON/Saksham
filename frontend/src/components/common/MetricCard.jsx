@@ -13,11 +13,11 @@ const MetricCard = ({
   className = '' 
 }) => {
   const variants = {
-    default: 'bg-white border-slate-200 text-slate-900 border-l-4 border-l-slate-400',
-    critical: 'bg-white border-slate-200 text-slate-900 border-l-4 border-l-red-500',
-    high: 'bg-white border-slate-200 text-slate-900 border-l-4 border-l-orange-500',
-    success: 'bg-white border-slate-200 text-slate-900 border-l-4 border-l-emerald-500',
-    info: 'bg-white border-slate-200 text-slate-900 border-l-4 border-l-blue-600',
+    default: 'bg-white border-slate-200 text-slate-900',
+    critical: 'bg-white border-slate-200 text-slate-900',
+    high: 'bg-white border-slate-200 text-slate-900',
+    success: 'bg-white border-slate-200 text-slate-900',
+    info: 'bg-white border-slate-200 text-slate-900',
   };
 
   const iconColors = {
