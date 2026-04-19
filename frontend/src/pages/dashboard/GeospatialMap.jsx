@@ -22,7 +22,7 @@ L.Icon.Default.mergeOptions({
 });
 
 function getMarkerColor(score) {
-  if (score == null) return '#64748b'; // No risk data (slate)
+  if (score == null) return '#10b981'; // No complaints (emerald green)
   if (score >= 80) return '#ef4444';   // Critical (red)
   if (score >= 60) return '#f97316';   // High (orange)
   if (score >= 40) return '#f59e0b';   // Moderate (amber)
@@ -30,7 +30,7 @@ function getMarkerColor(score) {
 }
 
 function getRiskLevel(score) {
-  if (score == null) return 'UNKNOWN';
+  if (score == null) return 'NO COMPLAINTS';
   if (score >= 80) return 'CRITICAL';
   if (score >= 60) return 'HIGH';
   if (score >= 40) return 'MODERATE';

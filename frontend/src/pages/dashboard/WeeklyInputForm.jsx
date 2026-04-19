@@ -46,7 +46,7 @@ const CRACK_OPTIONS = [
 ];
 
 // ─── Category definitions ─────────────────────────────────────────────────────
-const CATEGORIES = [
+const getCategories = (t) => [
   {
     id: "plumbing",
     label: "Plumbing",
@@ -153,8 +153,9 @@ function getISOWeek() {
 
 // ─── Default per-category state ───────────────────────────────────────────────
 function defaultCategoryState() {
+  const cats = getCategories(() => ""); // Dummy t just for keys
   const s = {};
-  for (const cat of CATEGORIES) {
+  for (const cat of cats) {
     s[cat.id] = {
       conditionScore: "",
       issueFlag:             false,
@@ -275,6 +276,7 @@ function PhotoUpload({ file, onChange, t }) {
 export default function WeeklyInputForm() {
   const { user } = useAuth();
   const { t } = useLanguage();
+  const CATEGORIES = getCategories(t);
 
   const [school,     setSchool]     = useState(null);
   const weekNumber = getISOWeek();  // auto-filled, not editable by peon
