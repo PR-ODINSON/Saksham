@@ -12,9 +12,6 @@ import PageHeader from "../../components/common/PageHeader";
 import { FileText, AlertTriangle, TrendingUp, ArrowRight, Building, MapPin, Users, Calendar, CheckCircle2, Clock, Shield } from "lucide-react";
 import ActiveWorkOrders from "../../components/principal/ActiveWorkOrders";
 import WeeklyBundleQuickSend from "../../components/principal/WeeklyBundleQuickSend";
-import ApprovalQueue from "../../components/principal/ApprovalQueue";
-import AuditCompliance from "../../components/principal/AuditCompliance";
-import HealthTimeline from "../../components/principal/HealthTimeline";
 
 const RISK_CONFIG = {
   critical: { color: "text-red-700", bg: "bg-red-50 border border-red-200 shadow-sm", label: "CRITICAL", fill: "#b91c1c" },
@@ -94,6 +91,7 @@ export default function SchoolView() {
   const [analysis, setAnalysis] = useState(null);
   const [reports, setReports] = useState([]);
   const [school, setSchool] = useState(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const schoolId = typeof user?.schoolId === "object" ? user?.schoolId?._id : user?.schoolId;
@@ -102,15 +100,17 @@ export default function SchoolView() {
     const loadData = async () => {
       if (!schoolId) { setLoading(false); return; }
 
-      const [riskRes, reportsRes, schoolRes] = await Promise.all([
+      const [riskRes, reportsRes, schoolRes, statsRes] = await Promise.all([
         get(`/api/risk/${schoolId}`),
         get(`/api/condition-report?schoolId=${schoolId}&limit=50`),
         get(`/api/schools/${schoolId}`),
+        get(`/api/schools/${schoolId}/stats`),
       ]);
 
       if (riskRes.success) setAnalysis(buildAnalysis(riskRes.predictions));
       if (reportsRes.success) setReports(reportsRes.records || []);
       if (schoolRes.success) setSchool(schoolRes.school);
+      if (statsRes.success) setStats(statsRes.stats);
       setLoading(false);
     };
     loadData();
@@ -135,21 +135,6 @@ export default function SchoolView() {
       </div>
     );
   }
-
-  // Calculate Report Metrics
-  const currentWeek = getISOWeek();
-  const currentMonth = new Date().getMonth();
-
-  // Calculate completed
-  const uniqueCompletedWeeks = new Set(reports.map(r => r.weekNumber)).size;
-  const completedThisMonth = new Set(reports.filter(r => new Date(r.createdAt).getMonth() === currentMonth).map(r => r.weekNumber)).size;
-
-  // Assuming 1 report per week expected
-  const expectedWeeksSoFar = currentWeek;
-  const totalPending = Math.max(0, expectedWeeksSoFar - uniqueCompletedWeeks);
-  const pendingThisMonth = Math.max(0, 4 - completedThisMonth); // roughly 4 weeks in a month
-
-  const latestReport = reports.length > 0 ? reports[0] : null;
 
   // Determine image based on schoolId
   const imgIndex = (String(schoolId).split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % 10;
@@ -190,33 +175,33 @@ export default function SchoolView() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto pb-12 px-4 sm:px-8 space-y-8">
+    <div className="max-w-7xl mx-auto pb-12 px-4 sm:px-8 space-y-8">
         {/* REPORT METRICS - Floating Over Banner */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 -mt-16 relative z-10">
           <MetricCard
             label={t('sv.infra_health')}
-            value={analysis ? `${100 - analysis.score}%` : "0%"}
+            value={stats?.infraHealth || (analysis ? `${100 - analysis.score}%` : "0%")}
             icon={Shield}
             variant={analysis?.score > 60 ? "critical" : analysis?.score > 30 ? "high" : "success"}
             trendValue={t('sv.global_condition')}
           />
           <MetricCard
             label={t('sv.pending_audits')}
-            value={totalPending}
+            value={stats?.pendingAudits ?? 0}
             icon={Clock}
-            variant={totalPending > 0 ? "high" : "success"}
-            trendValue={`${pendingThisMonth} ${t('sv.due_this_month')}`}
+            variant={(stats?.pendingAudits || 0) > 0 ? "high" : "success"}
+            trendValue={t('sv.due_this_month')}
           />
           <MetricCard
             label={t('sv.critical_risks')}
-            value={analysis?.breakdown ? Object.values(analysis.breakdown).filter(v => v.level === 'critical' || v.level === 'high').length : 0}
+            value={stats?.criticalRisks ?? 0}
             icon={AlertTriangle}
             variant="critical"
             trendValue={t('sv.high_risk_vectors')}
           />
           <MetricCard
             label={t('sv.audit_history')}
-            value={uniqueCompletedWeeks}
+            value={stats?.auditHistory ?? 0}
             icon={FileText}
             variant="info"
             trendValue={`${t('sv.registry_volume')}: ${reports.length}`}
@@ -226,17 +211,8 @@ export default function SchoolView() {
         {/* WEEKLY BUNDLE — LR scoring + Send to DEO */}
         <WeeklyBundleQuickSend schoolId={schoolId} />
 
-        {/* APPROVAL QUEUE — bundles awaiting principal sign-off */}
-        <ApprovalQueue schoolId={schoolId} />
-
         {/* ACTIONABLE ITEMS — assigned/in-progress contractor work */}
         <ActiveWorkOrders schoolId={schoolId} />
-
-        {/* HEALTH TIMELINE — historic condition trend per category */}
-        <HealthTimeline schoolId={schoolId} reports={reports} />
-
-        {/* AUDIT COMPLIANCE — completion ratio & on-time submission summary */}
-        <AuditCompliance schoolId={schoolId} reports={reports} />
       </div>
     </div>
   );

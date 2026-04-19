@@ -4,7 +4,13 @@
  * School info is embedded in SchoolConditionRecord.
  * These endpoints aggregate distinct school profiles from those records.
  */
-import { SchoolConditionRecord, School } from '../models/index.js';
+import { SchoolConditionRecord, School, MaintenanceDecision } from '../models/index.js';
+
+function getISOWeek() {
+  const now = new Date();
+  const jan1 = new Date(now.getFullYear(), 0, 1);
+  return Math.ceil(((now - jan1) / 86400000 + jan1.getDay() + 1) / 7);
+}
 
 // GET /api/schools
 export const getAllSchools = async (req, res) => {
@@ -42,6 +48,59 @@ export const getSchoolById = async (req, res) => {
     };
 
     res.json({ success: true, school: profile });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// GET /api/schools/:id/stats
+export const getSchoolStats = async (req, res) => {
+  try {
+    const schoolId = Number(req.params.id);
+    if (isNaN(schoolId)) {
+      return res.status(400).json({ success: false, message: 'id must be a number' });
+    }
+
+    const currentWeek = getISOWeek();
+
+    // 1. Fetch records
+    const records = await SchoolConditionRecord.find({ schoolId })
+      .select('weekNumber priorityScore category')
+      .lean();
+
+    const uniqueWeeks = new Set(records.map(r => r.weekNumber));
+    const auditHistory = uniqueWeeks.size;
+
+    // 2. Pending Audits (total week expectations minus weeks submitted)
+    const pendingAudits = Math.max(0, currentWeek - auditHistory);
+
+    // 3. Infrastructure Health (100 - max(priorityScore) of latest categories)
+    const latestByCategory = {};
+    for (const r of records) {
+      if (!latestByCategory[r.category] || r.weekNumber > latestByCategory[r.category].weekNumber) {
+        latestByCategory[r.category] = r;
+      }
+    }
+    const scores = Object.values(latestByCategory).map(r => r.priorityScore || 0);
+    const maxPriority = scores.length > 0 ? Math.max(...scores) : 0;
+    const infraHealth = Math.max(0, 100 - Math.round(maxPriority));
+
+    // 4. Critical Risks
+    const criticalRisksCount = await MaintenanceDecision.countDocuments({
+      schoolId,
+      status: 'pending',
+      'decision.priorityLevel': { $in: ['high', 'urgent'] }
+    });
+
+    res.json({
+      success: true,
+      stats: {
+        infraHealth: `${infraHealth}%`,
+        pendingAudits,
+        criticalRisks: criticalRisksCount,
+        auditHistory
+      }
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
