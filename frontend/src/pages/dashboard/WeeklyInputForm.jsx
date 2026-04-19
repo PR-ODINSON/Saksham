@@ -66,7 +66,7 @@ const CATEGORIES = [
     selectField: {
       key: "toiletFunctionalRatio",
       label: "Toilet Functional Ratio",
-      options: TOILET_OPTIONS.map(o => ({ value: o.value, label: `${t(o.labelKey)} (${o.desc})` })),
+      rawOptions: TOILET_OPTIONS,
       defaultVal: "",
     },
   },
@@ -86,7 +86,7 @@ const CATEGORIES = [
     selectField: {
       key: "powerOutageHours",
       label: "Weekly Power Outage",
-      options: POWER_OPTIONS.map(o => ({ value: o.value, label: `${t(o.labelKey)} (${o.desc})` })),
+      rawOptions: POWER_OPTIONS,
       defaultVal: "",
     },
   },
@@ -108,7 +108,7 @@ const CATEGORIES = [
     selectField: {
       key: "crackWidthMM",
       label: "Crack Width Analysis",
-      options: CRACK_OPTIONS.map(o => ({ value: o.value, label: `${t(o.labelKey)} (${o.desc})` })),
+      rawOptions: CRACK_OPTIONS,
       defaultVal: "",
     },
   },
@@ -612,7 +612,10 @@ export default function WeeklyInputForm() {
                       {/* 2. Primary Ratio/Outage Select */}
                       <Select
                         label={activeCat.selectField.label}
-                        options={activeCat.selectField.options}
+                        options={activeCat.selectField.rawOptions.map(o => ({
+                          value: o.value,
+                          label: `${t(o.labelKey)} (${o.desc})`,
+                        }))}
                         value={activeState[activeCat.selectField.key]}
                         onChange={(e) => setField(activeTab, activeCat.selectField.key, e.target.value)}
                       />
