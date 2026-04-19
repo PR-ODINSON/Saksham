@@ -4,7 +4,7 @@
  */
 import express from 'express';
 import { protect, authorize } from '../middlewares/auth.middleware.js';
-import { getWorkOrders, assignTask, completeTask, updateTaskStatus, respondToTask, getWorkOrderDetails } from '../controllers/workorder.controller.js';
+import { getWorkOrders, assignTask, completeTask, updateTaskStatus, respondToTask, getWorkOrderDetails, getRepairLogByTask } from '../controllers/workorder.controller.js';
 import upload from '../config/multer.js';
 
 const router = express.Router();
@@ -16,20 +16,19 @@ router.get('/', protect, getWorkOrders);
 router.post('/assign', protect, authorize('deo', 'bmo', 'admin'), assignTask);
 
 // POST /api/tasks/complete — mark task complete, upload photo proof.
-// File field name 'photo' matches the contractor CompletionModal multipart key.
-// Legacy field 'completionImage' is also accepted for backwards compatibility.
+// Accepts the canonical multipart field 'photo' from the contractor
+// CompletionModal and the legacy field 'completionImage', normalising
+// whichever was sent into req.file so the controller stays agnostic.
 router.post(
   '/complete',
   protect,
   (req, res, next) => {
-    // Try the canonical 'photo' first; fall back to legacy 'completionImage'.
     upload.fields([
       { name: 'photo',           maxCount: 1 },
       { name: 'completionImage', maxCount: 1 },
     ])(req, res, (err) => {
       if (err) return next(err);
-      // Normalise to req.file for the controller (it already handles req.file).
-      if (req.files?.photo?.[0])           req.file = req.files.photo[0];
+      if (req.files?.photo?.[0])                req.file = req.files.photo[0];
       else if (req.files?.completionImage?.[0]) req.file = req.files.completionImage[0];
       next();
     });
@@ -46,5 +45,8 @@ router.patch('/:id/respond', protect, authorize('contractor', 'deo', 'admin'), r
 // GET /api/tasks/:id/details — full work-order context: school, condition record,
 // LR analysis, peon-uploaded photos and a human-readable issues list.
 router.get('/:id/details', protect, getWorkOrderDetails);
+
+// GET /api/tasks/:id/feedback — retrieve feedback for a task
+router.get('/:id/feedback', protect, getRepairLogByTask);
 
 export default router;
