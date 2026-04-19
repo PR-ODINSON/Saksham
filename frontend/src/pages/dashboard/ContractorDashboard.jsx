@@ -78,9 +78,9 @@ function TaskCard({ order, onOpen }) {
       {/* Header strip with urgency color */}
       <div className={`${u.bg} px-5 py-3 flex items-center justify-between`}>
         <div className="flex items-center gap-2">
-          <span className={`text-[10px] font-black ${u.color} uppercase tracking-widest`}>{u.label}</span>
+          <span className={`text-[10px] font-bold ${u.color} uppercase tracking-widest`}>{u.label}</span>
           <Cpu size={11} className="text-violet-700" />
-          <span className="text-[11px] font-black text-slate-700">{Math.round(order.priorityScore || 0)}/100</span>
+          <span className="text-[11px] font-bold text-slate-700">{Math.round(order.priorityScore || 0)}/100</span>
         </div>
         <Badge variant={dl.variant} size="sm">
           <Clock size={10} className="mr-1" /> {dl.text}
@@ -93,7 +93,7 @@ function TaskCard({ order, onOpen }) {
             <Icon className={cm.color} size={22} strokeWidth={2.5} />
           </div>
           <div className="min-w-0">
-            <h3 className="text-sm font-black uppercase tracking-tight text-slate-900 truncate">
+            <h3 className="text-sm font-bold uppercase tracking-tight text-slate-900 truncate">
               {school.name || `School ${order.schoolId}`}
             </h3>
             <p className="text-[11px] text-slate-500 font-medium truncate">
@@ -105,11 +105,11 @@ function TaskCard({ order, onOpen }) {
 
         <div className="flex items-center justify-between border-t border-slate-100 pt-3">
           <div>
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Category</p>
-            <p className={`text-[12px] font-black uppercase ${cm.color}`}>{order.category}</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Category</p>
+            <p className={`text-[12px] font-bold uppercase ${cm.color}`}>{order.category}</p>
           </div>
           <div className="text-right">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Status</p>
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Status</p>
             <Badge variant={status.variant} size="sm">{status.label}</Badge>
           </div>
           <ChevronRight size={18} className="text-slate-300 ml-2" />
@@ -194,7 +194,7 @@ function TaskDetailDrawer({ taskId, onClose, onChanged, onComplete }) {
                     <Clock size={10} className="mr-1" /> {dl.text}
                   </Badge>
                 </div>
-                <h2 className="text-xl font-black text-slate-900 truncate">
+                <h2 className="text-xl font-bold text-slate-900 truncate">
                   {school?.name || `School ${wo?.schoolId}`}
                 </h2>
                 <p className="text-[12px] font-bold text-slate-600 mt-0.5 uppercase tracking-wide">
@@ -225,11 +225,11 @@ function TaskDetailDrawer({ taskId, onClose, onChanged, onComplete }) {
               <div className={`rounded-lg border ${cm.border} ${cm.bg} p-4 flex items-center gap-3`}>
                 <cm.icon className={cm.color} size={28} strokeWidth={2.5} />
                 <div>
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Category</p>
-                  <p className={`text-lg font-black ${cm.color} uppercase`}>{wo.category}</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Category</p>
+                  <p className={`text-lg font-bold ${cm.color} uppercase`}>{wo.category}</p>
                 </div>
                 <div className="ml-auto text-right">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Reported by Peon</p>
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Reported by Peon</p>
                   <p className="text-[12px] font-bold text-slate-800">
                     Week {rec?.weekNumber ?? "—"} · {rec?.createdAt ? new Date(rec.createdAt).toLocaleDateString() : ""}
                   </p>
@@ -241,7 +241,7 @@ function TaskDetailDrawer({ taskId, onClose, onChanged, onComplete }) {
                 <div className="rounded-lg border-2 border-violet-200 bg-violet-50/30 p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Cpu size={16} className="text-violet-700" />
-                    <h3 className="text-[11px] font-black text-violet-700 uppercase tracking-widest">
+                    <h3 className="text-[11px] font-bold text-violet-700 uppercase tracking-widest">
                       Linear-Regression Risk Analysis
                     </h3>
                   </div>
@@ -263,7 +263,7 @@ function TaskDetailDrawer({ taskId, onClose, onChanged, onComplete }) {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <ListChecks size={16} className="text-slate-600" />
-                  <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-widest">
+                  <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     What the peon reported
                   </h3>
                 </div>
@@ -303,7 +303,7 @@ function TaskDetailDrawer({ taskId, onClose, onChanged, onComplete }) {
               <div>
                 <div className="flex items-center gap-2 mb-3">
                   <Camera size={16} className="text-slate-600" />
-                  <h3 className="text-[11px] font-black text-slate-500 uppercase tracking-widest">
+                  <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">
                     Photos from site ({photos.length})
                   </h3>
                 </div>
@@ -400,8 +400,8 @@ function TaskDetailDrawer({ taskId, onClose, onChanged, onComplete }) {
 function Stat({ label, value, accent = "text-slate-800" }) {
   return (
     <div className="bg-white border border-slate-200 rounded-lg px-3 py-2">
-      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
-      <p className={`text-sm font-black ${accent}`}>{value}</p>
+      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{label}</p>
+      <p className={`text-sm font-bold ${accent}`}>{value}</p>
     </div>
   );
 }
@@ -476,11 +476,11 @@ export default function ContractorDashboard() {
         {user && (
           <Card variant="default" className="bg-white">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-[#003366] text-white flex items-center justify-center text-base font-black">
+              <div className="w-12 h-12 rounded-full bg-[#003366] text-white flex items-center justify-center text-base font-bold">
                 {(user.name || "C")[0].toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-black text-slate-900 truncate">{user.name}</p>
+                <p className="text-sm font-bold text-slate-900 truncate">{user.name}</p>
                 <p className="text-[12px] text-slate-500">
                   {user.district ? `${user.district} District` : "Contractor"}
                   {user.phone && (
@@ -509,7 +509,7 @@ export default function ContractorDashboard() {
               {f.label}
             </Button>
           ))}
-          <span className="ml-auto text-[10px] font-black text-slate-400 uppercase tracking-widest">
+          <span className="ml-auto text-[10px] font-bold text-slate-400 uppercase tracking-widest">
             Sorted by urgency descending
           </span>
         </div>
@@ -518,7 +518,7 @@ export default function ContractorDashboard() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 space-y-4">
             <div className="w-12 h-12 border-4 border-slate-200 border-t-[#0f172a] rounded-full animate-spin" />
-            <p className="text-slate-400 font-black tracking-[0.2em] text-[12px] uppercase animate-pulse">Loading Tasks…</p>
+            <p className="text-slate-400 font-bold tracking-[0.2em] text-[12px] uppercase animate-pulse">Loading Tasks…</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 bg-white rounded border border-slate-200 border-dashed">

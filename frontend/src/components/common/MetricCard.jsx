@@ -31,7 +31,7 @@ const MetricCard = ({
   return (
     <div className={`rounded-xl border p-5 shadow-sm flex flex-col justify-between transition-all hover:shadow-md hover:translate-y-[-2px] ${variants[variant]} ${className}`}>
       <div className="flex items-center justify-between mb-3">
-        <span className="text-[10px] font-black uppercase tracking-[0.15em] opacity-60 leading-none">{label}</span>
+        <span className="text-[10px] font-bold uppercase tracking-[0.15em] opacity-60 leading-none">{label}</span>
         <div className={`p-2 rounded-lg ${variant === 'default' ? 'bg-slate-50' : 'bg-white/50'}`}>
           {Icon && <Icon size={18} className={iconColors[variant]} />}
         </div>
@@ -39,7 +39,7 @@ const MetricCard = ({
       <div>
         <div className="text-3xl font-bold tracking-tight tabular-nums whitespace-nowrap text-[#003366]">{value}</div>
         {trend && (
-          <div className={`text-[10px] font-black uppercase tracking-wider mt-2 flex items-center gap-1.5 ${
+          <div className={`text-[10px] font-bold uppercase tracking-wider mt-2 flex items-center gap-1.5 ${
             trend === 'up' ? 'text-emerald-700' : trend === 'down' ? 'text-red-700' : 'text-slate-500'
           }`}>
              <div className={`px-1.5 py-0.5 rounded ${

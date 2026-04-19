@@ -47,7 +47,7 @@ export default function ApprovalQueue({ schoolId, className }) {
                 </div>
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-black uppercase tracking-widest text-slate-900">{d.category} Repair</span>
+                    <span className="text-sm font-bold uppercase tracking-widest text-slate-900">{d.category} Repair</span>
                     <Badge variant={d.decision.priorityLevel === 'urgent' ? 'critical' : 'high'} size="sm">
                       {d.decision.priorityLevel}
                     </Badge>

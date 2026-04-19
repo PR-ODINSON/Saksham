@@ -98,7 +98,7 @@ export default function AuditLogView() {
       <Card className="px-6 py-3 border-slate-200 shadow-sm">
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('alv.actor_role')}</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('alv.actor_role')}</label>
             <div className="relative">
               <select
                 value={filters.role}
@@ -117,7 +117,7 @@ export default function AuditLogView() {
           </div>
 
           <div className="flex flex-col gap-1 flex-[2] min-w-[200px]">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('alv.action_sig')}</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('alv.action_sig')}</label>
             <input
               type="text"
               value={filters.action}
@@ -128,7 +128,7 @@ export default function AuditLogView() {
           </div>
 
           <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('alv.window_start')}</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('alv.window_start')}</label>
             <input
               type="date"
               value={filters.startDate}
@@ -138,7 +138,7 @@ export default function AuditLogView() {
           </div>
 
           <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('alv.window_end')}</label>
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('alv.window_end')}</label>
             <input
               type="date"
               value={filters.endDate}
@@ -147,7 +147,7 @@ export default function AuditLogView() {
             />
           </div>
 
-          <Button variant="primary" className="text-[11px] h-[36px] font-black uppercase tracking-widest px-8 shadow-md hover:translate-y-[-1px] transition-all active:translate-y-[0px]" onClick={handleApply}>
+          <Button variant="primary" className="text-[11px] h-[36px] font-bold uppercase tracking-widest px-8 shadow-md hover:translate-y-[-1px] transition-all active:translate-y-[0px]" onClick={handleApply}>
             {t('alv.apply_filters')}
           </Button>
         </div>
@@ -158,12 +158,12 @@ export default function AuditLogView() {
           <table className="w-full text-left border-collapse min-w-[900px]">
             <thead>
               <tr className="bg-slate-50/80 border-b border-slate-200">
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('alv.th_timestamp')}</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('alv.th_actor')}</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('alv.th_role')}</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('alv.th_action')}</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('alv.th_target')}</th>
-                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] text-right">{t('alv.th_details')}</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">{t('alv.th_timestamp')}</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">{t('alv.th_actor')}</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">{t('alv.th_role')}</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">{t('alv.th_action')}</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">{t('alv.th_target')}</th>
+                <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] text-right">{t('alv.th_details')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -186,7 +186,7 @@ export default function AuditLogView() {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-black text-slate-500 uppercase">
+                          <div className="w-7 h-7 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500 uppercase">
                             {(log.actorName || 'U')[0]}
                           </div>
                           <p className="text-[12px] font-bold text-slate-700">{log.actorName || t('alv.unknown_actor')}</p>
@@ -212,7 +212,7 @@ export default function AuditLogView() {
                       <td className="px-6 py-4 text-right">
                         <button
                           onClick={() => setExpandedId(isExpanded ? null : log._id)}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-widest transition-all ${
                             isExpanded ? 'bg-slate-900 text-white shadow-md' : 'text-slate-400 hover:text-slate-900 hover:bg-slate-100'
                           }`}
                         >
@@ -243,7 +243,7 @@ export default function AuditLogView() {
         </div>
         {pages > 1 && (
           <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/30 flex items-center justify-between">
-            <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
+            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
               {t('alv.registry_page')} {page} <span className="text-slate-300">/</span> {pages} <span className="ml-2 text-slate-500">({total} {t('alv.events')})</span>
             </span>
             <div className="flex gap-2">

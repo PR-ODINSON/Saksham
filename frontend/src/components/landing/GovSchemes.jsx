@@ -75,10 +75,10 @@ function GovSchemes() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
             </span>
-            <span className="text-blue-400 text-[12px] font-black uppercase tracking-[0.2em]">{t('gs.live_intelligence')}</span>
+            <span className="text-blue-400 text-[12px] font-bold uppercase tracking-[0.2em]">{t('gs.live_intelligence')}</span>
           </div>
         </div>
-        <h2 className="text-4xl md:text-5xl font-[900] text-white tracking-tighter uppercase leading-[1]">
+        <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tighter uppercase leading-[1]">
           {t('gs.engine')} <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-300 italic">{t('gs.capabilities')}</span>
         </h2>
       </div>
@@ -98,7 +98,7 @@ function GovSchemes() {
                 <item.icon size={32} strokeWidth={2.5} />
               </div>
               <div className="flex flex-col text-left">
-                <h4 className="text-white font-[900] text-xl leading-tight uppercase tracking-tight mb-2">
+                <h4 className="text-white font-bold text-xl leading-tight uppercase tracking-tight mb-2">
                   {t(item.titleKey)}
                 </h4>
                 <p className="text-slate-400 text-sm font-bold whitespace-normal max-w-[250px] leading-relaxed">

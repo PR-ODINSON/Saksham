@@ -55,7 +55,7 @@ function CategoryRow({ rec, t }) {
           <Icon size={18} />
         </div>
         <div>
-          <p className="text-sm font-black uppercase tracking-tight text-slate-800">
+          <p className="text-sm font-bold uppercase tracking-tight text-slate-800">
             {rec.category}
           </p>
           <p className="text-[11px] text-slate-500 font-medium">
@@ -67,15 +67,15 @@ function CategoryRow({ rec, t }) {
 
       <div className="flex flex-wrap items-center gap-3 text-right">
         <div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('clv.lr_urgency')}</p>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('clv.lr_urgency')}</p>
           <div className="flex items-center gap-2 justify-end">
             <span className={`w-1.5 h-1.5 rounded-full ${u.dot}`} />
-            <span className={`text-sm font-black ${u.color}`}>{Math.round(urgency)}/100</span>
+            <span className={`text-sm font-bold ${u.color}`}>{Math.round(urgency)}/100</span>
           </div>
         </div>
         <div>
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('clv.days_to_failure')}</p>
-          <span className="text-sm font-black text-slate-800">{dtf != null ? `${dtf}d` : "—"}</span>
+          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('clv.days_to_failure')}</p>
+          <span className="text-sm font-bold text-slate-800">{dtf != null ? `${dtf}d` : "—"}</span>
         </div>
         <Badge variant={level === "critical" ? "critical" : level === "high" ? "high" : level === "medium" ? "warning" : "success"} size="sm">
           {u.label}
@@ -97,12 +97,12 @@ function WeeklyBundleCard({ bundle, isPrincipal, isDEO, onForward, onView, onAss
       <div className={`px-5 py-4 flex flex-col lg:flex-row lg:items-center justify-between gap-4 ${u.bg}`}>
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-md bg-white border border-slate-200 flex flex-col items-center justify-center shadow-inner">
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest leading-none">{t('clv.week')}</span>
-            <span className="text-base font-black text-slate-800 leading-none mt-0.5">{bundle.weekNumber}</span>
+            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">{t('clv.week')}</span>
+            <span className="text-base font-bold text-slate-800 leading-none mt-0.5">{bundle.weekNumber}</span>
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-sm font-black uppercase tracking-widest text-slate-800">
+              <span className="text-sm font-bold uppercase tracking-widest text-slate-800">
                 {bundle.schoolName ? `${bundle.schoolName} · ` : ''}{t('clv.weekly_bundle')} ({t('fr.week_abbr')}{bundle.weekNumber})
               </span>
               <Badge variant={bundle.urgencyLabel === "critical" ? "critical" : bundle.urgencyLabel === "high" ? "high" : "default"} size="sm">
@@ -124,8 +124,8 @@ function WeeklyBundleCard({ bundle, isPrincipal, isDEO, onForward, onView, onAss
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="text-right pr-3 border-r border-slate-200">
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('clv.lr_urgency_score')}</p>
-            <p className={`text-2xl font-black ${u.color} leading-none`}>{bundle.maxUrgency}<span className="text-xs opacity-60">/100</span></p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('clv.lr_urgency_score')}</p>
+            <p className={`text-2xl font-bold ${u.color} leading-none`}>{bundle.maxUrgency}<span className="text-xs opacity-60">/100</span></p>
           </div>
 
           <Button variant="outline" size="sm" onClick={() => onView(bundle)}>
@@ -162,7 +162,7 @@ function WeeklyBundleCard({ bundle, isPrincipal, isDEO, onForward, onView, onAss
         <div className="px-5 py-4 bg-white">
           <div className="flex items-center gap-2 mb-2">
             <Cpu size={14} className="text-violet-700" />
-            <span className="text-[11px] font-black text-violet-700 uppercase tracking-widest">
+            <span className="text-[11px] font-bold text-violet-700 uppercase tracking-widest">
               {t('clv.lr_model_output')}
             </span>
           </div>
@@ -250,7 +250,7 @@ export default function ConditionLogView() {
     return (
       <div className="flex flex-col items-center justify-center py-32 space-y-4 font-body">
         <div className="w-12 h-12 border-4 border-slate-200 border-t-[#0f172a] rounded-full animate-spin" />
-        <p className="text-slate-400 font-black tracking-[0.2em] text-[12px] uppercase animate-pulse">{t('clv.loading_reports')}</p>
+        <p className="text-slate-400 font-bold tracking-[0.2em] text-[12px] uppercase animate-pulse">{t('clv.loading_reports')}</p>
       </div>
     );
   }
@@ -358,7 +358,7 @@ export default function ConditionLogView() {
             ))}
           </div>
 
-          <div className="ml-auto text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
+          <div className="ml-auto text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">
             {sorted.length} {t('clv.bundles_sorted')}
           </div>
         </div>

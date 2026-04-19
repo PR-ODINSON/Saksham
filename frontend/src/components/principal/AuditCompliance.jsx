@@ -30,11 +30,11 @@ export default function AuditCompliance({ schoolId, className }) {
         <div className="flex items-center justify-between mb-6 bg-slate-50 p-4 rounded border border-slate-100">
           <div>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1">Overall Compliance</p>
-            <p className="text-2xl font-black text-slate-900">{complianceRate}% <span className="text-xs font-bold text-slate-400 uppercase ml-2">Rating</span></p>
+            <p className="text-2xl font-bold text-slate-900">{complianceRate}% <span className="text-xs font-bold text-slate-400 uppercase ml-2">Rating</span></p>
           </div>
           <div className="text-right">
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-1">Reports Filed</p>
-            <p className="text-2xl font-black text-slate-900">{submittedCount}<span className="text-xs font-bold text-slate-400 uppercase ml-2">/ {stats.length}</span></p>
+            <p className="text-2xl font-bold text-slate-900">{submittedCount}<span className="text-xs font-bold text-slate-400 uppercase ml-2">/ {stats.length}</span></p>
           </div>
         </div>
 
@@ -59,7 +59,7 @@ export default function AuditCompliance({ schoolId, className }) {
            </div>
            <div className="ml-auto flex items-center gap-1.5 text-blue-700">
              <Info size={14} />
-             <span className="text-[10px] font-black uppercase tracking-widest">Target: 1 Report / Week</span>
+             <span className="text-[10px] font-bold uppercase tracking-widest">Target: 1 Report / Week</span>
            </div>
         </div>
       </div>

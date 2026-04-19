@@ -212,7 +212,7 @@ export default function WorkOrders() {
         <div className="absolute bottom-24 left-0 right-0">
           <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-md">
+              <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight drop-shadow-md">
                 {t('wo.title')}
               </h1>
               <p className="mt-2 text-sm font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
@@ -222,7 +222,7 @@ export default function WorkOrders() {
 
             <div className="flex items-center gap-4">
               {canAssign && (
-                <Button onClick={() => setShowNew(true)} variant="secondary" className="font-black uppercase tracking-widest text-[10px] bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md shadow-xl">
+                <Button onClick={() => setShowNew(true)} variant="secondary" className="font-bold uppercase tracking-widest text-[10px] bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md shadow-xl">
                   {t('wo.auth_btn')}
                 </Button>
               )}
@@ -265,7 +265,7 @@ export default function WorkOrders() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 space-y-4">
             <div className="w-12 h-12 border-4 border-slate-200 border-t-[#0f172a] rounded-full animate-spin" />
-            <p className="text-slate-400 font-black tracking-[0.2em] text-[12px] uppercase animate-pulse">{t('wo.loading')}</p>
+            <p className="text-slate-400 font-bold tracking-[0.2em] text-[12px] uppercase animate-pulse">{t('wo.loading')}</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 bg-white rounded border border-slate-200 border-dashed">
@@ -277,13 +277,13 @@ export default function WorkOrders() {
               <table className="w-full text-left border-collapse min-w-[1000px]">
                 <thead>
                   <tr className="bg-slate-50/80 border-b border-slate-200">
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('wo.th.type')}</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('wo.th.location')}</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('wo.th.personnel')}</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('wo.th.deadline')}</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('wo.th.offset')}</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">{t('wo.th.status')}</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em] text-right">{t('wo.th.actions')}</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">{t('wo.th.type')}</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">{t('wo.th.location')}</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">{t('wo.th.personnel')}</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">{t('wo.th.deadline')}</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">{t('wo.th.offset')}</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em]">{t('wo.th.status')}</th>
+                    <th className="px-6 py-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.15em] text-right">{t('wo.th.actions')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -323,7 +323,7 @@ export default function WorkOrders() {
                             <span className={`text-[12px] font-bold ${order.slaBreach ? 'text-red-600' : 'text-slate-700'}`}>
                               {order.dueDate ? new Date(order.dueDate).toLocaleDateString(undefined, { day: '2-digit', month: 'short' }) : t('wo.na')}
                             </span>
-                            {order.slaBreach && <span className="text-[8px] font-black text-red-500 uppercase tracking-widest">{t('wo.breach_badge')}</span>}
+                            {order.slaBreach && <span className="text-[8px] font-bold text-red-500 uppercase tracking-widest">{t('wo.breach_badge')}</span>}
                           </div>
                         </td>
                         <td className="px-6 py-4">

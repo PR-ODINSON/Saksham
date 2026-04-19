@@ -82,13 +82,13 @@ export default function ForwardedReportsPanel({ district, className = "" }) {
                 className={`p-4 rounded-lg border-2 ${u.border} ${u.bg} flex flex-col md:flex-row items-start md:items-center justify-between gap-4`}
               >
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 rounded ${u.dot} text-white flex flex-col items-center justify-center font-black`}>
+                  <div className={`w-10 h-10 rounded ${u.dot} text-white flex flex-col items-center justify-center font-bold`}>
                     <span className="text-[8px] uppercase opacity-70 leading-none">{t('fr.week_abbr')}</span>
                     <span className="text-xs leading-none">{b.weekNumber}</span>
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-black text-slate-800 uppercase tracking-tight">
+                      <span className="text-sm font-bold text-slate-800 uppercase tracking-tight">
                         {b.schoolName}
                       </span>
                       <Badge variant={b.urgencyLabel === "critical" ? "critical" : b.urgencyLabel === "high" ? "high" : "default"} size="sm">
@@ -108,10 +108,10 @@ export default function ForwardedReportsPanel({ district, className = "" }) {
 
                 <div className="flex items-center gap-3">
                   <div className="text-right">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('fr.lr_urgency')}</p>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('fr.lr_urgency')}</p>
                     <div className="flex items-center gap-1 justify-end">
                       <Cpu size={11} className="text-violet-700" />
-                      <span className={`text-lg font-black ${u.color} leading-none`}>
+                      <span className={`text-lg font-bold ${u.color} leading-none`}>
                         {b.maxUrgency}<span className="text-[10px] opacity-50">/100</span>
                       </span>
                     </div>

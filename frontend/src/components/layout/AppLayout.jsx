@@ -76,7 +76,6 @@ export default function AppLayout({ children }) {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [languageOpen, setLanguageOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   const { scrollYProgress } = useScroll();
@@ -105,7 +104,7 @@ export default function AppLayout({ children }) {
 
       {/* 1. Top Utility Bar (Accessibility & Language) - Pinned Static */}
       <div className="gov-top-bar hidden sm:block fixed top-0 left-0 right-0 z-[70] h-8">
-        <div className="max-w-7xl mx-auto px-4 lg:px-8 h-full flex justify-between items-center text-[10px] font-black text-slate-500 uppercase tracking-widest">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 h-full flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase tracking-widest">
           <div className="flex items-center gap-6">
             <a href="#main-content" className="hover:text-blue-700 transition-colors">Skip to main content</a>
             <div className="flex items-center gap-4 border-l border-slate-300 pl-4 h-4">
@@ -161,21 +160,21 @@ export default function AppLayout({ children }) {
                 </div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.2em] text-blue-800 leading-tight">
+                    <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] text-blue-800 leading-tight">
                       Government of India
                     </span>
                     <span className="text-[10px] sm:text-[11px] font-bold text-slate-400">|</span>
                     <span className="text-[10px] sm:text-[11px] font-medium text-slate-600">भारत सरकार</span>
                   </div>
                   <div className="flex items-baseline gap-2 mt-0.5">
-                    <span className="font-black text-2xl sm:text-3xl tracking-tighter text-[#003366] leading-none">
+                    <span className="font-bold text-2xl sm:text-3xl tracking-tighter text-[#003366] leading-none">
                       Saksham
                     </span>
                     <span className="font-bold text-lg sm:text-xl text-slate-400 tracking-tighter">
                       सक्षम
                     </span>
                   </div>
-                  <span className="text-[8px] sm:text-[9px] font-bold text-slate-500 uppercase tracking-[0.15em] mt-1">
+                  <span className="text-[10px] sm:text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em] mt-1">
                     Infrastructure Monitoring System
                   </span>
                 </div>
@@ -184,8 +183,8 @@ export default function AppLayout({ children }) {
               <div className="hidden xl:block h-12 w-px bg-slate-200 mx-2" />
               
               <div className="hidden xl:flex flex-col justify-center">
-                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">District Administration</span>
-                <span className="text-sm font-black text-[#003366] flex items-center gap-2">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">District Administration</span>
+                <span className="text-sm font-bold text-[#003366] flex items-center gap-2">
                    Kutch, Gujarat <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
                 </span>
               </div>
@@ -194,45 +193,14 @@ export default function AppLayout({ children }) {
             {/* Right Side: Role Badge, Language & Profile */}
             <div className="flex items-center gap-3 sm:gap-6">
               <div className="hidden lg:flex flex-col items-end">
-                <span className="text-[9px] font-black uppercase text-slate-400 tracking-[0.2em]">Live Session</span>
+                <span className="text-[9px] font-bold uppercase text-slate-400 tracking-[0.2em]">Live Session</span>
                 <div className="flex items-center gap-2 mt-0.5 px-3 py-1 rounded-md bg-white border border-slate-200 shadow-sm">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-[10px] font-black text-[#003366] uppercase tracking-widest">{t(ROLE_LABELS[role])}</span>
+                  <span className="text-[10px] font-bold text-[#003366] uppercase tracking-widest">{t(ROLE_LABELS[role])}</span>
                 </div>
               </div>
 
-              <div className="relative">
-                <button
-                  onClick={() => setLanguageOpen(!languageOpen)}
-                  className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-full border border-slate-200 hover:border-blue-400 transition-all bg-white"
-                >
-                  <Globe size={14} className="text-[#003366]" />
-                  <span className="text-[10px] sm:text-[11px] font-bold text-[#003366] uppercase">
-                    {language === 'en' ? 'EN' : language === 'hi' ? 'HI' : 'GU'}
-                  </span>
-                  <ChevronDown size={12} className={`text-slate-400 transition-transform ${languageOpen ? 'rotate-180' : ''}`} />
-                </button>
-                
-                <AnimatePresence>
-                  {languageOpen && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setLanguageOpen(false)} />
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="absolute right-0 mt-2 w-32 bg-white border border-slate-200 rounded-lg shadow-xl z-50 overflow-hidden"
-                      >
-                        <div className="flex flex-col">
-                          <button onClick={() => { setLanguage('en'); setLanguageOpen(false); }} className={`px-4 py-3 text-left text-xs font-bold hover:bg-slate-50 ${language === 'en' ? 'text-blue-600 bg-blue-50/50' : 'text-slate-600'}`}>English</button>
-                          <button onClick={() => { setLanguage('hi'); setLanguageOpen(false); }} className={`px-4 py-3 text-left text-xs font-bold hover:bg-slate-50 ${language === 'hi' ? 'text-blue-600 bg-blue-50/50' : 'text-slate-600'}`}>हिन्दी</button>
-                          <button onClick={() => { setLanguage('gu'); setLanguageOpen(false); }} className={`px-4 py-3 text-left text-xs font-bold hover:bg-slate-50 ${language === 'gu' ? 'text-blue-600 bg-blue-50/50' : 'text-slate-600'}`}>ગુજરાતી</button>
-                        </div>
-                      </motion.div>
-                    </>
-                  )}
-                </AnimatePresence>
-              </div>
+
 
               <div className="relative">
                 <button
@@ -288,7 +256,7 @@ export default function AppLayout({ children }) {
         {/* 3. Primary Navigation Bar (Integrated in the fixed header area) */}
         <div className="bg-[#003366] text-white hidden md:block border-t border-white/10 relative">
           <div className="max-w-7xl mx-auto px-4 lg:px-8 flex items-center h-12">
-            <nav className="flex items-center h-full text-[10.5px] font-black uppercase tracking-widest">
+            <nav className="flex items-center h-full text-[10.5px] font-bold uppercase tracking-widest">
               {navItems.map(item => (
                 <Link
                   key={item.path}
@@ -321,7 +289,7 @@ export default function AppLayout({ children }) {
             className="fixed inset-0 z-[100] bg-white flex flex-col p-6 md:hidden"
           >
             <div className="flex justify-between items-center mb-10 pb-4 border-b">
-              <span className="font-black text-xl text-[#003366]">Saksham Menu</span>
+              <span className="font-bold text-xl text-[#003366]">Saksham Menu</span>
               <button onClick={() => setMobileOpen(false)}><X size={28} className="text-slate-400" /></button>
             </div>
             <nav className="flex flex-col gap-2">
@@ -330,7 +298,7 @@ export default function AppLayout({ children }) {
                   key={item.path} 
                   onClick={() => setMobileOpen(false)} 
                   to={item.path} 
-                  className="px-4 py-4 rounded-lg hover:bg-slate-50 text-slate-700 font-black uppercase tracking-widest text-xs flex items-center gap-3"
+                  className="px-4 py-4 rounded-lg hover:bg-slate-50 text-slate-700 font-bold uppercase tracking-widest text-xs flex items-center gap-3"
                 >
                   {item.icon} {t(item.labelKey)}
                 </Link>

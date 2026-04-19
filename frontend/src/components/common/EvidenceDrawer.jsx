@@ -28,7 +28,7 @@ export default function EvidenceDrawer({ isOpen, onClose, schoolName, evidence =
               </div>
 
               <div className="absolute bottom-6 left-6 right-6">
-                <h2 className="text-2xl font-black text-white leading-tight drop-shadow-md">{schoolName}</h2>
+                <h2 className="text-2xl font-bold text-white leading-tight drop-shadow-md">{schoolName}</h2>
                 <p className="mt-1 text-xs text-slate-300 font-bold tracking-widest uppercase">
                   Infrastructure Insights
                 </p>

@@ -244,7 +244,7 @@ export default function ConditionLogView() {
           
           <div className="absolute inset-0 p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="flex flex-col justify-center h-full">
-              <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-md">
+              <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight drop-shadow-md">
                 Inspection Registry
               </h1>
               <p className="mt-1.5 text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
@@ -254,7 +254,7 @@ export default function ConditionLogView() {
             
             <div className="bg-white/10 border border-white/20 backdrop-blur-md px-6 py-3 rounded-xl shadow-xl text-center min-w-[140px] flex flex-col justify-center">
                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest block mb-0.5">Total Records</span>
-               <span className="text-2xl font-black text-white">{reports.length}</span>
+               <span className="text-2xl font-bold text-white">{reports.length}</span>
             </div>
           </div>
         </div>

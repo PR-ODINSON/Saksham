@@ -69,17 +69,17 @@ const MapController = ({ userLocation, activeFilter, setFilter, t }) => {
       <div className="bg-white/95 backdrop-blur-md p-3 rounded-xl border border-slate-200 shadow-xl flex flex-col gap-2 pointer-events-auto">
         <div className="flex items-center gap-2 px-1 pb-2 border-b border-slate-100 mb-1">
           <Filter size={14} className="text-slate-500" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-slate-700">{t('gs.map_filters')}</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-slate-700">{t('gs.map_filters')}</span>
         </div>
         <button 
           onClick={() => setFilter('ALL')}
-          className={`text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-lg border-2 transition-all text-left ${activeFilter === 'ALL' ? 'bg-[#003366] text-white border-[#003366]' : 'bg-slate-50 text-slate-500 border-transparent hover:border-slate-200'}`}
+          className={`text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-lg border-2 transition-all text-left ${activeFilter === 'ALL' ? 'bg-[#003366] text-white border-[#003366]' : 'bg-slate-50 text-slate-500 border-transparent hover:border-slate-200'}`}
         >
           {t('gs.show_all_sites')}
         </button>
         <button 
           onClick={() => setFilter('CRITICAL')}
-          className={`text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-lg border-2 transition-all text-left ${activeFilter === 'CRITICAL' ? 'bg-red-50 text-red-600 border-red-600' : 'bg-slate-50 text-slate-500 border-transparent hover:border-slate-200'}`}
+          className={`text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-lg border-2 transition-all text-left ${activeFilter === 'CRITICAL' ? 'bg-red-50 text-red-600 border-red-600' : 'bg-slate-50 text-slate-500 border-transparent hover:border-slate-200'}`}
         >
           {t('gs.critical_only')}
         </button>
@@ -207,7 +207,7 @@ export default function GeospatialMap() {
   if (!user || (user.role !== 'deo' && user.role !== 'admin')) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 font-body">
-        <p className="text-xl font-black text-[#0f172a]">{t('gs.access_denied')}</p>
+        <p className="text-xl font-bold text-[#0f172a]">{t('gs.access_denied')}</p>
       </div>
     );
   }
@@ -308,18 +308,18 @@ export default function GeospatialMap() {
           {activeRoute && routeDetails && (
             <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[1000] bg-[#003366]/95 backdrop-blur-xl border border-white/20 p-5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-2xl flex items-center gap-8 pointer-events-auto transition-all animate-in slide-in-from-top-4">
               <div className="flex flex-col">
-                <span className="text-[10px] font-black uppercase tracking-widest text-blue-300 mb-0.5">{t('gs.nav_target')}</span>
-                <span className="text-base font-black text-white uppercase tracking-tight">{activeRoute.destinationName}</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-blue-300 mb-0.5">{t('gs.nav_target')}</span>
+                <span className="text-base font-bold text-white uppercase tracking-tight">{activeRoute.destinationName}</span>
               </div>
               <div className="w-px h-10 bg-white/20"></div>
               <div className="flex flex-col items-center min-w-[80px]">
-                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 mb-0.5">{t('gs.distance')}</span>
-                <span className="text-xl font-black text-white">{routeDetails.distance} <span className="text-xs text-emerald-400">{t('gs.km')}</span></span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400 mb-0.5">{t('gs.distance')}</span>
+                <span className="text-xl font-bold text-white">{routeDetails.distance} <span className="text-xs text-emerald-400">{t('gs.km')}</span></span>
               </div>
               <div className="w-px h-10 bg-white/20"></div>
               <div className="flex flex-col items-center min-w-[80px]">
-                <span className="text-[10px] font-black uppercase tracking-widest text-amber-400 mb-0.5">{t('gs.est_eta')}</span>
-                <span className="text-xl font-black text-white">{routeDetails.duration} <span className="text-xs text-amber-400">{t('gs.min')}</span></span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400 mb-0.5">{t('gs.est_eta')}</span>
+                <span className="text-xl font-bold text-white">{routeDetails.duration} <span className="text-xs text-amber-400">{t('gs.min')}</span></span>
               </div>
               <button 
                 onClick={() => { setActiveRoute(null); setRouteDetails(null); }}
@@ -334,7 +334,7 @@ export default function GeospatialMap() {
           {loading && schools.length === 0 ? (
             <div className="absolute inset-0 bg-slate-50/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
               <div className="w-12 h-12 border-4 border-slate-200 border-t-[#003366] rounded-full animate-spin" />
-              <p className="mt-4 text-[12px] font-black tracking-[0.2em] uppercase text-slate-400">{t('gs.syncing_gps')}</p>
+              <p className="mt-4 text-[12px] font-bold tracking-[0.2em] uppercase text-slate-400">{t('gs.syncing_gps')}</p>
             </div>
           ) : null}
 
@@ -408,14 +408,14 @@ export default function GeospatialMap() {
                             <img src={imageUrl} alt={school.name} className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent" />
                             <div className="absolute bottom-3 left-4 right-4">
-                              <h3 className="text-white font-black text-sm leading-tight drop-shadow-md truncate">{school.name}</h3>
-                              <p className="text-slate-200 text-[10px] font-black uppercase tracking-widest mt-0.5">{school.district} District</p>
+                              <h3 className="text-white font-bold text-sm leading-tight drop-shadow-md truncate">{school.name}</h3>
+                              <p className="text-slate-200 text-[10px] font-bold uppercase tracking-widest mt-0.5">{school.district} District</p>
                             </div>
                           </div>
 
                           <div className="p-4">
                             <div className="flex items-center justify-between gap-4 p-2.5 mb-4 rounded bg-slate-50 border border-slate-100">
-                            <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{t('gs.designation')}</span>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{t('gs.designation')}</span>
                             <Badge variant={level.toLowerCase()} size="sm">
                               {level} {school.priorityScore ? `(${Math.round(school.priorityScore)})` : ''}
                             </Badge>
@@ -425,13 +425,13 @@ export default function GeospatialMap() {
                             <button 
                               onClick={() => fetchRoute(school.location, school.name)}
                               disabled={routingLoading}
-                              className="w-full bg-[#003366] text-white py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-900 transition-colors disabled:opacity-50"
+                              className="w-full bg-[#003366] text-white py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-900 transition-colors disabled:opacity-50"
                             >
                               <Navigation size={12} /> {routingLoading ? t('gs.routing') : t('gs.get_directions')}
                             </button>
                             <button 
                               onClick={() => navigate(`/dashboard/school/${school.schoolId}`)}
-                              className="w-full bg-slate-100 text-[#003366] border border-slate-200 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-200 transition-colors"
+                              className="w-full bg-slate-100 text-[#003366] border border-slate-200 py-2 rounded-lg text-[10px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-slate-200 transition-colors"
                             >
                               <ExternalLink size={12} /> {t('gs.view_profile')}
                             </button>

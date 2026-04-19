@@ -19,30 +19,30 @@ import {
 
 // toilet_functional_ratio : 0.0 – 1.0
 const TOILET_OPTIONS = [
-  { value: 1.0,  labelEn: "All Functional",   desc: "100%",      color: "blue" },
-  { value: 0.75, labelEn: "Mostly Functional",desc: "75%",       color: "blue" },
-  { value: 0.5,  labelEn: "Partially Functional", desc: "50%",   color: "amber"   },
-  { value: 0.25, labelEn: "Few Functional",   desc: "25%",       color: "orange"  },
-  { value: 0,    labelEn: "None Functional",  desc: "0%",        color: "red"     },
+  { value: 1.0,  labelKey: "peon.toilet_1_0",   desc: "100%",      color: "blue" },
+  { value: 0.75, labelKey: "peon.toilet_0_75",  desc: "75%",       color: "blue" },
+  { value: 0.5,  labelKey: "peon.toilet_0_5",   desc: "50%",       color: "amber"   },
+  { value: 0.25, labelKey: "peon.toilet_0_25",  desc: "25%",       color: "orange"  },
+  { value: 0,    labelKey: "peon.toilet_0_0",   desc: "0%",        color: "red"     },
 ];
 
 // power_outage_hours_weekly
 const POWER_OPTIONS = [
-  { value: 0,  labelEn: "No Outage",   desc: "0 hrs/wk",  color: "blue" },
-  { value: 3,  labelEn: "Minimal",     desc: "1–5 hrs",   color: "blue"    },
-  { value: 8,  labelEn: "Notable",     desc: "6–10 hrs",  color: "amber"   },
-  { value: 15, labelEn: "Significant", desc: "11–20 hrs", color: "orange"  },
-  { value: 25, labelEn: "Critical",    desc: "20+ hrs",   color: "red"     },
+  { value: 0,  labelKey: "peon.power_0",   desc: "0 hrs/wk",  color: "blue" },
+  { value: 3,  labelKey: "peon.power_3",   desc: "1–5 hrs",   color: "blue"    },
+  { value: 8,  labelKey: "peon.power_8",   desc: "6–10 hrs",  color: "amber"   },
+  { value: 15, labelKey: "peon.power_15",  desc: "11–20 hrs", color: "orange"  },
+  { value: 25, labelKey: "peon.power_25",  desc: "20+ hrs",   color: "red"     },
 ];
 
 // crack_width_mm
 const CRACK_OPTIONS = [
-  { value: 0,    labelEn: "No Cracks",  desc: "None",      color: "blue" },
-  { value: 0.5,  labelEn: "Hairline",   desc: "< 1 mm",    color: "blue"    },
-  { value: 2,    labelEn: "Minor",      desc: "1–3 mm",    color: "amber"   },
-  { value: 6,    labelEn: "Moderate",   desc: "3–10 mm",   color: "orange"  },
-  { value: 15,   labelEn: "Major",      desc: "10–20 mm",  color: "red"     },
-  { value: 25,   labelEn: "Severe",     desc: "> 20 mm",   color: "red"     },
+  { value: 0,    labelKey: "peon.crack_0",  desc: "None",      color: "blue" },
+  { value: 0.5,  labelKey: "peon.crack_0_5",desc: "< 1 mm",    color: "blue"    },
+  { value: 2,    labelKey: "peon.crack_2",  desc: "1–3 mm",    color: "amber"   },
+  { value: 6,    labelKey: "peon.crack_6",  desc: "3–10 mm",   color: "orange"  },
+  { value: 15,   labelKey: "peon.crack_15", desc: "10–20 mm",  color: "red"     },
+  { value: 25,   labelKey: "peon.crack_25", desc: "> 20 mm",   color: "red"     },
 ];
 
 // ─── Category definitions ─────────────────────────────────────────────────────
@@ -52,21 +52,21 @@ const CATEGORIES = [
     label: "Plumbing",
     icon: <Wrench size={20} strokeWidth={2} />,
     flags: [
-      { key: "waterLeak",        label: "Water Leak",        desc: "Active leakage in pipes" },
-      { key: "brokenTap",        label: "Broken Tap",        desc: "Faucet/Tap non-functional" },
-      { key: "cloggedDrain",     label: "Clogged Drain",     desc: "Water stagnation in sinks" },
-      { key: "tankOverflow",     label: "Tank Overflow",     desc: "Automatic switch failed" },
-      { key: "lowWaterPressure", label: "Low Pressure",      desc: "Barely any water flow" },
-      { key: "wallSeepage",      label: "Wall Seepage",      desc: "Dampness in toilet walls" },
-      { key: "roofLeakFlag",     label: "Roof Drip",         desc: "Water dripping from roof" },
-      { key: "brokenDoor",       label: "Broken Door",       desc: "Toilet door missing/broken" },
-      { key: "pestInfestation",  label: "Pest Issues",       desc: "Signs of rodents/insects" },
-      { key: "issueFlag",        label: "Other Issue",       desc: "Categorized plumbing fault" },
+      { key: "waterLeak",        labelKey: "peon.flag_waterLeak" },
+      { key: "brokenTap",        labelKey: "peon.flag_brokenTap" },
+      { key: "cloggedDrain",     labelKey: "peon.flag_cloggedDrain" },
+      { key: "tankOverflow",     labelKey: "peon.flag_tankOverflow" },
+      { key: "lowWaterPressure", labelKey: "peon.flag_lowWaterPressure" },
+      { key: "wallSeepage",      labelKey: "peon.flag_wallSeepage" },
+      { key: "roofLeakFlag",     labelKey: "peon.flag_roofLeakFlag" },
+      { key: "brokenDoor",       labelKey: "peon.flag_brokenDoor" },
+      { key: "pestInfestation",  labelKey: "peon.flag_pestInfestation" },
+      { key: "issueFlag",        labelKey: "peon.flag_issueFlag" },
     ],
     selectField: {
       key: "toiletFunctionalRatio",
       label: "Toilet Functional Ratio",
-      options: TOILET_OPTIONS.map(o => ({ value: o.value, label: `${o.labelEn} (${o.desc})` })),
+      options: TOILET_OPTIONS.map(o => ({ value: o.value, label: `${t(o.labelKey)} (${o.desc})` })),
       defaultVal: "",
     },
   },
@@ -75,18 +75,18 @@ const CATEGORIES = [
     label: "Electrical",
     icon: <Zap size={20} strokeWidth={2} />,
     flags: [
-      { key: "wiringExposed",    label: "Exposed Wiring",    desc: "Safety hazard: loose wires" },
-      { key: "brokenSwitch",     label: "Broken Switch",     desc: "Electrical board damage" },
-      { key: "burntSocket",      label: "Burnt Socket",      desc: "Signs of short circuit" },
-      { key: "flickeringLights", label: "Flickering",       desc: "Unstable power supply" },
-      { key: "panelDamage",      label: "Panel Damage",      desc: "Main breaker issues" },
-      { key: "highVoltage",      label: "Voltage Surge",     desc: "Equipment risk detected" },
-      { key: "issueFlag",        label: "Other Issue",       desc: "General electrical fault" },
+      { key: "wiringExposed",    labelKey: "peon.flag_wiringExposed" },
+      { key: "brokenSwitch",     labelKey: "peon.flag_brokenSwitch" },
+      { key: "burntSocket",      labelKey: "peon.flag_burntSocket" },
+      { key: "flickeringLights", labelKey: "peon.flag_flickeringLights" },
+      { key: "panelDamage",      labelKey: "peon.flag_panelDamage" },
+      { key: "highVoltage",      labelKey: "peon.flag_highVoltage" },
+      { key: "issueFlag",        labelKey: "peon.flag_issueFlag" },
     ],
     selectField: {
       key: "powerOutageHours",
       label: "Weekly Power Outage",
-      options: POWER_OPTIONS.map(o => ({ value: o.value, label: `${o.labelEn} (${o.desc})` })),
+      options: POWER_OPTIONS.map(o => ({ value: o.value, label: `${t(o.labelKey)} (${o.desc})` })),
       defaultVal: "",
     },
   },
@@ -95,20 +95,20 @@ const CATEGORIES = [
     label: "Structural",
     icon: <Building size={20} strokeWidth={2} />,
     flags: [
-      { key: "roofLeakFlag",     label: "Roof Damage",       desc: "Structural roof cracks" },
-      { key: "wallSeepage",      label: "Wall Dampness",      desc: "Ground water absorption" },
-      { key: "brokenWindow",     label: "Broken Window",     desc: "Glass/Frame damage" },
-      { key: "brokenDoor",       label: "Door Damage",       desc: "Classroom door issues" },
-      { key: "pestInfestation",  label: "Termite Issues",    desc: "Structural wood damage" },
-      { key: "paintPeeling",     label: "Paint Peeling",     desc: "Aesthetic/Moisture issue" },
-      { key: "floorDamage",      label: "Floor Cracks",      desc: "Safety hazard: floor holes" },
-      { key: "ceilingHole",      label: "Ceiling Hole",      desc: "Debris falling risk" },
-      { key: "issueFlag",        label: "Other Issue",       desc: "Unspecified structural risk" },
+      { key: "roofLeakFlag",     labelKey: "peon.flag_roofLeakFlag" },
+      { key: "wallSeepage",      labelKey: "peon.flag_wallSeepage" },
+      { key: "brokenWindow",     labelKey: "peon.flag_brokenWindow" },
+      { key: "brokenDoor",       labelKey: "peon.flag_brokenDoor" },
+      { key: "pestInfestation",  labelKey: "peon.flag_pestInfestation" },
+      { key: "paintPeeling",     labelKey: "peon.flag_paintPeeling" },
+      { key: "floorDamage",      labelKey: "peon.flag_floorDamage" },
+      { key: "ceilingHole",      labelKey: "peon.flag_ceilingHole" },
+      { key: "issueFlag",        labelKey: "peon.flag_issueFlag" },
     ],
     selectField: {
       key: "crackWidthMM",
       label: "Crack Width Analysis",
-      options: CRACK_OPTIONS.map(o => ({ value: o.value, label: `${o.labelEn} (${o.desc})` })),
+      options: CRACK_OPTIONS.map(o => ({ value: o.value, label: `${t(o.labelKey)} (${o.desc})` })),
       defaultVal: "",
     },
   },
@@ -116,11 +116,11 @@ const CATEGORIES = [
 
 // condition_score 1–5 (1 = best, 5 = worst) — mirrors CSV labels
 const CONDITION_LEVELS = [
-  { score: 1, label: "Excellent", color: "blue" },
-  { score: 2, label: "Good",      color: "blue"    },
-  { score: 3, label: "Fair",      color: "amber"   },
-  { score: 4, label: "Poor",      color: "orange"  },
-  { score: 5, label: "Critical",  color: "red"     },
+  { score: 1, labelKey: "peon.score_1", color: "blue" },
+  { score: 2, labelKey: "peon.score_2", color: "blue" },
+  { score: 3, labelKey: "peon.score_3", color: "amber" },
+  { score: 4, labelKey: "peon.score_4", color: "orange" },
+  { score: 5, labelKey: "peon.score_5", color: "red" },
 ];
 
 const COLOR_MAP = {
@@ -274,7 +274,7 @@ function PhotoUpload({ file, onChange, t }) {
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function WeeklyInputForm() {
   const { user } = useAuth();
-  const { t, language, setLanguage } = useLanguage();
+  const { t } = useLanguage();
 
   const [school,     setSchool]     = useState(null);
   const weekNumber = getISOWeek();  // auto-filled, not editable by peon
@@ -421,25 +421,25 @@ export default function WeeklyInputForm() {
           
           <div className="flex justify-between items-start mb-8 border-b-2 border-slate-100 pb-6">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-800 mb-1">Government of Gujarat</p>
-              <h1 className="text-2xl font-extrabold text-[#003366] tracking-tighter">Acknowledgement Receipt</h1>
-              <p className="text-xs font-bold text-slate-500 uppercase mt-1">Infrastructure Condition Audit · Saksham Portal</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-blue-800 mb-1">Government of Gujarat</p>
+              <h1 className="text-2xl font-bold text-[#003366] tracking-tighter">Acknowledgement Receipt</h1>
+              <p className="text-sm font-bold text-slate-500 uppercase mt-1">Infrastructure Condition Audit · Saksham Portal</p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] font-black uppercase text-slate-400">Reference Number</p>
-              <p className="text-sm font-black text-[#003366]">SAK-{weekNumber}-{String(schoolId).slice(-6).toUpperCase()}</p>
-              <p className="text-[10px] font-bold text-slate-500 mt-1">{new Date().toLocaleString()}</p>
+              <p className="text-[11px] font-bold uppercase text-slate-400">Reference Number</p>
+              <p className="text-sm font-bold text-[#003366]">SAK-{weekNumber}-{String(schoolId).slice(-6).toUpperCase()}</p>
+              <p className="text-xs font-bold text-slate-500 mt-1">{new Date().toLocaleString()}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-8 mb-8">
             <div>
-              <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Entity Information</p>
+              <p className="text-[10px] font-bold uppercase text-slate-400 mb-1">Entity Information</p>
               <p className="text-sm font-bold text-slate-900">{school?.name}</p>
               <p className="text-xs font-medium text-slate-600">{school?.district}, {school?.block}</p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] font-black uppercase text-slate-400 mb-1">Reported By</p>
+              <p className="text-[10px] font-bold uppercase text-slate-400 mb-1">Reported By</p>
               <p className="text-sm font-bold text-slate-900">{user?.name}</p>
               <p className="text-xs font-medium text-slate-600">{ROLE_LABELS[user?.role]}</p>
             </div>
@@ -465,7 +465,7 @@ export default function WeeklyInputForm() {
                         </div>
                      </td>
                      <td className="px-4 py-3 text-center">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${r.success ? "text-emerald-700 bg-emerald-50 border border-emerald-100" : "text-red-700 bg-red-50 border border-red-100"}`}>
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${r.success ? "text-emerald-700 bg-emerald-50 border border-emerald-100" : "text-red-700 bg-red-50 border border-red-100"}`}>
                           {r.success ? "Recorded" : "Failed"}
                         </span>
                      </td>
@@ -483,8 +483,8 @@ export default function WeeklyInputForm() {
           </div>
 
           <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-md">
-            <p className="text-[10px] font-bold text-blue-800 leading-relaxed">
-              <span className="font-black uppercase mr-2 text-blue-900">Official Note:</span>
+            <p className="text-xs font-bold text-blue-800 leading-relaxed">
+              <span className="font-bold uppercase mr-2 text-blue-900">Official Note:</span>
               This is a computer-generated acknowledgement. All data submitted is subject to verification by the District Education Office (DEO). Please maintain a digital copy for your records.
             </p>
           </div>
@@ -521,40 +521,23 @@ export default function WeeklyInputForm() {
       <div className="bg-white border border-slate-200 rounded-lg shadow-sm">
         <div className="bg-[#003366] px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-t-lg">
           <div>
-            <h1 className="text-lg font-extrabold text-white tracking-tight flex items-center gap-3">
+            <h1 className="text-lg font-bold text-white tracking-tight flex items-center gap-3">
               <Wrench size={20} className="text-blue-300" />
               {t('peon.title')}
             </h1>
-            <p className="text-blue-200 text-[11px] font-bold uppercase tracking-wider mt-0.5">
+            <p className="text-blue-200 text-xs font-bold uppercase tracking-wider mt-0.5">
               {t('peon.ref')}: {school?.district} / {school?.block} / {t('peon.week')} {weekNumber}
             </p>
           </div>
 
-          {/* Language Switcher */}
-          <div className="flex items-center gap-2 px-2 py-1 bg-[#002244] border border-[#004080] rounded-md shadow-inner">
-            <button 
-              type="button"
-              onClick={() => setLanguage('en')}
-              className={`text-[10px] font-black px-2 py-1 rounded transition-colors ${language === 'en' ? 'bg-white text-[#003366]' : 'text-blue-300 hover:bg-[#003366]'}`}
-            >EN</button>
-            <button 
-              type="button"
-              onClick={() => setLanguage('hi')}
-              className={`text-[10px] font-black px-2 py-1 rounded transition-colors ${language === 'hi' ? 'bg-white text-[#003366]' : 'text-blue-300 hover:bg-[#003366]'}`}
-            >HI</button>
-            <button 
-              type="button"
-              onClick={() => setLanguage('gu')}
-              className={`text-[10px] font-black px-2 py-1 rounded transition-colors ${language === 'gu' ? 'bg-white text-[#003366]' : 'text-blue-300 hover:bg-[#003366]'}`}
-            >GU</button>
-          </div>
+
         </div>
 
         <div className="p-6 md:p-8">
           <div className="mb-8 flex items-start gap-4 p-4 bg-amber-50 border-l-4 border-amber-500 rounded-r-md">
             <ShieldAlert className="text-amber-500 shrink-0 mt-0.5" size={18} />
             <div>
-              <p className="text-xs font-black text-amber-900 uppercase mb-0.5">{t('peon.instruction_title')}</p>
+              <p className="text-xs font-bold text-amber-900 uppercase mb-0.5">{t('peon.instruction_title')}</p>
               <p className="text-xs font-medium text-amber-800 leading-relaxed">
                 {t('peon.instruction_desc')}
               </p>
@@ -569,7 +552,7 @@ export default function WeeklyInputForm() {
                   key={cat.id}
                   type="button"
                   onClick={() => setActiveTab(cat.id)}
-                  className={`flex items-center justify-center gap-2 py-3 px-4 rounded-md text-xs font-black uppercase tracking-widest transition-all ${
+                  className={`flex items-center justify-center gap-2 py-3 px-4 rounded-md text-xs font-bold uppercase tracking-widest transition-all ${
                     activeTab === cat.id
                       ? "bg-white text-[#003366] shadow-md border border-slate-200"
                       : "text-slate-500 hover:bg-slate-200/50"
@@ -590,7 +573,7 @@ export default function WeeklyInputForm() {
                     <div className="w-8 h-8 rounded bg-blue-50 flex items-center justify-center text-[#003366]">
                        {activeCat.icon}
                     </div>
-                    <h2 className="text-sm font-black uppercase tracking-widest text-slate-800">
+                    <h2 className="text-sm font-bold uppercase tracking-widest text-slate-800">
                       I. {t(`peon.cat_${activeCat.id}`)} {t('peon.unit_assessment')}
                     </h2>
                   </div>
@@ -599,12 +582,12 @@ export default function WeeklyInputForm() {
                     <div className="space-y-6">
                        {/* 1. Condition Score */}
                        <div className="space-y-4">
-                          <label className="text-[11px] font-black text-slate-500 uppercase flex items-center gap-2">
+                          <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
                             <span>{t('peon.condition_state')}</span>
-                            <span className="text-[9px] font-bold text-white bg-slate-400 px-1.5 py-0.5 rounded">{t('peon.required')}</span>
+                            <span className="text-[10px] font-bold text-white bg-slate-400 px-2 py-0.5 rounded">{t('peon.required')}</span>
                           </label>
                           <div className="grid grid-cols-5 gap-2">
-                            {CONDITION_LEVELS.map(({ score, label, color }) => {
+                            {CONDITION_LEVELS.map(({ score, labelKey, color }) => {
                               const c = COLOR_MAP[color];
                               const isSelected = activeState.conditionScore === score;
                               return (
@@ -612,14 +595,14 @@ export default function WeeklyInputForm() {
                                   key={score}
                                   type="button"
                                   onClick={() => setField(activeTab, "conditionScore", score)}
-                                  className={`py-3 rounded border transition-all text-center flex flex-col items-center justify-center gap-1 ${
+                                  className={`py-4 rounded border transition-all text-center flex flex-col items-center justify-center gap-1.5 ${
                                     isSelected
                                       ? `bg-[#003366] border-[#003366] text-white shadow-lg scale-105`
-                                      : "bg-white border-slate-200 text-slate-600 hover:border-blue-400"
+                                      : "bg-white border-slate-200 text-slate-600 hover:border-blue-400 hover:bg-slate-50"
                                   }`}
                                 >
-                                  <span className="text-sm font-black">{score}</span>
-                                  <span className="text-[9px] font-bold uppercase">{label}</span>
+                                  <span className="text-xl font-bold">{score}</span>
+                                  <span className="text-xs font-bold uppercase tracking-tight">{t(labelKey)}</span>
                                 </button>
                               );
                             })}
@@ -638,7 +621,7 @@ export default function WeeklyInputForm() {
                       <MultiSelect
                         label={t('peon.deficiency_list')}
                         placeholder={t('peon.observe')}
-                        options={activeCat.flags.map(f => ({ value: f.key, label: f.label, desc: f.desc }))}
+                        options={activeCat.flags.map(f => ({ value: f.key, label: t(f.labelKey) }))}
                         selectedValues={activeCat.flags.filter(f => activeState[f.key]).map(f => f.key)}
                         onChange={(newKeys) => {
                           const updatedCatState = { ...activeState };
@@ -665,7 +648,7 @@ export default function WeeklyInputForm() {
                         size="lg" 
                         disabled={submitting}
                         isLoading={submitting}
-                        className="w-full bg-[#003366] hover:bg-blue-900 text-white font-black uppercase tracking-widest text-[10px] h-12 shadow-sm"
+                        className="w-full bg-[#003366] hover:bg-blue-900 text-white font-bold uppercase tracking-widest text-[10px] h-12 shadow-sm"
                       >
                         {t('peon.submit_report')}
                       </Button>

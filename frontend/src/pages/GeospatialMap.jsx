@@ -22,7 +22,7 @@ const getMarkerColor = (score) => {
 // Component: Legend for better UX
 const MapLegend = () => (
   <div className="absolute bottom-6 left-6 z-[1000] bg-white p-3 rounded-xl border-2 border-[#0f172a] shadow-[4px_4px_0_#0f172a] w-48">
-    <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Risk Legend</div>
+    <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">Risk Legend</div>
     {[
       { label: 'Critical', color: '#ef4444' },
       { label: 'High', color: '#f97316' },
@@ -44,7 +44,7 @@ const MapController = ({ userLocation, activeFilter, setFilter }) => {
     <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-3">
        {/* Filters */}
        <div className="bg-white p-2 rounded-xl border-2 border-[#0f172a] shadow-[4px_4px_0_#0f172a] flex flex-col gap-2">
-        <div className="px-2 pt-1 flex items-center gap-2"><Filter size={12} /> <span className="text-[9px] font-black uppercase">Filters</span></div>
+        <div className="px-2 pt-1 flex items-center gap-2"><Filter size={12} /> <span className="text-[9px] font-bold uppercase">Filters</span></div>
         <button onClick={() => setFilter('ALL')} className={`px-4 py-2 text-[10px] font-bold rounded-lg border-2 ${activeFilter === 'ALL' ? 'bg-[#0f172a] text-white' : 'bg-slate-50'}`}>All</button>
         <button onClick={() => setFilter('CRITICAL')} className={`px-4 py-2 text-[10px] font-bold rounded-lg border-2 ${activeFilter === 'CRITICAL' ? 'bg-red-500 text-white' : 'bg-red-50 text-red-600'}`}>Critical Only</button>
       </div>
@@ -90,7 +90,7 @@ export default function GeospatialMap() {
 
       {/* Header Info */}
       <div className="absolute top-4 left-4 z-[1000] bg-white/90 backdrop-blur border-2 border-[#0f172a] p-3 rounded-xl shadow-[4px_4px_0_#0f172a]">
-        <h1 className="text-sm font-black uppercase tracking-tighter">School Infrastructure Map</h1>
+        <h1 className="text-sm font-bold uppercase tracking-tighter">School Infrastructure Map</h1>
         <p className="text-[9px] font-bold text-slate-500 uppercase">{filteredSchools.length} nodes active</p>
       </div>
 
@@ -109,14 +109,14 @@ export default function GeospatialMap() {
              >
                <Popup>
                  <div className="p-2 w-48">
-                   <h3 className="font-black text-xs uppercase mb-1">{school.name}</h3>
+                   <h3 className="font-bold text-xs uppercase mb-1">{school.name}</h3>
                    <div className="flex gap-2 items-center mb-2">
                      <span className="text-[9px] bg-slate-100 px-1 rounded font-bold">Score: {Math.round(school.priorityScore || 0)}</span>
                    </div>
                    <a 
                     href={`https://www.google.com/maps/dir/?api=1&destination=${school.location.lat},${school.location.lng}`}
                     target="_blank" rel="noopener noreferrer"
-                    className="block w-full text-center bg-[#0f172a] text-white text-[10px] font-black uppercase py-1.5 rounded"
+                    className="block w-full text-center bg-[#0f172a] text-white text-[10px] font-bold uppercase py-1.5 rounded"
                    >
                      Directions
                    </a>

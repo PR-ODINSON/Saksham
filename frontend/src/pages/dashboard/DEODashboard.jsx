@@ -130,7 +130,7 @@ export default function DEODashboard() {
         <div className="absolute bottom-24 left-0 right-0">
           <div className="max-w-7xl mx-auto px-4 sm:px-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-md">
+              <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight drop-shadow-md">
                 {t('deo.title')}
               </h1>
               <p className="mt-2 text-sm font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
@@ -142,7 +142,7 @@ export default function DEODashboard() {
               <Button 
                 onClick={() => navigate(roleSubPath(user?.role, "work-orders"))}
                 variant="secondary"
-                className="font-black uppercase tracking-widest text-[10px] bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md shadow-xl"
+                className="font-bold uppercase tracking-widest text-[10px] bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-md shadow-xl"
               >
                 {t('deo.all_work_orders')}
               </Button>
@@ -234,13 +234,13 @@ export default function DEODashboard() {
                           
                           {/* Badges on Image */}
                           <div className="absolute top-3 left-3 flex gap-2">
-                            <span className="bg-red-500/90 backdrop-blur-sm text-white px-2.5 py-1 rounded text-[10px] font-black uppercase tracking-widest shadow-sm">
+                            <span className="bg-red-500/90 backdrop-blur-sm text-white px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-widest shadow-sm">
                               {t('deo.score')}: {s.priorityScore}
                             </span>
                           </div>
                           
                           <div className="absolute bottom-3 left-4 right-4">
-                            <h3 className="text-white font-black text-lg leading-tight truncate drop-shadow-md">{s.schoolName}</h3>
+                            <h3 className="text-white font-bold text-lg leading-tight truncate drop-shadow-md">{s.schoolName}</h3>
                             <p className="text-slate-200 text-xs font-semibold uppercase tracking-widest mt-0.5">{s.block}, {s.district}</p>
                           </div>
                         </div>
@@ -255,8 +255,8 @@ export default function DEODashboard() {
 
                           <div className="mt-auto space-y-2 mb-4">
                             <div className="flex justify-between items-end">
-                              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t('deo.failure_horizon')}</span>
-                              <span className="text-sm font-black text-slate-800">{s.daysToFailure} {t('deo.days')}</span>
+                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{t('deo.failure_horizon')}</span>
+                              <span className="text-sm font-bold text-slate-800">{s.daysToFailure} {t('deo.days')}</span>
                             </div>
                             <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
                               <motion.div 
@@ -269,8 +269,8 @@ export default function DEODashboard() {
 
                           <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                             <div className="flex flex-col">
-                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{t('deo.student_impact')}</span>
-                              <span className="text-sm font-black text-slate-800">{s.studentImpactScore} <span className="text-slate-400">{t('deo.pts')}</span></span>
+                              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t('deo.student_impact')}</span>
+                              <span className="text-sm font-bold text-slate-800">{s.studentImpactScore} <span className="text-slate-400">{t('deo.pts')}</span></span>
                             </div>
                             <Button 
                               variant="primary" 

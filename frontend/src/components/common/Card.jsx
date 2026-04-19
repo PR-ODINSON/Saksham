@@ -30,7 +30,7 @@ const Card = ({
         }`}>
           <div>
             {title && (
-              <h3 className={`text-sm font-black uppercase tracking-widest ${
+              <h3 className={`text-sm font-bold uppercase tracking-widest ${
                 variant === 'gov' ? 'text-white' : 'text-slate-900'
               }`}>
                 {title}

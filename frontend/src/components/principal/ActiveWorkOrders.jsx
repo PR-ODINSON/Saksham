@@ -36,7 +36,7 @@ export default function ActiveWorkOrders({ schoolId, className }) {
               <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-100">
                 <div className="flex items-center gap-2">
                   <div className={`w-2 h-2 rounded-full animate-pulse ${o.status === 'in_progress' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-                  <span className="text-xs font-black uppercase tracking-widest text-slate-800">{o.category} REPAIR</span>
+                  <span className="text-xs font-bold uppercase tracking-widest text-slate-800">{o.category} REPAIR</span>
                 </div>
                 <Badge variant={o.status === 'in_progress' ? 'success' : 'info'} size="sm">
                   {o.status.replace('_', ' ')}

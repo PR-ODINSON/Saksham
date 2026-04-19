@@ -107,15 +107,15 @@ export default function WeeklyBundleQuickSend({ schoolId, className = "" }) {
         <div className="p-4 rounded-lg border-2 border-slate-200 bg-slate-50/50">
           <div className="flex items-start justify-between mb-3">
             <div>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Reporting Period</p>
-              <p className="text-base font-black text-slate-900">Week {target.weekNumber}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reporting Period</p>
+              <p className="text-base font-bold text-slate-900">Week {target.weekNumber}</p>
               <p className="text-[11px] text-slate-500 font-medium mt-0.5">
                 {target.categories.length} categories · Worst: {target.worstCategory}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">LR Urgency</p>
-              <p className="text-2xl font-black text-slate-900 leading-none">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">LR Urgency</p>
+              <p className="text-2xl font-bold text-slate-900 leading-none">
                 {target.maxUrgency}<span className="text-xs opacity-50">/100</span>
               </p>
               <Badge variant={URGENCY_BADGE[target.urgencyLabel] || "default"} size="sm" className="mt-1">
@@ -142,7 +142,7 @@ export default function WeeklyBundleQuickSend({ schoolId, className = "" }) {
           </Button>
 
           {target.forwarded ? (
-            <div className="flex items-center justify-center gap-2 px-3 py-2.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-black uppercase tracking-widest">
+            <div className="flex items-center justify-center gap-2 px-3 py-2.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold uppercase tracking-widest">
               <CheckCircle2 size={14} /> Sent to DEO
             </div>
           ) : (

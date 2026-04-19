@@ -8,4 +8,23 @@
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
+
+  /* Custom Professional Dark Blue Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(100, 116, 139, 0.7);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #003366;
+    border-radius: 10px;
+    opacity: 0.8;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #002244;
+  }
 }

@@ -120,7 +120,7 @@ export default function SchoolView() {
     return (
       <div className="flex flex-col items-center justify-center py-32 space-y-4 font-body">
         <div className="w-12 h-12 border-4 border-slate-200 border-t-[#0f172a] rounded-full animate-spin" />
-        <p className="text-slate-400 font-black tracking-[0.2em] text-[12px] uppercase animate-pulse">{t('sv.analyzing')}</p>
+        <p className="text-slate-400 font-bold tracking-[0.2em] text-[12px] uppercase animate-pulse">{t('sv.analyzing')}</p>
       </div>
     );
   }
@@ -188,7 +188,7 @@ export default function SchoolView() {
                   <Users size={12} className="mr-1.5" /> {t('sv.registry')}: {school?.numStudents ?? "?"}
                 </Badge>
               </div>
-              <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight drop-shadow-md">
+              <h1 className="text-4xl md:text-5xl font-bold text-white tracking-tight drop-shadow-md">
                 {school?.name || t('sv.generic_node')}
               </h1>
               <p className="mt-2 text-sm font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
@@ -262,7 +262,7 @@ export default function SchoolView() {
                   {Object.entries(analysis.breakdown).map(([cat, data]) => (
                     <div key={cat} className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{cat}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">{cat}</span>
                         <Badge variant={data.level} size="xs">{data.level}</Badge>
                       </div>
                       <div className="flex items-center gap-3">
@@ -272,7 +272,7 @@ export default function SchoolView() {
                             style={{ width: `${data.score}%` }}
                           />
                         </div>
-                        <span className="text-[10px] font-black text-slate-900 w-6 text-right">{data.score}</span>
+                        <span className="text-[10px] font-bold text-slate-900 w-6 text-right">{data.score}</span>
                       </div>
                     </div>
                   ))}
@@ -291,7 +291,7 @@ export default function SchoolView() {
             {analysis ? (
               <div className="relative z-10 flex flex-col h-full">
                 <div className="mb-6">
-                  <h3 className="text-xl font-black tracking-tight text-white flex items-center gap-2">
+                  <h3 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
                     <ActivityIcon size={20} className="text-blue-400" />
                     {t('sv.infra_survival')}
                   </h3>
@@ -301,7 +301,7 @@ export default function SchoolView() {
                 <div className="grid grid-cols-2 gap-4 mb-6">
                   <div className="bg-white/10 backdrop-blur-md p-4 rounded-xl border border-white/10">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{t('sv.failure_horizon')}</p>
-                    <div className={`text-3xl font-black ${analysis.timeToFailureDays <= 15 ? "text-red-400" : "text-white"}`}>
+                    <div className={`text-3xl font-bold ${analysis.timeToFailureDays <= 15 ? "text-red-400" : "text-white"}`}>
                       {analysis.timeToFailureDays || "N/A"} <span className="text-xs font-bold opacity-60 uppercase">{t('deo.days')}</span>
                     </div>
                   </div>
@@ -311,7 +311,7 @@ export default function SchoolView() {
                       {analysis.trend === "deteriorating" ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
                       {analysis.trend}
                     </div>
-                    <div className="text-[10px] font-black text-white uppercase mt-1 opacity-80">{t('sv.critical_worst')}: {analysis.worstCategory || t('sv.none')}</div>
+                    <div className="text-[10px] font-bold text-white uppercase mt-1 opacity-80">{t('sv.critical_worst')}: {analysis.worstCategory || t('sv.none')}</div>
                   </div>
                 </div>
 

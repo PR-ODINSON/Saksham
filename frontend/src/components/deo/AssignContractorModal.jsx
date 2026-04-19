@@ -88,7 +88,7 @@ export default function AssignContractorModal({ bundle, onClose, onAssigned }) {
           {/* Bundle summary */}
           <div className="rounded-lg border-2 border-slate-200 bg-slate-50 p-4">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Bundle Urgency</span>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Bundle Urgency</span>
               <Badge variant={bundle.urgencyLabel === "critical" ? "critical" : bundle.urgencyLabel === "high" ? "high" : "default"} size="sm">
                 {(bundle.urgencyLabel || "low").toUpperCase()}
               </Badge>
@@ -96,7 +96,7 @@ export default function AssignContractorModal({ bundle, onClose, onAssigned }) {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-1">
                 <Cpu size={14} className="text-violet-700" />
-                <span className="text-2xl font-black text-slate-800">{bundle.maxUrgency}<span className="text-xs text-slate-400">/100</span></span>
+                <span className="text-2xl font-bold text-slate-800">{bundle.maxUrgency}<span className="text-xs text-slate-400">/100</span></span>
               </div>
               {bundle.willFailWithin30Days && (
                 <Badge variant="critical" size="sm">

@@ -8,8 +8,8 @@ function PageHeader({ icon, title, subtitle, className = '', variant = 'default'
       {icon && <div className={`text-7xl mb-6 ${isCinematic ? 'drop-shadow-[0_0_15px_rgba(16,185,129,0.5)]' : ''}`}>{icon}</div>}
       <h1 className={`${
         isCinematic 
-          ? 'text-5xl md:text-7xl lg:text-8xl font-black text-emerald-900 leading-[0.9] tracking-tighter mb-6' 
-          : 'text-3xl md:text-4xl lg:text-5xl font-black text-emerald-900 tracking-tight mb-3'
+          ? 'text-5xl md:text-7xl lg:text-8xl font-bold text-emerald-900 leading-[0.9] tracking-tighter mb-6' 
+          : 'text-3xl md:text-4xl lg:text-5xl font-bold text-emerald-900 tracking-tight mb-3'
       }`}>
         {title}
       </h1>
