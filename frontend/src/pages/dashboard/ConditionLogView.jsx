@@ -356,12 +356,24 @@ export default function ConditionLogView() {
                             )}
 
                             {isDEO && b.forwarded && (
-                              <button
-                                onClick={() => setAssignBundle(b)}
-                                className="h-10 px-6 rounded-xl bg-[#003366] text-white hover:bg-[#002244] transition-all shadow-lg shadow-blue-900/10 border border-[#003366] flex items-center gap-2 group/btn"
-                              >
-                                <span className="text-[11px] font-bold uppercase tracking-widest">Assign</span>
-                              </button>
+                              b.assigned ? (
+                                <div
+                                  className="h-10 px-5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-2"
+                                  title={b.assignedAt ? `Assigned ${new Date(b.assignedAt).toLocaleString()}` : 'Assigned'}
+                                >
+                                  <CheckCircle2 size={14} />
+                                  <span className="text-[11px] font-bold uppercase tracking-widest">Assigned</span>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setAssignBundle(b)}
+                                  className="h-10 px-6 rounded-xl bg-[#003366] text-white hover:bg-[#002244] transition-all shadow-lg shadow-blue-900/10 border border-[#003366] flex items-center gap-2 group/btn"
+                                >
+                                  <span className="text-[11px] font-bold uppercase tracking-widest">
+                                    {b.partiallyAssigned ? `Assign (${b.assignedCount}/${b.categories.length})` : 'Assign'}
+                                  </span>
+                                </button>
+                              )
                             )}
                           </div>
                         </td>

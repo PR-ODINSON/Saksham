@@ -651,7 +651,12 @@ export const getWeeklyBundles = async (req, res) => {
 
     const filter = {};
     if (schoolId) filter.schoolId = Number(schoolId);
-    if (district) filter.district = district;
+    // Case/whitespace-insensitive district match — DEO accounts often have
+    // a slightly different casing than what the school document stores.
+    if (district) {
+      const escaped = String(district).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      filter.district = { $regex: `^${escaped}$`, $options: 'i' };
+    }
     if (onlyForwarded) filter.forwardedAt = { $ne: null };
 
     if (!schoolId && !onlyForwarded && !district) {
@@ -677,6 +682,27 @@ export const getWeeklyBundles = async (req, res) => {
       byKey.get(k).push(r);
     }
 
+    // Look up MaintenanceDecisions for these bundles in one query so we can
+    // expose per-bundle assignment status to the frontend (badges + Assign
+    // button gating). A bundle is "assigned" once every category decision
+    // has been moved off the 'pending' state.
+    const bundleKeys = [...byKey.values()].map(cats => ({
+      schoolId:   cats[0].schoolId,
+      weekNumber: cats[0].weekNumber,
+    }));
+    const decisionFilter = bundleKeys.length
+      ? { $or: bundleKeys.map(k => ({ schoolId: k.schoolId, weekNumber: k.weekNumber })) }
+      : null;
+    const decisions = decisionFilter
+      ? await MaintenanceDecision.find(decisionFilter).lean()
+      : [];
+    const decisionByKey = new Map();
+    for (const d of decisions) {
+      const k = `${d.schoolId}::${d.weekNumber}`;
+      if (!decisionByKey.has(k)) decisionByKey.set(k, []);
+      decisionByKey.get(k).push(d);
+    }
+
     const bundles = [];
     for (const cats of byKey.values()) {
       const first = cats[0];
@@ -689,6 +715,24 @@ export const getWeeklyBundles = async (req, res) => {
         ? cats.map(c => c.forwardedAt).sort((a, b) => new Date(b) - new Date(a))[0]
         : null;
       const lrFlag = cats.some(c => c.willFailWithin30Days);
+
+      // Assignment status: derive from MaintenanceDecisions for this week.
+      const k = `${first.schoolId}::${first.weekNumber}`;
+      const dList = decisionByKey.get(k) || [];
+      const decisionByCategory = new Map(dList.map(d => [d.category, d]));
+      const assignedCats = cats.filter(c => {
+        const d = decisionByCategory.get(c.category);
+        return d && d.status && d.status !== 'pending';
+      });
+      const assigned = cats.length > 0 && assignedCats.length === cats.length;
+      const partiallyAssigned = !assigned && assignedCats.length > 0;
+      const assignedAt = dList.length
+        ? dList
+            .filter(d => d.status && d.status !== 'pending')
+            .map(d => d.updatedAt)
+            .sort((a, b) => new Date(b) - new Date(a))[0] || null
+        : null;
+
       bundles.push({
         schoolId:   first.schoolId,
         schoolName: nameById.get(first.schoolId) || `School ${first.schoolId}`,
@@ -704,6 +748,10 @@ export const getWeeklyBundles = async (req, res) => {
         willFailWithin30Days: lrFlag,
         forwarded,
         forwardedAt,
+        assigned,
+        partiallyAssigned,
+        assignedCount: assignedCats.length,
+        assignedAt,
       });
     }
 
