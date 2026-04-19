@@ -3,12 +3,12 @@ import React from 'react';
 /**
  * Common PageHeader component.
  */
-const PageHeader = ({ 
-  title, 
-  subtitle, 
-  icon: Icon, 
-  actions, 
-  className = '' 
+const PageHeader = ({
+  title,
+  subtitle,
+  icon: Icon,
+  actions,
+  className = ''
 }) => {
   return (
     <div className={`flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 ${className}`}>
