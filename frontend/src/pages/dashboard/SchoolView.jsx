@@ -10,7 +10,6 @@ import Badge from "../../components/common/Badge";
 import MetricCard from "../../components/common/MetricCard";
 import PageHeader from "../../components/common/PageHeader";
 import { FileText, AlertTriangle, TrendingUp, ArrowRight, Building, MapPin, Users, Calendar, CheckCircle2, Clock, Shield } from "lucide-react";
-import ApprovalQueue from "../../components/principal/ApprovalQueue";
 import ActiveWorkOrders from "../../components/principal/ActiveWorkOrders";
 import WeeklyBundleQuickSend from "../../components/principal/WeeklyBundleQuickSend";
 
@@ -225,10 +224,7 @@ export default function SchoolView() {
         <WeeklyBundleQuickSend schoolId={schoolId} />
 
         {/* ACTIONABLE ITEMS */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
-          <ApprovalQueue schoolId={schoolId} className="h-full" />
-          <ActiveWorkOrders schoolId={schoolId} className="h-full" />
-        </div>
+        <ActiveWorkOrders schoolId={schoolId} />
 
 
       </div>
