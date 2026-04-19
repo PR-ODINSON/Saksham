@@ -8,6 +8,7 @@ import Badge from "../../components/common/Badge";
 import MetricCard from "../../components/common/MetricCard";
 import PageHeader from "../../components/common/PageHeader";
 import CompletionModal from "../../components/common/CompletionModal";
+import ViewFeedbackModal from "../../components/common/ViewFeedbackModal";
 import {
   Hammer, Wrench, Zap, Building, AlertTriangle, MapPin, Calendar,
   Camera, Cpu, CheckCircle2, X, Clock, ChevronRight, RefreshCw,
@@ -120,7 +121,7 @@ function TaskCard({ order, onOpen }) {
 }
 
 // ─── Side drawer with full peon submission ───────────────────────────────────
-function TaskDetailDrawer({ taskId, onClose, onChanged, onComplete }) {
+function TaskDetailDrawer({ taskId, onClose, onChanged, onComplete, onViewFeedback }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
@@ -372,6 +373,11 @@ function TaskDetailDrawer({ taskId, onClose, onChanged, onComplete }) {
                     <Shield size={14} className="mr-1.5" /> Mark Complete
                   </Button>
                 )}
+                {wo.status === "completed" && (
+                  <Button variant="primary" size="sm" className="ml-auto" onClick={() => onViewFeedback?.(wo)}>
+                    <FileText size={14} className="mr-1.5" /> View Feedback
+                  </Button>
+                )}
               </div>
             </div>
           )}
@@ -414,6 +420,7 @@ export default function ContractorDashboard() {
   const [filter, setFilter] = useState("active"); // active | completed | all
   const [openId, setOpenId] = useState(null);
   const [completing, setCompleting] = useState(null);
+  const [viewingFeedback, setViewingFeedback] = useState(null);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -542,7 +549,14 @@ export default function ContractorDashboard() {
           taskId={openId}
           onClose={() => setOpenId(null)}
           onChanged={fetchOrders}
-          onComplete={(wo) => { setCompleting(wo); setOpenId(null); }}
+          onComplete={(wo) => {
+            setOpenId(null);
+            setCompleting(wo);
+          }}
+          onViewFeedback={(wo) => {
+            setOpenId(null);
+            setViewingFeedback(wo);
+          }}
         />
       )}
 
@@ -551,6 +565,13 @@ export default function ContractorDashboard() {
           workOrder={completing}
           onDone={() => { fetchOrders(); }}
           onClose={() => setCompleting(null)}
+        />
+      )}
+      
+      {viewingFeedback && (
+        <ViewFeedbackModal
+          workOrder={viewingFeedback}
+          onClose={() => setViewingFeedback(null)}
         />
       )}
     </div>

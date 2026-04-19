@@ -4,6 +4,8 @@
  */
 import mongoose from 'mongoose';
 import { WorkOrder, MaintenanceDecision, RepairLog, SchoolConditionRecord, School, Alert } from '../models/index.js';
+import fs from 'fs';
+import path from 'path';
 import cloudinary from '../config/cloudinary.js';
 import { getIO } from '../socket/index.js';
 import { writeAuditLog } from '../utils/auditLogger.js';
@@ -146,7 +148,10 @@ export const assignTask = async (req, res) => {
 // PS-03 learning rule: create a RepairLog recording before/after state
 export const completeTask = async (req, res) => {
   try {
-    const { workOrderId, afterConditionScore, beforeConditionScore, notes, lat, lng } = req.body;
+    const { 
+      workOrderId, afterConditionScore, beforeConditionScore, notes, lat, lng,
+      repair_done, contractor_delay_days, sla_breach 
+    } = req.body;
     let { photoUrl } = req.body;
 
     const workOrder = await WorkOrder.findById(workOrderId);
@@ -252,6 +257,48 @@ export const completeTask = async (req, res) => {
         workOrder.decisionId,
         { status: 'completed' },
       );
+    }
+
+    // 4. Update TS-PS3.csv by appending a new row reflecting the fixed state
+    try {
+      const csvPath = path.join(process.cwd(), '..', 'TS-PS3.csv');
+      const schoolDetails = await School.findOne({ schoolId: workOrder.schoolId });
+      
+      const newRow = [
+        workOrder.schoolId,
+        schoolDetails?.district || workOrder.district || 'Unknown',
+        schoolDetails?.block || 'Unknown',
+        schoolDetails?.schoolType || 'Primary',
+        schoolDetails?.girlsSchool ? 1 : 0,
+        schoolDetails?.numStudents || 500,
+        schoolDetails?.buildingAge || 20,
+        schoolDetails?.materialType || 'Brick',
+        schoolDetails?.weatherZone || 'Dry',
+        workOrder.category,
+        beforeRecord?.weekNumber || new Date().getWeek ? new Date().getWeek() : 12,
+        Number(afterConditionScore) || 1, // updated condition score
+        0, // issue_flag
+        0, // water_leak
+        0, // wiring_exposed
+        0, // crack_width_mm
+        1.0, // toilet_functional_ratio
+        0, // power_outage_hours_weekly
+        0, // roof_leak_flag
+        photoUrl ? 1 : 0, // photo_uploaded
+        100, // days_to_failure (safe now)
+        0, // failure_within_30_days
+        0, // failure_within_60_days
+        0, // priority_score
+        repair_done !== undefined ? repair_done : 1,
+        0, // days_since_repair (just repaired)
+        contractor_delay_days || 0,
+        sla_breach || 0
+      ].join(',') + '\n';
+      
+      fs.appendFileSync(csvPath, newRow);
+      console.log('Appended new feedback data to TS-PS3.csv');
+    } catch (csvErr) {
+      console.error('Failed to write to TS-PS3.csv:', csvErr);
     }
 
     // ── Socket.IO emit + audit log ────────────────────────────────────────
@@ -445,6 +492,19 @@ export const respondToTask = async (req, res) => {
     }
 
     res.json({ success: true, updated: updatedCount });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// GET /api/tasks/:id/feedback
+export const getRepairLogByTask = async (req, res) => {
+  try {
+    const repairLog = await RepairLog.findOne({ workOrderId: req.params.id }).lean();
+    if (!repairLog) {
+      return res.status(404).json({ success: false, message: 'Feedback not found for this task' });
+    }
+    res.json({ success: true, feedback: repairLog });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

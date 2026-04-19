@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { post } from "../../services/api";
-import { MapPin, X, CheckCircle2 } from "lucide-react";
+import { post, postFile } from "../../services/api";
+import { MapPin, X, CheckCircle2, UploadCloud } from "lucide-react";
 import Card from "./Card";
 import Button from "./Button";
 import Badge from "./Badge";
@@ -12,7 +12,11 @@ export default function CompletionModal({ workOrder, onDone, onClose }) {
     notes: "",
     lat: null,
     lng: null,
-    photoUrl: "https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&q=80&w=400", // Default mockup photo
+    photoUrl: "", // Compulsory image upload
+    repair_done: 1,
+    contractor_delay_days: 0,
+    sla_breach: 0,
+    file: null,
   });
   
   const [gpsStatus, setGpsStatus] = useState("detecting"); // detecting, captured, denied
@@ -43,15 +47,30 @@ export default function CompletionModal({ workOrder, onDone, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSaving(true);
     setError("");
 
-    const payload = {
-      workOrderId: workOrder._id,
-      ...form
-    };
+    if (!form.photoUrl) {
+      setError("Please upload a resolution proof photo before submitting the feedback.");
+      return;
+    }
 
-    const res = await post("/api/tasks/complete", payload);
+    setSaving(true);
+
+    const formData = new FormData();
+    formData.append("workOrderId", workOrder._id);
+    formData.append("beforeConditionScore", form.beforeConditionScore);
+    formData.append("afterConditionScore", form.afterConditionScore);
+    formData.append("notes", form.notes);
+    if (form.lat) formData.append("lat", form.lat);
+    if (form.lng) formData.append("lng", form.lng);
+    formData.append("repair_done", form.repair_done);
+    formData.append("contractor_delay_days", form.contractor_delay_days);
+    formData.append("sla_breach", form.sla_breach);
+    if (form.file) {
+      formData.append("photo", form.file);
+    }
+
+    const res = await postFile("/api/tasks/complete", formData);
     setSaving(false);
     
     if (res.success) {
@@ -65,7 +84,7 @@ export default function CompletionModal({ workOrder, onDone, onClose }) {
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1100] flex items-center justify-center p-4">
       <Card 
-        title="Directorial Resolution Verification"
+        title="Feedback Form"
         subtitle="Formal submission of operational resolution and geospatial validation"
         className="w-full max-w-xl"
         noPadding
@@ -128,7 +147,7 @@ export default function CompletionModal({ workOrder, onDone, onClose }) {
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-3">
               <label className="text-[12px] font-bold text-slate-500 uppercase tracking-widest block">Coordinates</label>
-              <div className={`h-20 rounded border flex flex-col items-center justify-center transition-all ${
+              <div className={`h-28 rounded-lg border-2 flex flex-col items-center justify-center transition-all ${
                 gpsStatus === 'captured' ? 'bg-emerald-50 border-emerald-200' : 
                 gpsStatus === 'denied' ? 'bg-red-50 border-red-200' : 
                 'bg-slate-50 border-slate-200'
@@ -156,14 +175,40 @@ export default function CompletionModal({ workOrder, onDone, onClose }) {
               </div>
             </div>
             <div className="space-y-3">
-              <label className="text-[12px] font-bold text-slate-500 uppercase tracking-widest block">Resolution Proof</label>
-              <div className="h-20 rounded bg-slate-100 border border-slate-200 overflow-hidden relative group cursor-pointer shadow-inner">
-                <img src={form.photoUrl} alt="Preview" className="w-full h-full object-cover opacity-90 group-hover:opacity-75 transition-opacity" />
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <span className="text-[13px] font-bold text-slate-900 uppercase bg-white/95 border border-slate-300 px-2 py-1 rounded shadow-sm">
-                    Modify Photo
-                  </span>
-                </div>
+              <label className="text-[12px] font-bold text-slate-500 uppercase tracking-widest block">
+                Resolution Proof <span className="text-red-500">*</span>
+              </label>
+              <div className="h-28 rounded-lg bg-slate-50 border-2 border-dashed border-slate-300 hover:border-blue-400 hover:bg-blue-50/50 transition-all overflow-hidden relative group">
+                <input 
+                  type="file" 
+                  accept="image/*"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      setForm({ 
+                        ...form, 
+                        photoUrl: URL.createObjectURL(e.target.files[0]),
+                        file: e.target.files[0]
+                      });
+                    }
+                  }}
+                />
+                {form.photoUrl ? (
+                  <>
+                    <img src={form.photoUrl} alt="Preview" className="w-full h-full object-cover opacity-90 group-hover:opacity-40 transition-opacity" />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                      <UploadCloud size={24} className="text-white drop-shadow-md mb-1" />
+                      <span className="text-[11px] font-bold text-white uppercase tracking-widest drop-shadow-md">
+                        Change Photo
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 group-hover:text-blue-500 transition-colors">
+                    <UploadCloud size={28} className="mb-2" />
+                    <span className="text-[11px] font-bold uppercase tracking-widest">Upload Image</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -178,14 +223,49 @@ export default function CompletionModal({ workOrder, onDone, onClose }) {
               placeholder="Technical summary of resolution actions implemented..."
               className="w-full bg-slate-50 border border-slate-200 rounded p-4 text-slate-900 text-sm focus:ring-1 focus:ring-blue-500 outline-none resize-none font-medium"
             />
+          {/* CSV Parameters */}
+          <div className="grid grid-cols-3 gap-4 border-t border-slate-100 pt-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Repair Done?</label>
+              <select 
+                value={form.repair_done} 
+                onChange={e => setForm({...form, repair_done: Number(e.target.value)})}
+                className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-xs font-bold"
+              >
+                <option value={1}>Yes (1)</option>
+                <option value={0}>No (0)</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Delay (Days)</label>
+              <input 
+                type="number" 
+                value={form.contractor_delay_days}
+                onChange={e => setForm({...form, contractor_delay_days: Number(e.target.value)})}
+                className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-xs font-bold"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">SLA Breach?</label>
+              <select 
+                value={form.sla_breach} 
+                onChange={e => setForm({...form, sla_breach: Number(e.target.value)})}
+                className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-xs font-bold"
+              >
+                <option value={0}>No (0)</option>
+                <option value={1}>Yes (1)</option>
+              </select>
+            </div>
+          </div>
           </div>
 
-          <div className="flex gap-4 pt-4">
-            <Button variant="ghost" onClick={onClose} className="flex-1">Discard</Button>
-            <Button type="submit" variant="primary" isLoading={saving} className="flex-[2]">Authorize Resolution</Button>
+          <div className="flex gap-4 pt-2">
+            <Button variant="ghost" type="button" onClick={onClose} className="flex-1">Discard</Button>
+            <Button type="submit" variant="primary" isLoading={saving} className="flex-[2]">Submit Feedback</Button>
           </div>
         </form>
       </Card>
     </div>
+    
   );
 }

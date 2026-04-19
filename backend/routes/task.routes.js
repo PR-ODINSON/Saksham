@@ -4,7 +4,7 @@
  */
 import express from 'express';
 import { protect, authorize } from '../middlewares/auth.middleware.js';
-import { getWorkOrders, assignTask, completeTask, updateTaskStatus, respondToTask, getWorkOrderDetails } from '../controllers/workorder.controller.js';
+import { getWorkOrders, assignTask, completeTask, updateTaskStatus, respondToTask, getWorkOrderDetails, getRepairLogByTask } from '../controllers/workorder.controller.js';
 import upload from '../config/multer.js';
 
 const router = express.Router();
@@ -19,7 +19,7 @@ router.post('/assign', protect, authorize('deo', 'bmo', 'admin'), assignTask);
 router.post(
   '/complete',
   protect,
-  upload.single('completionImage'),
+  upload.single('photo'),
   completeTask,
 );
 
@@ -32,5 +32,8 @@ router.patch('/:id/respond', protect, authorize('contractor', 'deo', 'admin'), r
 // GET /api/tasks/:id/details — full work-order context: school, condition record,
 // LR analysis, peon-uploaded photos and a human-readable issues list.
 router.get('/:id/details', protect, getWorkOrderDetails);
+
+// GET /api/tasks/:id/feedback — retrieve feedback for a task
+router.get('/:id/feedback', protect, getRepairLogByTask);
 
 export default router;
