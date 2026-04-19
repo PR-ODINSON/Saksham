@@ -56,6 +56,7 @@ export default function AssignContractorModal({ bundle, onClose, onAssigned }) {
           schoolId:      bundle.schoolId,
           district:      bundle.district,
           category:      c.category,
+          weekNumber:    bundle.weekNumber,
           priorityScore: c.priorityScore,
           deadline,
           assignedTo:    contractorId,

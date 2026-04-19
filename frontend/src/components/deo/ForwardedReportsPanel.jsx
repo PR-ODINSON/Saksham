@@ -8,7 +8,7 @@ import Badge from "../common/Badge";
 import { useLanguage } from "../../context/LanguageContext";
 import AssignContractorModal from "./AssignContractorModal";
 import {
-  FileText, Download, Cpu, AlertTriangle, ChevronRight, RefreshCw, UserPlus,
+  FileText, Download, Cpu, AlertTriangle, ChevronRight, RefreshCw, UserPlus, CheckCircle2,
 } from "lucide-react";
 
 const URGENCY = {
@@ -142,13 +142,23 @@ export default function ForwardedReportsPanel({ district, className = "" }) {
                   >
                     <Download size={14} className="mr-1.5" /> {t('fr.pdf')}
                   </Button>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    onClick={() => setAssignBundle(b)}
-                  >
-                    <UserPlus size={14} className="mr-1.5" /> {t('fr.assign')}
-                  </Button>
+                  {b.assigned ? (
+                    <span
+                      className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold uppercase tracking-widest"
+                      title={b.assignedAt ? `Assigned ${new Date(b.assignedAt).toLocaleString()}` : 'Assigned'}
+                    >
+                      <CheckCircle2 size={14} /> Assigned
+                    </span>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setAssignBundle(b)}
+                    >
+                      <UserPlus size={14} className="mr-1.5" />
+                      {b.partiallyAssigned ? `${t('fr.assign')} (${b.assignedCount}/${b.categories.length})` : t('fr.assign')}
+                    </Button>
+                  )}
                 </div>
               </div>
             );

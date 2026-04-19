@@ -81,7 +81,7 @@ export const getWorkOrders = async (req, res) => {
 // POST /api/tasks/assign  |  POST /api/work-orders/assign
 export const assignTask = async (req, res) => {
   try {
-    const { decisionId, schoolId, district, category, assignedTo, priorityScore, deadline } = req.body;
+    const { decisionId, schoolId, district, category, assignedTo, priorityScore, deadline, weekNumber } = req.body;
 
     if (!schoolId || !category || !deadline) {
       return res.status(400).json({
@@ -90,19 +90,25 @@ export const assignTask = async (req, res) => {
       });
     }
 
-    // Resolve decisionId if not provided — use latest pending decision for school+category
+    // Resolve decisionId if not provided — prefer the decision belonging to
+    // the explicit weekNumber the DEO is assigning from. Fall back to the
+    // latest pending decision for school+category if weekNumber is omitted.
     let resolvedDecisionId = decisionId;
     if (!resolvedDecisionId) {
-      const decision = await MaintenanceDecision.findOne({
-        schoolId: Number(schoolId),
-        category,
-        status: 'pending',
-      }).sort({ 'decision.computedPriorityScore': -1 });
+      const lookup = { schoolId: Number(schoolId), category };
+      if (weekNumber !== undefined && weekNumber !== null && weekNumber !== '') {
+        lookup.weekNumber = Number(weekNumber);
+      } else {
+        lookup.status = 'pending';
+      }
+      const decision = await MaintenanceDecision.findOne(lookup)
+        .sort({ 'decision.computedPriorityScore': -1 });
       if (decision) {
         resolvedDecisionId = decision._id;
-        // Update decision status to 'assigned'
-        decision.status = 'assigned';
-        await decision.save();
+        if (decision.status !== 'completed') {
+          decision.status = 'assigned';
+          await decision.save();
+        }
       }
     }
 
