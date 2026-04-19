@@ -179,9 +179,13 @@ export const submitReport = async (req, res) => {
 
     // TESTING MODE: previously this upserted into a single (schoolId, category,
     // weekNumber) doc, so a peon could only ever have ONE submission per week
-    // per category. We now `create` a fresh document on every submission so all
-    // reports are kept and downstream ML / forwarding can work on them.
-    const record = await SchoolConditionRecord.create(finalPayload);
+    // per category. We now use findOneAndUpdate with upsert so that submissions
+    // are robust against duplicate key errors while allowing corrections.
+    const record = await SchoolConditionRecord.findOneAndUpdate(
+      { schoolId: finalPayload.schoolId, category: finalPayload.category, weekNumber: finalPayload.weekNumber },
+      finalPayload,
+      { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+    );
 
     // ── Run ML prediction engine after save ────────────────────────────────
     // Fetch full week history for this school + category (needed for slope / trend)
@@ -415,10 +419,14 @@ export const submitWeeklyReport = async (req, res) => {
         ...(imageUrls.length ? { images: imageUrls } : {}),
       };
 
-      // TESTING MODE: see note in submitReport — multiple weekly bundles per
-      // (school, week) are now allowed; create a new record per category on
-      // every submission instead of upserting the existing one.
-      const record = await SchoolConditionRecord.create(updatePayload);
+      // TESTING MODE: multiple weekly bundles allowed, but we use findOneAndUpdate
+      // per category to ensure we don't hit duplicate key errors if a specific
+      // category is re-submitted for the same week.
+      const record = await SchoolConditionRecord.findOneAndUpdate(
+        { schoolId: updatePayload.schoolId, category: cat, weekNumber: updatePayload.weekNumber },
+        updatePayload,
+        { upsert: true, new: true, runValidators: true, setDefaultsOnInsert: true }
+      );
 
       // Run ML prediction for this category
       const weekHistoryDocs = await SchoolConditionRecord.find({

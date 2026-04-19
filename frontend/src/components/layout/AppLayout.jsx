@@ -10,7 +10,7 @@ import { dashboardPathFor } from '../../utils/roleRoutes.js';
 // Each role's nav uses its own URL prefix (/peon/dashboard, /principal/dashboard, ...)
 const ROLE_NAV = {
   peon: [
-    // Peons land directly on the weekly input form — no extra nav
+    { path: '/peon/dashboard', labelKey: 'nav.dashboard', icon: <LayoutDashboard size={18} strokeWidth={2.5} />, exact: true },
   ],
   principal: [
     { path: '/principal/dashboard',         labelKey: 'nav.principal_dashboard', icon: <LayoutDashboard size={18} strokeWidth={2.5} />, exact: true },
