@@ -170,16 +170,16 @@ function TaskDetailDrawer({ taskId, onClose, onChanged, onComplete }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50"
+        className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[1100] flex items-center justify-center p-4 sm:p-6"
         onClick={onClose}
       >
         <motion.div
-          initial={{ x: "100%" }}
-          animate={{ x: 0 }}
-          exit={{ x: "100%" }}
-          transition={{ type: "spring", damping: 30, stiffness: 280 }}
+          initial={{ scale: 0.95, opacity: 0, y: 10 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.95, opacity: 0, y: 10 }}
+          transition={{ type: "spring", damping: 25, stiffness: 300 }}
           onClick={(e) => e.stopPropagation()}
-          className="absolute right-0 top-0 h-full w-full md:w-[640px] bg-white shadow-2xl overflow-y-auto"
+          className="relative w-full max-w-3xl max-h-[90vh] bg-white rounded-2xl shadow-2xl overflow-y-auto flex flex-col"
         >
           {/* Header */}
           <div className={`${u.bg} ${u.border} border-b-2 px-6 pt-6 pb-5 sticky top-0 z-10`}>

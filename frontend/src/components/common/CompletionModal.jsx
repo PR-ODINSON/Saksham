@@ -63,7 +63,7 @@ export default function CompletionModal({ workOrder, onDone, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[1100] flex items-center justify-center p-4">
       <Card 
         title="Directorial Resolution Verification"
         subtitle="Formal submission of operational resolution and geospatial validation"
